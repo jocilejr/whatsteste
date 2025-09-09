@@ -1203,9 +1203,33 @@ body {
   gap: 0.5rem;
 }
 
-.webhook-trigger-btn {
-  background: #ed8936;
+/* Macro Buttons */
+.macro-buttons {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.macro-button {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 500;
+}
+
+.macro-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.add-macro-button {
+  background: #e2e8f0;
+  color: #666;
   border: none;
   padding: 0.5rem 1rem;
   border-radius: 6px;
@@ -1214,9 +1238,15 @@ body {
   transition: all 0.3s ease;
 }
 
-.webhook-trigger-btn:hover {
-  background: #dd7524;
-  transform: translateY(-1px);
+.add-macro-button:hover {
+  background: #cbd5e0;
+}
+
+.no-macros {
+  display: flex;
+  align-items: center;
+  color: #666;
+  font-size: 0.85rem;
 }
 
 .messages-container {
