@@ -918,6 +918,8 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             self.handle_connect_instance(instance_id)
         elif self.path == '/api/messages/receive':
             self.handle_receive_message()
+        elif self.path == '/api/whatsapp/connected':
+            self.handle_whatsapp_connected()
         else:
             self.send_error(404, "Not Found")
     
