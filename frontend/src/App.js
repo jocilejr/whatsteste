@@ -419,6 +419,10 @@ function App() {
           {currentView === 'messages' && (
             <MessagesCenter />
           )}
+
+          {currentView === 'instances' && (
+            <WhatsAppInstances />
+          )}
         </div>
       </main>
     </div>
