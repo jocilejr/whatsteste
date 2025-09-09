@@ -1203,7 +1203,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             except ImportError:
                 # Fallback usando urllib
                 try:
-                    with urllib.request.urlopen('http://localhost:3001/qr', timeout=5) as response:
+                    with urllib.request.urlopen('http://localhost:3002/qr', timeout=5) as response:
                         if response.status == 200:
                             data = json.loads(response.read().decode('utf-8'))
                             self.send_json_response(data)
