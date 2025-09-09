@@ -660,6 +660,8 @@ HTML_APP = '''<!DOCTYPE html>
                             `<button class="btn btn-success" onclick="connectInstance('${instance.id}')" style="flex: 1;">🔗 Conectar Real</button>` :
                             `<button class="btn btn-secondary" disabled style="flex: 1;">✅ Conectado</button>`
                         }
+                        <button class="btn btn-primary" onclick="showQRCode('${instance.id}')">📋 Ver QR Code</button>
+                        <button class="btn btn-danger" onclick="disconnectInstance('${instance.id}')">❌ Desconectar</button>
                         <button class="btn btn-danger" onclick="deleteInstance('${instance.id}', '${instance.name}')">🗑️ Excluir</button>
                     </div>
                 </div>
