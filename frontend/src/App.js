@@ -59,6 +59,13 @@ const Navigation = ({ currentView, onViewChange }) => {
           <span className="nav-icon">💬</span>
           <span>Mensagens</span>
         </button>
+        <button 
+          className={`nav-item ${currentView === 'instances' ? 'active' : ''}`}
+          onClick={() => onViewChange('instances')}
+        >
+          <span className="nav-icon">📱</span>
+          <span>Instâncias</span>
+        </button>
       </div>
     </nav>
   );
