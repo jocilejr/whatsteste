@@ -357,9 +357,25 @@ HTML_APP = '''<!DOCTYPE html>
         let currentQRInstance = null;
 
         async function showQRModal(instanceId) {
+            console.log('🔄 Showing QR modal for instance:', instanceId);
             currentQRInstance = instanceId;
-            document.getElementById('qr-instance-name').textContent = instanceId;
-            document.getElementById('qrModal').classList.add('show');
+            
+            // Check if elements exist before setting text
+            const instanceNameEl = document.getElementById('qr-instance-name');
+            if (instanceNameEl) {
+                instanceNameEl.textContent = instanceId;
+                console.log('✅ Instance name set');
+            } else {
+                console.error('❌ qr-instance-name element not found');
+            }
+            
+            const modalEl = document.getElementById('qrModal');
+            if (modalEl) {
+                modalEl.classList.add('show');
+                console.log('✅ Modal shown');
+            } else {
+                console.error('❌ qrModal element not found');
+            }
             
             // Start QR polling
             loadQRCode();
