@@ -1644,9 +1644,225 @@ body {
   width: 100%;
 }
 
-.add-webhook-btn:hover {
+/* Macros Sidebar */
+.macros-sidebar {
+  width: 280px;
+  border-left: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  background: #f8fafc;
+  max-height: 100%;
+}
+
+.macros-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid #e2e8f0;
+  background: white;
+}
+
+.macros-header h3 {
+  color: #2d3748;
+  font-size: 1.2rem;
+  margin-bottom: 1rem;
+}
+
+.contact-selected {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: #667eea;
+  border-radius: 8px;
+  color: white;
+}
+
+.selected-contact-avatar {
+  width: 32px;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.selected-contact-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.selected-contact-device {
+  font-size: 0.75rem;
+  opacity: 0.9;
+}
+
+.macros-content {
+  flex: 1;
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+.macros-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.macro-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.macro-trigger-button {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: left;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.macro-trigger-button.delivery {
+  background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+  color: white;
+}
+
+.macro-trigger-button.default {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.macro-trigger-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.macro-icon {
+  font-size: 1.1rem;
+}
+
+.macro-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.delete-macro-btn {
+  background: #e53e3e;
+  color: white;
+  border: none;
+  padding: 0.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.8rem;
+}
+
+.delete-macro-btn:hover {
+  background: #c53030;
+  transform: scale(1.1);
+}
+
+.add-macro-btn {
+  background: #667eea;
+  color: white;
+  border: none;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 100%;
+  font-weight: 500;
+}
+
+.add-macro-btn:hover {
   background: #5a67d8;
   transform: translateY(-2px);
+}
+
+.add-macro-form {
+  background: white;
+  border-radius: 8px;
+  padding: 1rem;
+  border: 1px solid #e2e8f0;
+}
+
+.add-macro-form h4 {
+  color: #2d3748;
+  margin-bottom: 1rem;
+}
+
+.macro-input, .macro-textarea {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  margin-bottom: 0.75rem;
+  font-size: 0.85rem;
+}
+
+.macro-textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+.macro-input:focus, .macro-textarea:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.macro-form-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.save-macro, .cancel-macro {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.85rem;
+}
+
+.save-macro {
+  background: #48bb78;
+  color: white;
+  flex: 1;
+}
+
+.save-macro:hover {
+  background: #38a169;
+}
+
+.cancel-macro {
+  background: #e2e8f0;
+  color: #2d3748;
+}
+
+.cancel-macro:hover {
+  background: #cbd5e0;
+}
+
+.no-macros-message {
+  text-align: center;
+  color: #666;
+  padding: 2rem 1rem;
+  font-size: 0.9rem;
 }
 
 /* Loading */
