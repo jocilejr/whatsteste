@@ -190,6 +190,121 @@ async def trigger_webhook_async(webhook_url: str, data: Dict[str, Any]):
         logging.error(f"Webhook trigger failed: {webhook_url} - Error: {str(e)}")
         return {"success": False, "error": str(e)}
 
+# WhatsApp Instances Routes
+@api_router.get("/whatsapp/instances")
+async def get_whatsapp_instances():
+    """Get all WhatsApp instances"""
+    try:
+        instances = await db.whatsapp_instances.find().to_list(100)
+        
+        # Update stats for each instance
+        for instance in instances:
+            instance['id'] = str(instance.get('_id'))
+            if '_id' in instance:
+                del instance['_id']
+            
+            # Count contacts for this device
+            contacts_count = await db.contacts.count_documents({
+                "device_id": instance.get('device_id')
+            })
+            instance['contacts_count'] = contacts_count
+            
+            # Count messages today for this device
+            today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+            messages_today = await db.messages.count_documents({
+                "device_id": instance.get('device_id'),
+                "timestamp": {"$gte": today}
+            })
+            instance['messages_today'] = messages_today
+        
+        return instances
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/whatsapp/instances")
+async def create_whatsapp_instance(instance_data: WhatsAppInstanceCreate):
+    """Create a new WhatsApp instance"""
+    try:
+        device_id = f"whatsapp_{str(uuid.uuid4())[:8]}"
+        device_name = instance_data.device_name or instance_data.name
+        
+        instance = WhatsAppInstance(
+            name=instance_data.name,
+            device_id=device_id,
+            device_name=device_name
+        )
+        
+        result = await db.whatsapp_instances.insert_one(instance.dict())
+        instance.id = str(result.inserted_id)
+        
+        return {"success": True, "instance": instance.dict()}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/whatsapp/instances/{instance_id}/connect")
+async def connect_whatsapp_instance(instance_id: str):
+    """Start connection process for a WhatsApp instance"""
+    try:
+        # Get instance from database
+        instance = await db.whatsapp_instances.find_one({"_id": instance_id})
+        if not instance:
+            raise HTTPException(status_code=404, detail="Instance not found")
+        
+        # For now, just return success - actual QR generation would happen through whatsapp-service
+        return {"success": True, "message": "Connection initiated"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/whatsapp/instances/{instance_id}/qr")
+async def get_instance_qr(instance_id: str):
+    """Get QR code for specific instance"""
+    try:
+        # Get instance from database
+        instance = await db.whatsapp_instances.find_one({"_id": instance_id})
+        if not instance:
+            raise HTTPException(status_code=404, detail="Instance not found")
+        
+        # For demo purposes, return a fake QR code
+        # In production, this would communicate with whatsapp-service
+        qr_data = f"whatsapp-instance-{instance_id}-{datetime.now().timestamp()}"
+        
+        return {"qr": qr_data, "connected": False}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/whatsapp/instances/{instance_id}/disconnect")
+async def disconnect_whatsapp_instance(instance_id: str):
+    """Disconnect a WhatsApp instance"""
+    try:
+        result = await db.whatsapp_instances.update_one(
+            {"_id": instance_id},
+            {"$set": {
+                "connected": False,
+                "user": None,
+                "last_connected_at": datetime.now(timezone.utc)
+            }}
+        )
+        
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Instance not found")
+        
+        return {"success": True, "message": "Instance disconnected"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.delete("/whatsapp/instances/{instance_id}")
+async def delete_whatsapp_instance(instance_id: str):
+    """Delete a WhatsApp instance"""
+    try:
+        result = await db.whatsapp_instances.delete_one({"_id": instance_id})
+        
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Instance not found")
+        
+        return {"success": True, "message": "Instance deleted"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 # WhatsApp Routes
 @api_router.post("/whatsapp/message", response_model=MessageResponse)
 async def handle_whatsapp_message(message_data: IncomingMessage):
