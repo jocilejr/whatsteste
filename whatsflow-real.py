@@ -972,13 +972,32 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
     def handle_connect_instance(self, instance_id):
         try:
             # Start Baileys connection
-            import requests
-            response = requests.post('http://localhost:3001/connect', timeout=5)
-            
-            if response.status_code == 200:
-                self.send_json_response({"success": True, "message": "Conexão iniciada"})
-            else:
-                self.send_json_response({"error": "Erro ao iniciar conexão"}, 500)
+            try:
+                import requests
+                response = requests.post('http://localhost:3001/connect', timeout=5)
+                
+                if response.status_code == 200:
+                    self.send_json_response({"success": True, "message": "Conexão iniciada"})
+                else:
+                    self.send_json_response({"error": "Erro ao iniciar conexão"}, 500)
+            except ImportError:
+                # Fallback usando urllib se requests não estiver disponível
+                import urllib.request
+                import urllib.error
+                
+                try:
+                    data = json.dumps({}).encode('utf-8')
+                    req = urllib.request.Request('http://localhost:3001/connect', data=data, 
+                                               headers={'Content-Type': 'application/json'})
+                    req.get_method = lambda: 'POST'
+                    
+                    with urllib.request.urlopen(req, timeout=5) as response:
+                        if response.status == 200:
+                            self.send_json_response({"success": True, "message": "Conexão iniciada"})
+                        else:
+                            self.send_json_response({"error": "Erro ao iniciar conexão"}, 500)
+                except urllib.error.URLError as e:
+                    self.send_json_response({"error": f"Serviço WhatsApp indisponível: {str(e)}"}, 500)
                 
         except Exception as e:
             self.send_json_response({"error": str(e)}, 500)
