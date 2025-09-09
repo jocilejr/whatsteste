@@ -926,6 +926,14 @@ app.listen(PORT, () => {
                 
                 if result.returncode == 0:
                     print("✅ Dependências instaladas com sucesso!")
+                    # Install node-fetch specifically (required for backend communication)
+                    print("📦 Instalando node-fetch...")
+                    fetch_result = subprocess.run(['npm', 'install', 'node-fetch@2.6.7'], 
+                                                cwd=self.baileys_dir, capture_output=True, text=True)
+                    if fetch_result.returncode == 0:
+                        print("✅ node-fetch instalado com sucesso!")
+                    else:
+                        print("⚠️ Aviso: node-fetch pode não ter sido instalado corretamente")
                 else:
                     print(f"❌ Erro na instalação: {result.stderr}")
                     return False
