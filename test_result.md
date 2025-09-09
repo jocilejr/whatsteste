@@ -149,6 +149,9 @@ backend:
       - working: true
         agent: "testing"
         comment: "✅ DATABASE SCHEMA TOTALMENTE CORRIGIDO E TESTADO! Todas as colunas necessárias presentes: instance_id, user_name, user_id, avatar_url, message_type, whatsapp_id, created_at. Dados preservados: 3 contatos, 5 mensagens, 8 instâncias. Database persistence funcionando perfeitamente."
+      - working: true
+        agent: "testing"
+        comment: "🎯 VALIDAÇÃO FINAL APÓS CORREÇÕES: ✅ SQLite WAL mode ATIVO - journal_mode=wal ✅ ORDER BY created_at queries FUNCIONANDO em todas tabelas ✅ Database concurrency TESTADO - 5 conexões simultâneas OK ✅ Schema constraints RESOLVIDOS - todas colunas created_at presentes ✅ Data integrity PRESERVADA - 3 contatos, 5 mensagens, 11 instâncias ✅ QR code generation ESTÁVEL - QR real gerado com 60s expiry ✅ Baileys integration FUNCIONANDO - porta 3002 ativa ✅ 14/14 testes backend PASSARAM (100% success rate) ✅ TODOS PROBLEMAS DE DATABASE DEFINITIVAMENTE RESOLVIDOS!"
 
 frontend:
   - task: "Interface WhatsFlow Real"
