@@ -1001,6 +1001,8 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             self.handle_whatsapp_qr()
         elif self.path == '/api/contacts':
             self.handle_get_contacts()
+        elif self.path == '/api/webhooks':
+            self.handle_get_webhooks()
         else:
             self.send_error(404, "Not Found")
     
