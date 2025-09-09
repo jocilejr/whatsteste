@@ -463,11 +463,184 @@ HTML_APP = '''<!DOCTYPE html>
 
         async function loadMessages() {
             try {
-                const response = await fetch('/api/messages');
-                const messages = await response.json();
-                renderMessages(messages);
+                // Load chat list
+                const chatsResponse = await fetch('/api/chats');
+                const chats = await chatsResponse.json();
+                
+                const chatList = document.getElementById('chat-list');
+                if (chats.length === 0) {
+                    chatList.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-icon">💬</div>
+                            <div class="empty-title">Nenhuma conversa</div>
+                            <p>As conversas aparecerão aqui quando receber mensagens</p>
+                        </div>
+                    `;
+                } else {
+                    chatList.innerHTML = chats.map(chat => `
+                        <div class="chat-item" onclick="openChat('${chat.contact_phone}', '${chat.contact_name}', '${chat.instance_id}')"
+                             style="padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; hover: background: #f5f5f5;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <div class="contact-avatar" style="width: 40px; height: 40px; border-radius: 50%; background: #007bff; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold;">
+                                    ${chat.contact_name.charAt(0).toUpperCase()}
+                                </div>
+                                <div style="flex: 1;">
+                                    <div style="font-weight: bold; margin-bottom: 2px;">${chat.contact_name}</div>
+                                    <div style="color: #666; font-size: 0.9em; truncate: ellipsis;">${chat.last_message || 'Nova conversa'}</div>
+                                </div>
+                                ${chat.unread_count > 0 ? `<div class="unread-badge" style="background: #007bff; color: white; border-radius: 50%; padding: 2px 6px; font-size: 0.8em;">${chat.unread_count}</div>` : ''}
+                            </div>
+                        </div>
+                    `).join('');
+                }
+                
             } catch (error) {
-                console.error('Error loading messages');
+                console.error('Erro ao carregar mensagens:', error);
+                document.getElementById('chat-list').innerHTML = `
+                    <div class="error-state">
+                        <p>❌ Erro ao carregar conversas</p>
+                        <button class="btn btn-sm btn-primary" onclick="loadMessages()">Tentar novamente</button>
+                    </div>
+                `;
+            }
+        }
+
+        let currentChat = null;
+
+        async function openChat(phone, contactName, instanceId) {
+            currentChat = { phone, contactName, instanceId };
+            
+            // Update chat header
+            document.getElementById('chat-contact-name').textContent = contactName;
+            document.getElementById('chat-contact-phone').textContent = phone;
+            document.getElementById('chat-header').style.display = 'block';
+            document.getElementById('message-input-area').style.display = 'block';
+            
+            // Load messages for this chat
+            try {
+                const response = await fetch(`/api/messages?phone=${phone}&instance_id=${instanceId}`);
+                const messages = await response.json();
+                
+                const messagesContainer = document.getElementById('messages-container');
+                if (messages.length === 0) {
+                    messagesContainer.innerHTML = `
+                        <div style="text-align: center; color: #666; margin-top: 100px;">
+                            <p>💬 Nenhuma mensagem ainda</p>
+                            <p>Comece uma conversa!</p>
+                        </div>
+                    `;
+                } else {
+                    messagesContainer.innerHTML = messages.map(msg => `
+                        <div class="message ${msg.direction}" style="margin-bottom: 15px; display: flex; ${msg.direction === 'outgoing' ? 'justify-content: flex-end' : 'justify-content: flex-start'};">
+                            <div class="message-bubble" style="max-width: 70%; padding: 10px 15px; border-radius: 15px; ${msg.direction === 'outgoing' ? 'background: #007bff; color: white; border-bottom-right-radius: 5px;' : 'background: white; border: 1px solid #ddd; border-bottom-left-radius: 5px;'}">
+                                <div class="message-text">${msg.message}</div>
+                                <div class="message-time" style="font-size: 0.8em; margin-top: 5px; opacity: 0.7;">
+                                    ${new Date(msg.created_at).toLocaleTimeString()}
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                    
+                    // Scroll to bottom
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                }
+                
+            } catch (error) {
+                console.error('Erro ao carregar mensagens:', error);
+                document.getElementById('messages-container').innerHTML = `
+                    <div style="text-align: center; color: red; margin-top: 100px;">
+                        <p>❌ Erro ao carregar mensagens</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function sendMessage() {
+            if (!currentChat) return;
+            
+            const messageInput = document.getElementById('message-input');
+            const message = messageInput.value.trim();
+            
+            if (!message) return;
+            
+            try {
+                const response = await fetch(`/api/messages/send/${currentChat.instanceId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        to: currentChat.phone,
+                        message: message
+                    })
+                });
+                
+                if (response.ok) {
+                    messageInput.value = '';
+                    
+                    // Add message to UI immediately
+                    const messagesContainer = document.getElementById('messages-container');
+                    const messageDiv = document.createElement('div');
+                    messageDiv.className = 'message outgoing';
+                    messageDiv.style.cssText = 'margin-bottom: 15px; display: flex; justify-content: flex-end;';
+                    messageDiv.innerHTML = `
+                        <div class="message-bubble" style="max-width: 70%; padding: 10px 15px; border-radius: 15px; background: #007bff; color: white; border-bottom-right-radius: 5px;">
+                            <div class="message-text">${message}</div>
+                            <div class="message-time" style="font-size: 0.8em; margin-top: 5px; opacity: 0.7;">
+                                ${new Date().toLocaleTimeString()}
+                            </div>
+                        </div>
+                    `;
+                    messagesContainer.appendChild(messageDiv);
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                    
+                } else {
+                    alert('❌ Erro ao enviar mensagem');
+                }
+                
+            } catch (error) {
+                console.error('Erro ao enviar mensagem:', error);
+                alert('❌ Erro de conexão');
+            }
+        }
+
+        async function sendWebhook() {
+            if (!currentChat) {
+                alert('❌ Selecione uma conversa primeiro');
+                return;
+            }
+            
+            const webhookUrl = prompt('URL do Webhook:', 'https://webhook.site/your-webhook-url');
+            if (!webhookUrl) return;
+            
+            try {
+                const chatData = {
+                    contact_name: currentChat.contactName,
+                    contact_phone: currentChat.phone,
+                    instance_id: currentChat.instanceId,
+                    timestamp: new Date().toISOString()
+                };
+                
+                const response = await fetch('/api/webhooks/send', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        url: webhookUrl,
+                        data: chatData
+                    })
+                });
+                
+                if (response.ok) {
+                    alert('✅ Webhook enviado com sucesso!');
+                } else {
+                    alert('❌ Erro ao enviar webhook');
+                }
+                
+            } catch (error) {
+                console.error('Erro ao enviar webhook:', error);
+                alert('❌ Erro de conexão');
             }
         }
 
