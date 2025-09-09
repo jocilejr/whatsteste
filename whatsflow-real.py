@@ -317,7 +317,7 @@ HTML_APP = '''<!DOCTYPE html>
             </div>
             
             <div style="text-align: center; margin-top: 20px;">
-                <button class="btn btn-danger" onclick="hideQRModal()">🚫 Fechar</button>
+                <button class="btn btn-danger" onclick="closeQRModal()">🚫 Fechar</button>
             </div>
         </div>
     </div>
