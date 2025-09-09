@@ -313,7 +313,7 @@ HTML_APP = '''<!DOCTYPE html>
                 </ol>
             </div>
             
-            <div id="qr-container" class="qr-container">
+            <div id="qr-code-container" class="qr-container">
                 <div id="qr-loading" style="text-align: center; padding: 40px;">
                     <div style="font-size: 2rem; margin-bottom: 15px;">⏳</div>
                     <p>Gerando QR Code real...</p>
