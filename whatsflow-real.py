@@ -25,6 +25,7 @@ import urllib.parse
 DB_FILE = "whatsflow.db"
 PORT = 8888
 BAILEYS_PORT = 3001
+BAILEYS_PORT = 3001
 
 # HTML da aplicação (mesmo do Pure, mas com conexão real)
 HTML_APP = '''<!DOCTYPE html>
