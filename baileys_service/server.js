@@ -60,7 +60,7 @@ async function connectToWhatsApp() {
                 setTimeout(async () => {
                     try {
                         const fetch = (await import('node-fetch')).default;
-                        await fetch('http://localhost:8888/api/whatsapp/connected', {
+                        await fetch('http://localhost:8889/api/whatsapp/connected', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify(connectedUser)
@@ -93,7 +93,7 @@ async function connectToWhatsApp() {
                     // Send to Python backend
                     try {
                         const fetch = (await import('node-fetch')).default;
-                        await fetch('http://localhost:8888/api/messages/receive', {
+                        await fetch('http://localhost:8889/api/messages/receive', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
