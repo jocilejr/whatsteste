@@ -1,0 +1,112 @@
+{
+  "summary": {
+    "total_tests": 14,
+    "passed": 12,
+    "failed": 2,
+    "success_rate": 85.71428571428571
+  },
+  "passed_tests": [
+    "Server Connectivity",
+    "GET /api/instances",
+    "GET /api/stats",
+    "GET /api/whatsapp/status",
+    "GET /api/whatsapp/qr",
+    "GET /api/webhooks",
+    "POST /api/instances",
+    "POST /api/instances/{id}/connect",
+    "POST /api/instances",
+    "GET /api/instances",
+    "Database Persistence",
+    "Baileys Service Integration"
+  ],
+  "failed_tests": [
+    "GET /api/contacts",
+    "GET /api/messages"
+  ],
+  "detailed_results": [
+    {
+      "test": "Server Connectivity",
+      "status": "PASS",
+      "details": "Server responding on port 8889",
+      "timestamp": "2025-09-09T16:56:58.848579"
+    },
+    {
+      "test": "GET /api/instances",
+      "status": "PASS",
+      "details": "Retrieved 2 instances",
+      "timestamp": "2025-09-09T16:56:58.850541"
+    },
+    {
+      "test": "GET /api/contacts",
+      "status": "FAIL",
+      "details": "HTTP 500: {\n  \"error\": \"no such column: created_at\"\n}",
+      "timestamp": "2025-09-09T16:56:58.852169"
+    },
+    {
+      "test": "GET /api/messages",
+      "status": "FAIL",
+      "details": "HTTP 500: {\n  \"error\": \"no such column: created_at\"\n}",
+      "timestamp": "2025-09-09T16:56:58.853847"
+    },
+    {
+      "test": "GET /api/stats",
+      "status": "PASS",
+      "details": "Statistics retrieved - Contacts: 3, Messages: 5",
+      "timestamp": "2025-09-09T16:56:58.855543"
+    },
+    {
+      "test": "GET /api/whatsapp/status",
+      "status": "PASS",
+      "details": "WhatsApp status: Disconnected",
+      "timestamp": "2025-09-09T16:56:58.859663"
+    },
+    {
+      "test": "GET /api/whatsapp/qr",
+      "status": "PASS",
+      "details": "QR code: Not available",
+      "timestamp": "2025-09-09T16:56:58.863827"
+    },
+    {
+      "test": "GET /api/webhooks",
+      "status": "PASS",
+      "details": "Retrieved 0 webhooks",
+      "timestamp": "2025-09-09T16:56:58.865340"
+    },
+    {
+      "test": "POST /api/instances",
+      "status": "PASS",
+      "details": "Created instance: Test Instance 5f1251fd",
+      "timestamp": "2025-09-09T16:56:58.870190"
+    },
+    {
+      "test": "POST /api/instances/{id}/connect",
+      "status": "PASS",
+      "details": "Connection initiated successfully",
+      "timestamp": "2025-09-09T16:56:58.875468"
+    },
+    {
+      "test": "POST /api/instances",
+      "status": "PASS",
+      "details": "Created instance: Test Instance 78f87d62",
+      "timestamp": "2025-09-09T16:56:58.880169"
+    },
+    {
+      "test": "GET /api/instances",
+      "status": "PASS",
+      "details": "Retrieved 4 instances",
+      "timestamp": "2025-09-09T16:56:59.882522"
+    },
+    {
+      "test": "Database Persistence",
+      "status": "PASS",
+      "details": "SQLite database working correctly",
+      "timestamp": "2025-09-09T16:56:59.882567"
+    },
+    {
+      "test": "Baileys Service Integration",
+      "status": "PASS",
+      "details": "Baileys service is running and accessible",
+      "timestamp": "2025-09-09T16:56:59.885236"
+    }
+  ]
+}
