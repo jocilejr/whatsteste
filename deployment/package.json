@@ -1,0 +1,17 @@
+{
+  "name": "whatsflow-deployment",
+  "version": "1.0.0",
+  "description": "WhatsFlow - Sistema de Automação WhatsApp",
+  "scripts": {
+    "install-all": "cd backend && pip install -r requirements.txt && cd ../frontend && npm install && cd ../whatsapp-service && npm install",
+    "build": "cd frontend && npm run build",
+    "start": "pm2 start ecosystem.config.js",
+    "stop": "pm2 stop all",
+    "restart": "pm2 restart all",
+    "logs": "pm2 logs",
+    "status": "pm2 status"
+  },
+  "keywords": ["whatsapp", "automation", "chatbot", "webhook"],
+  "author": "WhatsFlow Team",
+  "license": "MIT"
+}
