@@ -21,6 +21,7 @@ export default function MessagesCenter() {
   useEffect(() => {
     fetchConversations();
     fetchWebhooks();
+    fetchDevices();
     
     // Polling para atualizações em tempo real
     const interval = setInterval(() => {
@@ -31,7 +32,7 @@ export default function MessagesCenter() {
     }, 2000);
 
     return () => clearInterval(interval);
-  }, [selectedConversation]);
+  }, [selectedConversation, selectedDevice]);
 
   // Auto scroll para última mensagem
   useEffect(() => {
