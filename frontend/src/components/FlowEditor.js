@@ -62,10 +62,33 @@ const ConditionNode = ({ data, isConnectable }) => {
           onChange={(e) => data.onChange?.(e.target.value)}
           className="condition-input"
         />
+        <div className="condition-options">
+          <label>
+            <input
+              type="radio"
+              name={`condition-type-${data.id}`}
+              value="contains"
+              checked={data.conditionType === 'contains'}
+              onChange={(e) => data.onConditionTypeChange?.(e.target.value)}
+            />
+            Contém texto
+          </label>
+          <label>
+            <input
+              type="radio"
+              name={`condition-type-${data.id}`}
+              value="equals"
+              checked={data.conditionType === 'equals'}
+              onChange={(e) => data.onConditionTypeChange?.(e.target.value)}
+            />
+            Igual a
+          </label>
+        </div>
       </div>
       <div className="node-handles">
-        <div className="source-handle success">SIM</div>
-        <div className="source-handle error">NÃO</div>
+        <div className="target-handle">📥</div>
+        <div className="source-handle success">✅ SIM</div>
+        <div className="source-handle error">❌ NÃO</div>
       </div>
     </div>
   );
