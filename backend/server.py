@@ -377,6 +377,33 @@ async def delete_webhook(webhook_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@api_router.post("/webhooks/trigger")
+async def trigger_webhook(webhook_trigger: WebhookTrigger, background_tasks: BackgroundTasks):
+    """Trigger a webhook with contact data"""
+    try:
+        # Add background task to trigger webhook
+        background_tasks.add_task(
+            trigger_webhook_async,
+            webhook_trigger.webhook_url,
+            webhook_trigger.data
+        )
+        
+        # Log webhook trigger
+        webhook_log = {
+            "webhook_id": webhook_trigger.webhook_id,
+            "webhook_url": webhook_trigger.webhook_url,
+            "data": webhook_trigger.data,
+            "triggered_at": datetime.now(timezone.utc),
+            "status": "triggered"
+        }
+        await db.webhook_logs.insert_one(webhook_log)
+        
+        return {"message": "Webhook triggered successfully", "status": "processing"}
+        
+    except Exception as e:
+        logging.error(f"Error triggering webhook: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @api_router.post("/macros/trigger")
 async def trigger_macro(macro: MacroTrigger, background_tasks: BackgroundTasks):
     """Trigger a macro (webhook) for a specific contact"""
