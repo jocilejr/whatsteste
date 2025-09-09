@@ -1745,6 +1745,8 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             self.handle_receive_message()
         elif self.path == '/api/whatsapp/connected':
             self.handle_whatsapp_connected()
+        elif self.path == '/api/whatsapp/disconnected':
+            self.handle_whatsapp_disconnected()
         elif self.path == '/api/chats/import':
             self.handle_import_chats()
         elif self.path.startswith('/api/whatsapp/connect/'):
