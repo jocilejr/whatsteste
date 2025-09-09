@@ -140,6 +140,7 @@ HTML_APP = '''<!DOCTYPE html>
         <nav class="nav">
             <button class="nav-btn active" onclick="showSection('dashboard')">📊 Dashboard</button>
             <button class="nav-btn" onclick="showSection('instances')">📱 Instâncias</button>
+            <button class="nav-btn" onclick="showSection('contacts')">👥 Contatos</button>
             <button class="nav-btn" onclick="showSection('messages')">💬 Mensagens</button>
             <button class="nav-btn" onclick="showSection('info')">ℹ️ Info</button>
         </nav>
