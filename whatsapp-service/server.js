@@ -1,4 +1,3 @@
-const { makeWASocket, useMultiFileAuthState, DisconnectReason } = require('@whiskeysockets/baileys')
 const express = require('express')
 const cors = require('cors')
 const axios = require('axios')
@@ -16,14 +15,36 @@ let sock = null
 let qrCode = null
 let isConnected = false
 let connectedUser = null
+let demoMode = true // Enable demo mode for now
+
+// Simulate connection states for demo
+let connectionState = 'disconnected' // 'disconnected', 'qr', 'connected'
+let demoQR = 'whatsflow-demo-qr-12345'
 
 // Ensure auth directory exists
 const authDir = path.join(__dirname, 'auth_info')
 fs.ensureDirSync(authDir)
 
 async function initWhatsApp() {
+    if (demoMode) {
+        console.log('Starting WhatsApp service in DEMO mode...')
+        console.log('In production, this would connect to real WhatsApp Web')
+        
+        // Simulate QR generation
+        setTimeout(() => {
+            if (connectionState === 'disconnected') {
+                connectionState = 'qr'
+                qrCode = `whatsflow-demo-${Date.now()}`
+                console.log('Demo QR Code generated:', qrCode)
+            }
+        }, 2000)
+        
+        return
+    }
+
     try {
         console.log('Initializing WhatsApp connection...')
+        const { makeWASocket, useMultiFileAuthState, DisconnectReason } = require('@whiskeysockets/baileys')
         const { state, saveCreds } = await useMultiFileAuthState(authDir)
 
         sock = makeWASocket({
@@ -43,7 +64,6 @@ async function initWhatsApp() {
             if (qr) {
                 qrCode = qr
                 console.log('QR Code generated')
-                // Notify FastAPI about QR code
                 try {
                     await axios.post(`${FASTAPI_URL}/api/whatsapp/qr-update`, { qr })
                 } catch (error) {
@@ -67,7 +87,6 @@ async function initWhatsApp() {
                 isConnected = true
                 connectedUser = sock.user
                 
-                // Notify FastAPI about connection
                 try {
                     await axios.post(`${FASTAPI_URL}/api/whatsapp/connection-update`, {
                         connected: true,
@@ -93,7 +112,9 @@ async function initWhatsApp() {
 
     } catch (error) {
         console.error('WhatsApp initialization error:', error)
-        setTimeout(initWhatsApp, 10000)
+        console.log('Falling back to demo mode...')
+        demoMode = true
+        initWhatsApp()
     }
 }
 
@@ -107,7 +128,6 @@ async function handleIncomingMessage(message) {
         
         console.log(`Received message from ${pushName} (${phoneNumber}): ${messageText}`)
 
-        // Forward message to FastAPI for processing
         const response = await axios.post(`${FASTAPI_URL}/api/whatsapp/message`, {
             phone_number: phoneNumber,
             message: messageText,
@@ -116,7 +136,6 @@ async function handleIncomingMessage(message) {
             push_name: pushName
         })
 
-        // Send response back to WhatsApp if FastAPI returns one
         if (response.data.reply) {
             await sendMessage(phoneNumber, response.data.reply)
         }
@@ -128,6 +147,11 @@ async function handleIncomingMessage(message) {
 
 async function sendMessage(phoneNumber, text) {
     try {
+        if (demoMode) {
+            console.log(`[DEMO] Would send message to ${phoneNumber}: ${text}`)
+            return { success: true, demo: true }
+        }
+        
         if (!sock || !isConnected) {
             throw new Error('WhatsApp not connected')
         }
@@ -140,6 +164,20 @@ async function sendMessage(phoneNumber, text) {
     } catch (error) {
         console.error('Error sending message:', error)
         return { success: false, error: error.message }
+    }
+}
+
+// Demo functions
+function simulateConnection() {
+    if (connectionState === 'qr') {
+        connectionState = 'connected'
+        isConnected = true
+        qrCode = null
+        connectedUser = {
+            id: '551199999999',
+            name: 'WhatsFlow Demo User'
+        }
+        console.log('Demo: WhatsApp connected!')
     }
 }
 
@@ -160,15 +198,29 @@ app.post('/send', async (req, res) => {
 
 app.get('/status', (req, res) => {
     res.json({
-        connected: isConnected,
-        user: connectedUser,
-        hasQR: !!qrCode
+        connected: demoMode ? isConnected : (sock?.user ? true : false),
+        user: demoMode ? connectedUser : (sock?.user || null),
+        hasQR: !!qrCode,
+        demo: demoMode
     })
+})
+
+// Demo endpoint to simulate connection
+app.post('/demo/connect', (req, res) => {
+    if (demoMode) {
+        simulateConnection()
+        res.json({ success: true, message: 'Demo connection simulated' })
+    } else {
+        res.json({ success: false, message: 'Not in demo mode' })
+    }
 })
 
 app.listen(PORT, () => {
     console.log(`WhatsApp service running on port ${PORT}`)
     console.log(`FastAPI URL: ${FASTAPI_URL}`)
+    if (demoMode) {
+        console.log('🚧 DEMO MODE ENABLED - Simulating WhatsApp functionality')
+    }
     initWhatsApp()
 })
 
