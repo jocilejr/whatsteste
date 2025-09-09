@@ -60,6 +60,12 @@ const MessageNode = ({ data, isConnectable }) => {
 const ConditionNode = ({ data, isConnectable }) => {
   return (
     <div className="flow-node condition-node">
+      <Handle
+        type="target"
+        position={Position.Top}
+        style={{ background: '#ed8936' }}
+        isConnectable={isConnectable}
+      />
       <div className="node-header">
         <span className="node-icon">🔀</span>
         <span className="node-title">Condição</span>
@@ -95,10 +101,23 @@ const ConditionNode = ({ data, isConnectable }) => {
           </label>
         </div>
       </div>
-      <div className="node-handles">
-        <div className="target-handle">📥</div>
-        <div className="source-handle success">✅ SIM</div>
-        <div className="source-handle error">❌ NÃO</div>
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        id="yes"
+        style={{ background: '#48bb78', left: '30%' }}
+        isConnectable={isConnectable}
+      />
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        id="no"
+        style={{ background: '#e53e3e', left: '70%' }}
+        isConnectable={isConnectable}
+      />
+      <div className="condition-labels">
+        <span className="yes-label">✅ SIM</span>
+        <span className="no-label">❌ NÃO</span>
       </div>
     </div>
   );
