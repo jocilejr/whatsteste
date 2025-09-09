@@ -979,7 +979,7 @@ HTML_APP = '''<!DOCTYPE html>
             });
             
             document.getElementById('qrModal').addEventListener('click', function(e) {
-                if (e.target === this) hideQRModal();
+                if (e.target === this) closeQRModal();
             });
         });
 
