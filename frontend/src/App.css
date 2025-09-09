@@ -983,9 +983,48 @@ body {
   transform: translateY(-1px);
 }
 
-.search-container {
+/* Device Filter */
+.device-filter {
   padding: 1rem;
   border-bottom: 1px solid #e2e8f0;
+  background: white;
+}
+
+.device-filter label {
+  display: block;
+  font-size: 0.85rem;
+  color: #666;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.device-select {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  background: white;
+}
+
+.device-select:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.device-tag {
+  font-size: 0.75rem;
+  color: #667eea;
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+}
+
+.device-info {
+  font-size: 0.85rem;
+  color: #667eea;
+  font-weight: 500;
+  margin-bottom: 0.25rem;
 }
 
 .search-input {
