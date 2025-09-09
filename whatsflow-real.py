@@ -905,6 +905,8 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             self.handle_get_messages()
         elif self.path == '/api/whatsapp/status':
             self.handle_whatsapp_status()
+        elif self.path == '/api/whatsapp/qr':
+            self.handle_whatsapp_qr()
         elif self.path == '/api/contacts':
             self.handle_get_contacts()
         else:
