@@ -1,194 +1,101 @@
 #!/bin/bash
 
-# WhatsFlow Real - Instalador para Conexão WhatsApp REAL
-# Python + Node.js + Baileys = WhatsApp verdadeiro
+# WhatsFlow Real - Instalador Ultra-Simples
+# Sistema de Automação WhatsApp com Baileys + Python
+# Instalação: bash instalar-real.sh
 
-echo "🤖 WhatsFlow Real - Instalador para WhatsApp VERDADEIRO"
-echo "======================================================="
-echo ""
-echo "🚀 Este instalador criará um sistema que conecta"
-echo "   REALMENTE com seu WhatsApp via Baileys!"
-echo ""
-echo "✅ Python: Interface web e banco de dados"
-echo "✅ Node.js: Serviço WhatsApp com Baileys"
-echo "✅ QR Code: Real para conectar seu número"
-echo "✅ Mensagens: Envio e recebimento reais"
-echo ""
+set -e
+
+echo "🤖 WhatsFlow Real - Instalação Ultra-Simples"
+echo "================================================="
+echo "✅ Python + Node.js para WhatsApp REAL"
+echo "✅ Conexão via QR Code verdadeira"
+echo "✅ Mensagens reais enviadas/recebidas"
+echo "✅ Central de contatos automática"
+echo "✅ Interface web completa"
+echo
 
 # Verificar Python
 echo "🔍 Verificando Python..."
-if command -v python3 &> /dev/null; then
-    PYTHON_VERSION=$(python3 --version)
-    echo "✅ $PYTHON_VERSION encontrado"
-else
+if ! command -v python3 &> /dev/null; then
     echo "❌ Python 3 não encontrado!"
-    echo "   Ubuntu: sudo apt install python3"
+    echo "📦 Para instalar:"
+    echo "   Ubuntu/Debian: sudo apt install python3"
+    echo "   CentOS/RHEL: sudo yum install python3"
+    echo "   macOS: brew install python3"
     exit 1
 fi
+
+PYTHON_VERSION=$(python3 -c 'import sys; print(".".join(map(str, sys.version_info[:2])))')
+echo "✅ Python $PYTHON_VERSION encontrado"
 
 # Verificar Node.js
 echo "🔍 Verificando Node.js..."
-if command -v node &> /dev/null; then
-    NODE_VERSION=$(node --version)
-    echo "✅ Node.js $NODE_VERSION encontrado"
-else
-    echo "❌ Node.js não encontrado!"
-    echo ""
-    echo "📦 Instalando Node.js..."
-    if command -v apt-get &> /dev/null; then
-        curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-        sudo apt-get install -y nodejs
-    else
-        echo "   Ubuntu: sudo apt install nodejs npm"
-        echo "   macOS:  brew install node"
+NODE_AVAILABLE=true
+if ! command -v node &> /dev/null; then
+    echo "⚠️ Node.js não encontrado!"
+    echo "📦 Para instalar Node.js:"
+    echo "   Ubuntu/Debian: curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash - && sudo apt-get install -y nodejs"
+    echo "   CentOS/RHEL: curl -fsSL https://rpm.nodesource.com/setup_18.x | sudo bash - && sudo yum install nodejs npm"
+    echo "   macOS: brew install node"
+    echo
+    echo "🔧 Continuar sem Node.js? (WhatsApp ficará em modo demo)"
+    read -p "Digite 's' para continuar ou 'n' para sair: " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Ss]$ ]]; then
         exit 1
     fi
+    NODE_AVAILABLE=false
+else
+    NODE_VERSION=$(node --version)
+    NPM_VERSION=$(npm --version)
+    echo "✅ Node.js $NODE_VERSION encontrado"
+    echo "✅ NPM $NPM_VERSION encontrado"
 fi
 
-# Verificar npm
-if command -v npm &> /dev/null; then
-    NPM_VERSION=$(npm --version)
-    echo "✅ npm $NPM_VERSION encontrado"
-else
-    echo "❌ npm não encontrado!"
+# Baixar WhatsFlow Real se não existe
+if [ ! -f "whatsflow-real.py" ]; then
+    echo "📥 Baixando WhatsFlow Real..."
+    curl -L -o whatsflow-real.py https://raw.githubusercontent.com/user/repo/main/whatsflow-real.py || {
+        echo "⚠️ Não foi possível baixar - usando versão local"
+    }
+fi
+
+if [ ! -f "whatsflow-real.py" ]; then
+    echo "❌ whatsflow-real.py não encontrado!"
+    echo "   Coloque o arquivo na pasta atual e tente novamente."
     exit 1
 fi
 
-# Criar diretório
-INSTALL_DIR="$HOME/whatsflow-real"
-echo ""
-echo "📁 Criando diretório de instalação..."
-echo "   Diretório: $INSTALL_DIR"
+# Tornar executável
+chmod +x whatsflow-real.py
 
-if [ -d "$INSTALL_DIR" ]; then
-    echo "🗑️ Removendo instalação anterior..."
-    rm -rf "$INSTALL_DIR"
-fi
-
-mkdir -p "$INSTALL_DIR"
-cd "$INSTALL_DIR"
-
-echo "⬇️ Criando WhatsFlow Real..."
-
-# Copiar arquivo principal
-cp /app/whatsflow-real.py ./whatsflow.py
-chmod +x whatsflow.py
-
-# Criar script de inicialização
-cat > iniciar.sh << 'EOF'
-#!/bin/bash
 echo "🚀 Iniciando WhatsFlow Real..."
-echo "🌐 Interface: http://localhost:8888"
-echo "📱 WhatsApp: Conexão real via Baileys"
-echo "   Para parar: Ctrl+C"
-echo ""
-python3 whatsflow.py
-EOF
-
-chmod +x iniciar.sh
-
-# Criar README
-cat > README.md << 'EOF'
-# 🤖 WhatsFlow Real
-
-Sistema de Automação WhatsApp com conexão REAL
-
-## 🚀 Iniciar
-
-```bash
-python3 whatsflow.py
-```
-
-**OU**
-
-```bash
-./iniciar.sh
-```
-
-## 🌐 Acessar
-
-http://localhost:8888
-
-## ✅ Características
-
-- ✅ Conexão WhatsApp REAL via Baileys
-- ✅ QR Code real para conectar seu número
-- ✅ Envio e recebimento de mensagens reais
-- ✅ Interface web completa
-- ✅ Banco SQLite local
-- ✅ Python + Node.js
-
-## 📱 Como usar
-
-1. Execute `python3 whatsflow.py`
-2. Acesse http://localhost:8888
-3. Crie uma instância WhatsApp
-4. Clique em "Conectar Real"
-5. Escaneie o QR Code com seu WhatsApp
-6. Pronto! WhatsApp conectado de verdade
-
-## 🔧 Requisitos
-
-- Python 3
-- Node.js + npm
-- Conexão com internet
-
----
-WhatsFlow Real - WhatsApp verdadeiro! 🤖📱
-EOF
-
-echo ""
-echo "🎉 INSTALAÇÃO CONCLUÍDA COM SUCESSO!"
-echo "===================================="
-echo ""
-echo "📁 Diretório: $INSTALL_DIR"
-echo "🔧 Arquivos criados:"
-echo "   ├── whatsflow.py    (aplicação principal)"
-echo "   ├── iniciar.sh      (script para iniciar)"
-echo "   └── README.md       (documentação)"
-echo ""
-echo "🚀 Como iniciar:"
-echo "   cd $INSTALL_DIR"
-echo "   python3 whatsflow.py"
-echo ""
-echo "   OU usando o script:"
-echo "   ./iniciar.sh"
-echo ""
-echo "🌐 Depois acesse: http://localhost:8888"
-echo ""
-echo "✅ Características da instalação:"
-echo "   ✅ Conexão WhatsApp REAL via Baileys"
-echo "   ✅ QR Code real para seu número"
-echo "   ✅ Mensagens reais enviadas/recebidas"
-echo "   ✅ Interface web completa"
-echo "   ✅ Python backend + Node.js WhatsApp service"
-echo "   ✅ Banco SQLite automático"
-echo ""
-echo "📱 Como conectar:"
-echo "   1. Execute o sistema"
-echo "   2. Crie uma instância"
-echo "   3. Clique em 'Conectar Real'"
-echo "   4. Escaneie QR Code com WhatsApp"
-echo "   5. Pronto! Conectado de verdade"
-echo ""
-echo "🚀 Quer iniciar agora? (s/n)"
-read -r start_now
-
-if [[ "$start_now" =~ ^[Ss]$ ]]; then
-    echo ""
-    echo "🚀 Iniciando WhatsFlow Real..."
-    echo "🌐 Acesse: http://localhost:8888"
-    echo "📱 Prepare seu WhatsApp para escanear o QR Code!"
-    echo ""
-    cd "$INSTALL_DIR"
-    python3 whatsflow.py
+echo "   Interface: http://localhost:8888"
+if [ "$NODE_AVAILABLE" = true ]; then
+    echo "   WhatsApp Service: Será iniciado automaticamente"
+    echo "   Status: Conexão WhatsApp REAL ativada"
 else
-    echo ""
-    echo "✅ WhatsFlow Real instalado com sucesso!"
-    echo "📋 Para usar:"
-    echo "   cd $INSTALL_DIR"
-    echo "   python3 whatsflow.py"
-    echo ""
-    echo "🌐 Depois acesse: http://localhost:8888"
-    echo "📱 E conecte seu WhatsApp REAL!"
+    echo "   Status: Modo demonstração (Node.js não disponível)"
 fi
+
+echo
+echo "📋 Como usar:"
+echo "   1. Abra http://localhost:8888 no navegador"
+if [ "$NODE_AVAILABLE" = true ]; then
+    echo "   2. Vá na aba 'Instâncias'"
+    echo "   3. Crie uma instância e clique 'Conectar Real'"
+    echo "   4. Escaneie o QR Code com seu WhatsApp"
+    echo "   5. Use as abas 'Contatos' e 'Mensagens'"
+else
+    echo "   2. Interface funcionará em modo demonstração"
+    echo "   3. Instale Node.js para ativar WhatsApp real"
+fi
+
+echo
+echo "⏳ Iniciando servidor..."
+echo "   Para parar: Ctrl+C"
+echo
+
+# Iniciar WhatsFlow Real
+python3 whatsflow-real.py
