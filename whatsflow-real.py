@@ -294,8 +294,12 @@ HTML_APP = '''<!DOCTYPE html>
     <div id="qrModal" class="modal">
         <div class="modal-content">
             <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
-                <h3>📱 Conectar WhatsApp Real</h3>
+                <h3>📱 Conectar WhatsApp Real - <span id="qr-instance-name">Instância</span></h3>
                 <button onclick="closeQRModal()" style="background: none; border: none; font-size: 20px; cursor: pointer;">&times;</button>
+            </div>
+            
+            <div id="connection-status" style="text-align: center; margin-bottom: 15px; font-weight: bold;">
+                ⏳ Preparando conexão...
             </div>
             
             <div class="qr-instructions">
