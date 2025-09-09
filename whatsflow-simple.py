@@ -5,7 +5,7 @@ Sistema de Automação WhatsApp sem dependências complexas
 
 Requisitos: Apenas Python 3.8+ (já vem no Ubuntu)
 Instalação: python3 whatsflow-simple.py
-Acesso: http://localhost:8000
+Acesso: http://localhost:8080
 """
 
 import json
