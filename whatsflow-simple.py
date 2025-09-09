@@ -38,7 +38,7 @@ except ImportError:
 
 # Configurações
 DB_FILE = "whatsflow.db"
-PORT = 8000
+PORT = 8080
 
 # Models
 class WhatsAppInstance(BaseModel):
