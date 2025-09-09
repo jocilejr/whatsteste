@@ -237,6 +237,7 @@ const nodeTypes = {
   tagNode: TagNode,
   mediaNode: MediaNode,
   startNode: StartNode,
+  delayNode: DelayNode,
 };
 
 // Initial nodes and edges
