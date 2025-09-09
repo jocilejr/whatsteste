@@ -448,6 +448,33 @@ HTML_APP = '''<!DOCTYPE html>
             `).join('');
         }
 
+        function renderContacts(contacts) {
+            const container = document.getElementById('contacts-container');
+            if (!contacts || contacts.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">👥</div>
+                        <div class="empty-title">Nenhum contato ainda</div>
+                        <p>Os contatos aparecerão aqui quando começar a receber mensagens</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = contacts.map(contact => `
+                <div style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 15px; margin: 10px 0; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <div style="font-weight: 600; color: #1f2937;">${contact.name}</div>
+                        <div style="color: #6b7280; font-size: 14px;">📱 ${contact.phone}</div>
+                        <div style="color: #9ca3af; font-size: 12px;">Adicionado: ${new Date(contact.created_at).toLocaleDateString()}</div>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-primary" onclick="startChat('${contact.phone}', '${contact.name}')" style="padding: 8px 12px; font-size: 12px;">💬 Conversar</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
         async function checkConnectionStatus() {
             try {
                 const response = await fetch('/api/whatsapp/status');
