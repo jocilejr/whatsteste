@@ -1545,9 +1545,11 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
         elif self.path == '/api/messages':
             self.handle_get_messages()
         elif self.path == '/api/whatsapp/status':
-            self.handle_whatsapp_status()
+            # Fallback for backward compatibility - use default instance
+            self.handle_whatsapp_status('default')
         elif self.path == '/api/whatsapp/qr':
-            self.handle_whatsapp_qr()
+            # Fallback for backward compatibility - use default instance
+            self.handle_whatsapp_qr('default')
         elif self.path == '/api/contacts':
             self.handle_get_contacts()
         elif self.path == '/api/chats':
