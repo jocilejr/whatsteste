@@ -1135,7 +1135,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             # Start Baileys connection
             try:
                 import requests
-                response = requests.post('http://localhost:3001/connect', timeout=5)
+                response = requests.post('http://localhost:3002/connect', timeout=5)
                 
                 if response.status_code == 200:
                     self.send_json_response({"success": True, "message": "Conexão iniciada"})
