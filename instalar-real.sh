@@ -1,13 +1,13 @@
 #!/bin/bash
 
-# WhatsFlow Real - Instalador Ultra-Simples
+# WhatsFlow Real - Instalador Ultra-Simples (v2.0)
 # Sistema de Automação WhatsApp com Baileys + Python
 # Instalação: bash instalar-real.sh
 
 set -e
 
-echo "🤖 WhatsFlow Real - Instalação Ultra-Simples"
-echo "================================================="
+echo "🤖 WhatsFlow Real - Instalação Ultra-Simples (v2.0)"
+echo "====================================================="
 echo "✅ Python + Node.js para WhatsApp REAL"
 echo "✅ Conexão via QR Code verdadeira"
 echo "✅ Mensagens reais enviadas/recebidas"
@@ -31,21 +31,31 @@ echo "✅ Python $PYTHON_VERSION encontrado"
 
 # Verificar Node.js
 echo "🔍 Verificando Node.js..."
-NODE_AVAILABLE=true
 if ! command -v node &> /dev/null; then
     echo "⚠️ Node.js não encontrado!"
-    echo "📦 Para instalar Node.js:"
+    echo "📦 Para usar WhatsApp REAL, instale Node.js:"
     echo "   Ubuntu/Debian: curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash - && sudo apt-get install -y nodejs"
     echo "   CentOS/RHEL: curl -fsSL https://rpm.nodesource.com/setup_18.x | sudo bash - && sudo yum install nodejs npm"
     echo "   macOS: brew install node"
     echo
-    echo "🔧 Continuar sem Node.js? (WhatsApp ficará em modo demo)"
-    read -p "Digite 's' para continuar ou 'n' para sair: " -n 1 -r
+    echo "🔧 Ou continuar com versão simplificada (sem WhatsApp real)?"
+    read -p "Digite 's' para continuar simplificado ou 'n' para sair: " -n 1 -r
     echo
     if [[ ! $REPLY =~ ^[Ss]$ ]]; then
+        echo "👍 Instale Node.js e execute novamente para funcionalidade completa!"
         exit 1
     fi
-    NODE_AVAILABLE=false
+    
+    echo "⚠️ Iniciando em modo demonstração (Node.js não disponível)"
+    echo "🚀 Executando WhatsFlow Pure (modo demo)..."
+    if [ -f "whatsflow-pure.py" ]; then
+        python3 whatsflow-pure.py
+    else
+        echo "❌ whatsflow-pure.py não encontrado!"
+        echo "   Execute apenas: python3 whatsflow-real.py"
+        echo "   (Funcionará em modo demo)"
+    fi
+    exit 0
 else
     NODE_VERSION=$(node --version)
     NPM_VERSION=$(npm --version)
@@ -53,14 +63,7 @@ else
     echo "✅ NPM $NPM_VERSION encontrado"
 fi
 
-# Baixar WhatsFlow Real se não existe
-if [ ! -f "whatsflow-real.py" ]; then
-    echo "📥 Baixando WhatsFlow Real..."
-    curl -L -o whatsflow-real.py https://raw.githubusercontent.com/user/repo/main/whatsflow-real.py || {
-        echo "⚠️ Não foi possível baixar - usando versão local"
-    }
-fi
-
+# Verificar arquivo principal
 if [ ! -f "whatsflow-real.py" ]; then
     echo "❌ whatsflow-real.py não encontrado!"
     echo "   Coloque o arquivo na pasta atual e tente novamente."
@@ -70,32 +73,38 @@ fi
 # Tornar executável
 chmod +x whatsflow-real.py
 
+# Parar processos anteriores se existirem
+echo "🧹 Limpando processos anteriores..."
+pkill -f "whatsflow-real.py" 2>/dev/null || true
+pkill -f "baileys_service" 2>/dev/null || true
+sleep 2
+
 echo "🚀 Iniciando WhatsFlow Real..."
 echo "   Interface: http://localhost:8889"
-if [ "$NODE_AVAILABLE" = true ]; then
-    echo "   WhatsApp Service: Será iniciado automaticamente"
-    echo "   Status: Conexão WhatsApp REAL ativada"
-else
-    echo "   Status: Modo demonstração (Node.js não disponível)"
-fi
+echo "   WhatsApp Service: Será iniciado automaticamente"
+echo "   Status: Conexão WhatsApp REAL ativada"
 
 echo
 echo "📋 Como usar:"
 echo "   1. Abra http://localhost:8889 no navegador"
-if [ "$NODE_AVAILABLE" = true ]; then
-    echo "   2. Vá na aba 'Instâncias'"
-    echo "   3. Crie uma instância e clique 'Conectar Real'"
-    echo "   4. Escaneie o QR Code com seu WhatsApp"
-    echo "   5. Use as abas 'Contatos' e 'Mensagens'"
-else
-    echo "   2. Interface funcionará em modo demonstração"
-    echo "   3. Instale Node.js para ativar WhatsApp real"
-fi
+echo "   2. Vá na aba 'Instâncias'"
+echo "   3. Crie uma instância e clique 'Conectar Real'"
+echo "   4. Escaneie o QR Code com seu WhatsApp"
+echo "   5. Use as abas 'Contatos' e 'Mensagens'"
 
 echo
 echo "⏳ Iniciando servidor..."
 echo "   Para parar: Ctrl+C"
 echo
+
+# Verificar se já existe Baileys configurado
+if [ -d "baileys_service" ]; then
+    echo "✅ Baileys já configurado"
+    cd baileys_service
+    echo "📦 Verificando dependências..."
+    npm install node-fetch@2.6.7 > /dev/null 2>&1 || true
+    cd ..
+fi
 
 # Iniciar WhatsFlow Real
 python3 whatsflow-real.py
