@@ -295,7 +295,7 @@ HTML_APP = '''<!DOCTYPE html>
         <div class="modal-content">
             <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
                 <h3>📱 Conectar WhatsApp Real</h3>
-                <button onclick="hideQRModal()" style="background: none; border: none; font-size: 20px; cursor: pointer;">&times;</button>
+                <button onclick="closeQRModal()" style="background: none; border: none; font-size: 20px; cursor: pointer;">&times;</button>
             </div>
             
             <div class="qr-instructions">
