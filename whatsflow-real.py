@@ -448,7 +448,7 @@ HTML_APP = '''<!DOCTYPE html>
         }
 
         function closeQRModal() {
-            document.getElementById('qr-modal').style.display = 'none';
+            document.getElementById('qrModal').classList.remove('show');
             currentQRInstance = null;
             
             // Stop QR polling
