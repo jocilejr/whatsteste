@@ -409,14 +409,7 @@ function App() {
           )}
 
           {currentView === 'messages' && (
-            <section className="messages-section">
-              <h2>💬 Central de Mensagens</h2>
-              <div className="coming-soon">
-                <div className="coming-soon-icon">🚧</div>
-                <h3>Em breve!</h3>
-                <p>Central de mensagens em desenvolvimento</p>
-              </div>
-            </section>
+            <MessagesCenter />
           )}
         </div>
       </main>
