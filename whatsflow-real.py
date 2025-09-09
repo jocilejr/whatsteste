@@ -426,6 +426,29 @@ HTML_APP = '''<!DOCTYPE html>
             }
         }
 
+        async function showQRCode(instanceId) {
+            showQRModal(instanceId);
+        }
+
+        async function disconnectInstance(instanceId) {
+            if (!confirm('Desconectar esta instância?')) return;
+            
+            try {
+                const response = await fetch(`/api/instances/${instanceId}/disconnect`, {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    loadInstances();
+                    alert('✅ Instância desconectada!');
+                } else {
+                    alert('❌ Erro ao desconectar');
+                }
+            } catch (error) {
+                alert('❌ Erro de conexão');
+            }
+        }
+
         async function loadStats() {
             try {
                 const response = await fetch('/api/stats');
