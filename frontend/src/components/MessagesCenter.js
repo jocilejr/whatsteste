@@ -290,19 +290,35 @@ export default function MessagesCenter() {
                   <div className="contact-details">
                     <h4>{selectedConversation.name}</h4>
                     <p>{selectedConversation.phone_number}</p>
+                    <div className="device-info">
+                      📱 {selectedConversation.device_name || 'WhatsApp 1'}
+                    </div>
                     <p className="jid">JID: {selectedConversation.phone_number}@s.whatsapp.net</p>
                   </div>
                 </div>
-                <div className="chat-actions">
+                
+                {/* Botões de Macros */}
+                <div className="macro-buttons">
                   {webhooks.map(webhook => (
                     <button
                       key={webhook.id}
-                      onClick={() => triggerWebhook(webhook, selectedConversation)}
-                      className="webhook-trigger-btn"
+                      onClick={() => triggerMacro(webhook, selectedConversation)}
+                      className="macro-button"
+                      title={webhook.description}
                     >
                       🎯 {webhook.name}
                     </button>
                   ))}
+                  {webhooks.length === 0 && (
+                    <div className="no-macros">
+                      <button
+                        onClick={() => setShowWebhookModal(true)}
+                        className="add-macro-button"
+                      >
+                        ➕ Criar Macro
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
 
