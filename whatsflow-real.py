@@ -1004,14 +1004,26 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
     
     def handle_whatsapp_status(self):
         try:
-            import requests
-            response = requests.get('http://localhost:3001/status', timeout=5)
-            
-            if response.status_code == 200:
-                data = response.json()
-                self.send_json_response(data)
-            else:
-                self.send_json_response({"connected": False, "connecting": False})
+            try:
+                import requests
+                response = requests.get('http://localhost:3001/status', timeout=5)
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    self.send_json_response(data)
+                else:
+                    self.send_json_response({"connected": False, "connecting": False})
+            except ImportError:
+                # Fallback usando urllib
+                try:
+                    with urllib.request.urlopen('http://localhost:3001/status', timeout=5) as response:
+                        if response.status == 200:
+                            data = json.loads(response.read().decode('utf-8'))
+                            self.send_json_response(data)
+                        else:
+                            self.send_json_response({"connected": False, "connecting": False})
+                except:
+                    self.send_json_response({"connected": False, "connecting": False})
                 
         except Exception as e:
             self.send_json_response({"connected": False, "connecting": False, "error": str(e)})
