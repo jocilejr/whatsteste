@@ -11,6 +11,8 @@ export default function MessagesCenter() {
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [webhooks, setWebhooks] = useState([]);
+  const [devices, setDevices] = useState([]);
+  const [selectedDevice, setSelectedDevice] = useState('all');
   const [showWebhookModal, setShowWebhookModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const messagesEndRef = useRef(null);
