@@ -207,14 +207,50 @@ HTML_APP = '''<!DOCTYPE html>
             </div>
         </div>
         
+        <!-- Messages Section -->
         <div id="messages" class="section">
             <div class="card">
-                <h2>💬 Mensagens Recebidas</h2>
-                <div id="messages-container">
-                    <div class="empty-state">
-                        <div class="empty-icon">💬</div>
-                        <div class="empty-title">Nenhuma mensagem ainda</div>
-                        <p>As mensagens do WhatsApp aparecerão aqui quando começar a receber</p>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2>💬 Central de Mensagens</h2>
+                    <button class="btn btn-primary" onclick="loadMessages()">🔄 Atualizar</button>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 300px 1fr; gap: 20px; height: 500px;">
+                    <!-- Chat List -->
+                    <div style="border-right: 1px solid #eee; padding-right: 15px;">
+                        <h3>Conversas Ativas</h3>
+                        <div id="chat-list" style="height: 450px; overflow-y: auto;">
+                            <div class="loading">
+                                <div class="loading-spinner">🔄</div>
+                                <p>Carregando conversas...</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Chat Window -->
+                    <div id="chat-window" style="display: flex; flex-direction: column;">
+                        <div id="chat-header" style="padding: 10px; border-bottom: 1px solid #eee; display: none;">
+                            <h4 id="chat-contact-name">Selecione uma conversa</h4>
+                            <p id="chat-contact-phone" style="color: #666; margin: 0;"></p>
+                        </div>
+                        
+                        <div id="messages-container" style="flex: 1; padding: 15px; overflow-y: auto; background: #f9f9f9;">
+                            <div style="text-align: center; color: #666; margin-top: 100px;">
+                                <p>📱 Selecione uma conversa para ver as mensagens</p>
+                            </div>
+                        </div>
+                        
+                        <div id="message-input-area" style="padding: 15px; border-top: 1px solid #eee; display: none;">
+                            <div style="display: flex; gap: 10px;">
+                                <input type="text" id="message-input" placeholder="Digite sua mensagem..." 
+                                       style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 5px;"
+                                       onkeypress="if(event.key==='Enter') sendMessage()">
+                                <button class="btn btn-primary" onclick="sendMessage()">📤 Enviar</button>
+                                <button class="btn btn-secondary" onclick="sendWebhook()" title="Enviar Webhook">
+                                    🔗 Webhook
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
