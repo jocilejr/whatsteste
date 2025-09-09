@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const { DisconnectReason, useMultiFileAuthState } = require('@whiskeysockets/baileys');
+const { DisconnectReason, useMultiFileAuthState, downloadMediaMessage } = require('@whiskeysockets/baileys');
 const makeWASocket = require('@whiskeysockets/baileys').default;
 const qrTerminal = require('qrcode-terminal');
 const fs = require('fs');
@@ -15,17 +15,17 @@ let instances = new Map(); // instanceId -> { sock, qr, connected, connecting, u
 let currentQR = null;
 let qrUpdateInterval = null;
 
-// QR Code auto-refresh every 20 seconds
+// QR Code auto-refresh every 30 seconds (WhatsApp QR expires after 60s)
 const startQRRefresh = (instanceId) => {
     if (qrUpdateInterval) clearInterval(qrUpdateInterval);
     
     qrUpdateInterval = setInterval(() => {
         const instance = instances.get(instanceId);
         if (instance && !instance.connected && instance.connecting) {
-            console.log('🔄 QR Code expirado, reconectando...');
-            connectInstance(instanceId);
+            console.log('🔄 QR Code expirado, gerando novo...');
+            // Don't reconnect immediately, let WhatsApp generate new QR
         }
-    }, 20000); // 20 seconds
+    }, 30000); // 30 seconds
 };
 
 const stopQRRefresh = () => {
@@ -37,7 +37,7 @@ const stopQRRefresh = () => {
 
 async function connectInstance(instanceId) {
     try {
-        console.log(`🔄 Conectando instância: ${instanceId}`);
+        console.log(`🔄 Iniciando conexão para instância: ${instanceId}`);
         
         // Create instance directory
         const authDir = `./auth_${instanceId}`;
@@ -50,11 +50,18 @@ async function connectInstance(instanceId) {
         const sock = makeWASocket({
             auth: state,
             printQRInTerminal: true,
-            browser: ['WhatsFlow', 'Chrome', '1.0.0'],
-            connectTimeoutMs: 30000,
+            browser: ['WhatsFlow', 'Desktop', '1.0.0'],
+            connectTimeoutMs: 60000,
             defaultQueryTimeoutMs: 0,
-            keepAliveIntervalMs: 10000,
-            generateHighQualityLinkPreview: true
+            keepAliveIntervalMs: 30000,
+            generateHighQualityLinkPreview: true,
+            markOnlineOnConnect: true,
+            syncFullHistory: true,
+            retryRequestDelayMs: 5000,
+            maxRetries: 5,
+            logger: {
+                level: 'silent'
+            }
         });
 
         // Initialize instance
@@ -63,7 +70,8 @@ async function connectInstance(instanceId) {
             qr: null,
             connected: false,
             connecting: true,
-            user: null
+            user: null,
+            lastSeen: new Date()
         });
 
         sock.ev.on('connection.update', async (update) => {
@@ -71,7 +79,7 @@ async function connectInstance(instanceId) {
             const instance = instances.get(instanceId);
             
             if (qr) {
-                console.log(`📱 QR Code gerado para instância: ${instanceId}`);
+                console.log(`📱 Novo QR Code gerado para instância: ${instanceId}`);
                 currentQR = qr;
                 instance.qr = qr;
                 qrTerminal.generate(qr, { small: true });
@@ -80,21 +88,68 @@ async function connectInstance(instanceId) {
             
             if (connection === 'close') {
                 const shouldReconnect = (lastDisconnect?.error)?.output?.statusCode !== DisconnectReason.loggedOut;
-                console.log(`🔌 Instância ${instanceId} desconectada. Reconectar?`, shouldReconnect);
+                const reason = lastDisconnect?.error?.output?.statusCode || 'unknown';
+                
+                console.log(`🔌 Instância ${instanceId} desconectada. Razão: ${reason}, Reconectar: ${shouldReconnect}`);
                 
                 instance.connected = false;
                 instance.connecting = false;
                 instance.user = null;
                 stopQRRefresh();
                 
+                // Implement robust reconnection logic
                 if (shouldReconnect) {
-                    setTimeout(() => connectInstance(instanceId), 5000);
+                    if (reason === DisconnectReason.restartRequired) {
+                        console.log(`🔄 Restart requerido para ${instanceId}`);
+                        setTimeout(() => connectInstance(instanceId), 5000);
+                    } else if (reason === DisconnectReason.connectionClosed) {
+                        console.log(`🔄 Conexão fechada, reconectando ${instanceId}`);
+                        setTimeout(() => connectInstance(instanceId), 10000);
+                    } else if (reason === DisconnectReason.connectionLost) {
+                        console.log(`🔄 Conexão perdida, reconectando ${instanceId}`);
+                        setTimeout(() => connectInstance(instanceId), 15000);
+                    } else if (reason === DisconnectReason.timedOut) {
+                        console.log(`⏱️ Timeout, reconectando ${instanceId}`);
+                        setTimeout(() => connectInstance(instanceId), 20000);
+                    } else {
+                        console.log(`🔄 Reconectando ${instanceId} em 30 segundos`);
+                        setTimeout(() => connectInstance(instanceId), 30000);
+                    }
+                } else {
+                    console.log(`❌ Instância ${instanceId} deslogada permanentemente`);
+                    // Clean auth files if logged out
+                    try {
+                        const authPath = path.join('./auth_' + instanceId);
+                        if (fs.existsSync(authPath)) {
+                            fs.rmSync(authPath, { recursive: true, force: true });
+                            console.log(`🧹 Arquivos de auth removidos para ${instanceId}`);
+                        }
+                    } catch (err) {
+                        console.log('⚠️ Erro ao limpar arquivos de auth:', err.message);
+                    }
                 }
+                
+                // Notify backend about disconnection
+                try {
+                    const fetch = (await import('node-fetch')).default;
+                    await fetch('http://localhost:8889/api/whatsapp/disconnected', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            instanceId: instanceId,
+                            reason: reason
+                        })
+                    });
+                } catch (err) {
+                    console.log('⚠️ Não foi possível notificar desconexão:', err.message);
+                }
+                
             } else if (connection === 'open') {
-                console.log(`✅ Instância ${instanceId} conectada com sucesso!`);
+                console.log(`✅ Instância ${instanceId} conectada com SUCESSO!`);
                 instance.connected = true;
                 instance.connecting = false;
                 instance.qr = null;
+                instance.lastSeen = new Date();
                 currentQR = null;
                 stopQRRefresh();
                 
@@ -102,37 +157,61 @@ async function connectInstance(instanceId) {
                 instance.user = {
                     id: sock.user.id,
                     name: sock.user.name || sock.user.id.split(':')[0],
-                    profilePictureUrl: null
+                    profilePictureUrl: null,
+                    phone: sock.user.id.split(':')[0]
                 };
+                
+                console.log(`👤 Usuário conectado: ${instance.user.name} (${instance.user.phone})`);
                 
                 // Try to get profile picture
                 try {
                     const profilePic = await sock.profilePictureUrl(sock.user.id, 'image');
                     instance.user.profilePictureUrl = profilePic;
+                    console.log('📸 Foto do perfil obtida');
                 } catch (err) {
                     console.log('⚠️ Não foi possível obter foto do perfil');
                 }
                 
-                // Import existing chats
-                console.log('📥 Importando conversas existentes...');
-                try {
-                    const chats = await sock.getChats();
-                    console.log(`📊 ${chats.length} conversas encontradas`);
-                    
-                    // Send chat data to Python backend
-                    const fetch = (await import('node-fetch')).default;
-                    await fetch('http://localhost:8889/api/chats/import', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            instanceId: instanceId,
-                            chats: chats.slice(0, 50), // Limit to first 50 chats
-                            user: instance.user
-                        })
-                    });
-                } catch (err) {
-                    console.log('⚠️ Erro ao importar conversas:', err.message);
-                }
+                // Wait a bit before importing chats to ensure connection is stable
+                setTimeout(async () => {
+                    try {
+                        console.log('📥 Importando conversas existentes...');
+                        
+                        // Get all chats
+                        const chats = await sock.getChats();
+                        console.log(`📊 ${chats.length} conversas encontradas`);
+                        
+                        // Process chats in batches to avoid overwhelming the system
+                        const batchSize = 20;
+                        for (let i = 0; i < chats.length; i += batchSize) {
+                            const batch = chats.slice(i, i + batchSize);
+                            
+                            // Send batch to Python backend
+                            const fetch = (await import('node-fetch')).default;
+                            await fetch('http://localhost:8889/api/chats/import', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    instanceId: instanceId,
+                                    chats: batch,
+                                    user: instance.user,
+                                    batchNumber: Math.floor(i / batchSize) + 1,
+                                    totalBatches: Math.ceil(chats.length / batchSize)
+                                })
+                            });
+                            
+                            console.log(`📦 Lote ${Math.floor(i / batchSize) + 1}/${Math.ceil(chats.length / batchSize)} enviado`);
+                            
+                            // Small delay between batches
+                            await new Promise(resolve => setTimeout(resolve, 1000));
+                        }
+                        
+                        console.log('✅ Importação de conversas concluída');
+                        
+                    } catch (err) {
+                        console.log('⚠️ Erro ao importar conversas:', err.message);
+                    }
+                }, 5000); // Wait 5 seconds after connection
                 
                 // Send connected notification to Python backend
                 setTimeout(async () => {
@@ -143,23 +222,26 @@ async function connectInstance(instanceId) {
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
                                 instanceId: instanceId,
-                                user: instance.user
+                                user: instance.user,
+                                connectedAt: new Date().toISOString()
                             })
                         });
+                        console.log('✅ Backend notificado sobre a conexão');
                     } catch (err) {
-                        console.log('⚠️ Não foi possível notificar backend:', err.message);
+                        console.log('⚠️ Erro ao notificar backend:', err.message);
                     }
-                }, 1000);
+                }, 2000);
                 
             } else if (connection === 'connecting') {
                 console.log(`🔄 Conectando instância ${instanceId}...`);
                 instance.connecting = true;
+                instance.lastSeen = new Date();
             }
         });
 
         sock.ev.on('creds.update', saveCreds);
         
-        // Handle incoming messages
+        // Handle incoming messages with better error handling
         sock.ev.on('messages.upsert', async (m) => {
             const messages = m.messages;
             
@@ -170,32 +252,55 @@ async function connectInstance(instanceId) {
                                       message.message.extendedTextMessage?.text || 
                                       'Mídia recebida';
                     
-                    console.log(`📥 Nova mensagem na instância ${instanceId} de:`, from.split('@')[0], '- Texto:', messageText.substring(0, 50));
+                    console.log(`📥 Nova mensagem na instância ${instanceId} de: ${from.split('@')[0]} - ${messageText.substring(0, 50)}...`);
                     
-                    // Send to Python backend
-                    try {
-                        const fetch = (await import('node-fetch')).default;
-                        await fetch('http://localhost:8889/api/messages/receive', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                instanceId: instanceId,
-                                from: from,
-                                message: messageText,
-                                timestamp: new Date().toISOString(),
-                                messageId: message.key.id,
-                                messageType: message.message.conversation ? 'text' : 'media'
-                            })
-                        });
-                    } catch (err) {
-                        console.log('❌ Erro ao enviar mensagem para backend:', err.message);
+                    // Send to Python backend with retry logic
+                    let retries = 3;
+                    while (retries > 0) {
+                        try {
+                            const fetch = (await import('node-fetch')).default;
+                            const response = await fetch('http://localhost:8889/api/messages/receive', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    instanceId: instanceId,
+                                    from: from,
+                                    message: messageText,
+                                    timestamp: new Date().toISOString(),
+                                    messageId: message.key.id,
+                                    messageType: message.message.conversation ? 'text' : 'media'
+                                })
+                            });
+                            
+                            if (response.ok) {
+                                break; // Success, exit retry loop
+                            } else {
+                                throw new Error(`HTTP ${response.status}`);
+                            }
+                        } catch (err) {
+                            retries--;
+                            console.log(`❌ Erro ao enviar mensagem (tentativas restantes: ${retries}):`, err.message);
+                            if (retries > 0) {
+                                await new Promise(resolve => setTimeout(resolve, 2000));
+                            }
+                        }
                     }
                 }
             }
         });
 
+        // Keep connection alive with heartbeat
+        setInterval(() => {
+            const instance = instances.get(instanceId);
+            if (instance && instance.connected && instance.sock) {
+                instance.lastSeen = new Date();
+                // Send heartbeat
+                instance.sock.sendPresenceUpdate('available').catch(() => {});
+            }
+        }, 60000); // Every minute
+
     } catch (error) {
-        console.error(`❌ Erro ao conectar instância ${instanceId}:`, error);
+        console.error(`❌ Erro fatal ao conectar instância ${instanceId}:`, error);
         const instance = instances.get(instanceId);
         if (instance) {
             instance.connecting = false;
@@ -204,7 +309,7 @@ async function connectInstance(instanceId) {
     }
 }
 
-// API Routes
+// API Routes with better error handling
 app.get('/status/:instanceId?', (req, res) => {
     const { instanceId } = req.params;
     
@@ -215,14 +320,16 @@ app.get('/status/:instanceId?', (req, res) => {
                 connected: instance.connected,
                 connecting: instance.connecting,
                 user: instance.user,
-                instanceId: instanceId
+                instanceId: instanceId,
+                lastSeen: instance.lastSeen
             });
         } else {
             res.json({
                 connected: false,
                 connecting: false,
                 user: null,
-                instanceId: instanceId
+                instanceId: instanceId,
+                lastSeen: null
             });
         }
     } else {
@@ -232,7 +339,8 @@ app.get('/status/:instanceId?', (req, res) => {
             allInstances[id] = {
                 connected: instance.connected,
                 connecting: instance.connecting,
-                user: instance.user
+                user: instance.user,
+                lastSeen: instance.lastSeen
             };
         }
         res.json(allInstances);
@@ -247,13 +355,15 @@ app.get('/qr/:instanceId', (req, res) => {
         res.json({
             qr: instance.qr,
             connected: instance.connected,
-            instanceId: instanceId
+            instanceId: instanceId,
+            expiresIn: 60 // QR expires in 60 seconds
         });
     } else {
         res.json({
             qr: null,
             connected: instance ? instance.connected : false,
-            instanceId: instanceId
+            instanceId: instanceId,
+            expiresIn: 0
         });
     }
 });
@@ -261,11 +371,14 @@ app.get('/qr/:instanceId', (req, res) => {
 app.post('/connect/:instanceId', (req, res) => {
     const { instanceId } = req.params;
     
-    if (!instances.has(instanceId) || !instances.get(instanceId).connected) {
+    const instance = instances.get(instanceId);
+    if (!instance || (!instance.connected && !instance.connecting)) {
         connectInstance(instanceId || 'default');
         res.json({ success: true, message: `Iniciando conexão para instância ${instanceId}...` });
+    } else if (instance.connecting) {
+        res.json({ success: true, message: `Instância ${instanceId} já está conectando...` });
     } else {
-        res.json({ success: false, message: 'Instância já conectada' });
+        res.json({ success: false, message: `Instância ${instanceId} já está conectada` });
     }
 });
 
@@ -274,10 +387,14 @@ app.post('/disconnect/:instanceId', (req, res) => {
     const instance = instances.get(instanceId);
     
     if (instance && instance.sock) {
-        instance.sock.logout();
-        instances.delete(instanceId);
-        stopQRRefresh();
-        res.json({ success: true, message: `Instância ${instanceId} desconectada` });
+        try {
+            instance.sock.logout();
+            instances.delete(instanceId);
+            stopQRRefresh();
+            res.json({ success: true, message: `Instância ${instanceId} desconectada` });
+        } catch (err) {
+            res.json({ success: false, message: `Erro ao desconectar ${instanceId}: ${err.message}` });
+        }
     } else {
         res.json({ success: false, message: 'Instância não encontrada' });
     }
@@ -289,7 +406,7 @@ app.post('/send/:instanceId', async (req, res) => {
     
     const instance = instances.get(instanceId);
     if (!instance || !instance.connected || !instance.sock) {
-        return res.status(400).json({ error: 'Instância não conectada' });
+        return res.status(400).json({ error: 'Instância não conectada', instanceId: instanceId });
     }
     
     try {
@@ -306,14 +423,34 @@ app.post('/send/:instanceId', async (req, res) => {
             });
         }
         
+        console.log(`📤 Mensagem enviada da instância ${instanceId} para ${to}`);
         res.json({ success: true, instanceId: instanceId });
     } catch (error) {
+        console.error(`❌ Erro ao enviar mensagem da instância ${instanceId}:`, error);
         res.status(500).json({ error: error.message, instanceId: instanceId });
     }
 });
 
+// Health check endpoint
+app.get('/health', (req, res) => {
+    const connectedInstances = Array.from(instances.values()).filter(i => i.connected).length;
+    const connectingInstances = Array.from(instances.values()).filter(i => i.connecting).length;
+    
+    res.json({
+        status: 'running',
+        instances: {
+            total: instances.size,
+            connected: connectedInstances,
+            connecting: connectingInstances
+        },
+        uptime: process.uptime(),
+        timestamp: new Date().toISOString()
+    });
+});
+
 const PORT = process.env.PORT || 3002;
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Baileys service rodando na porta ${PORT}`);
+    console.log(`📊 Health check: http://localhost:${PORT}/health`);
     console.log('⏳ Aguardando comandos para conectar instâncias...');
 });
