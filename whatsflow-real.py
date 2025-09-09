@@ -1640,18 +1640,23 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             post_data = self.rfile.read(content_length)
             data = json.loads(post_data.decode('utf-8'))
             
+            instance_id = data.get('instanceId', 'default')
+            user = data.get('user', {})
+            
             # Update instance connection status
             conn = sqlite3.connect(DB_FILE)
             cursor = conn.cursor()
             
-            # Update all instances to connected (for now, single instance support)
-            cursor.execute("UPDATE instances SET connected = 1")
+            cursor.execute("""
+                UPDATE instances SET connected = 1, user_name = ?, user_id = ?
+                WHERE id = ?
+            """, (user.get('name', ''), user.get('id', ''), instance_id))
             
             conn.commit()
             conn.close()
             
-            print(f"✅ WhatsApp conectado: {data.get('name', data.get('id', 'Unknown'))}")
-            self.send_json_response({"success": True})
+            print(f"✅ WhatsApp conectado na instância {instance_id}: {user.get('name', user.get('id', 'Unknown'))}")
+            self.send_json_response({"success": True, "instanceId": instance_id})
             
         except Exception as e:
             print(f"❌ Erro ao processar conexão: {e}")
@@ -1663,10 +1668,13 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             post_data = self.rfile.read(content_length)
             data = json.loads(post_data.decode('utf-8'))
             
-            # Extract contact info
+            # Extract message info
+            instance_id = data.get('instanceId', 'default')
             from_jid = data.get('from', '')
             message = data.get('message', '')
             timestamp = data.get('timestamp', datetime.now(timezone.utc).isoformat())
+            message_id = data.get('messageId', str(uuid.uuid4()))
+            message_type = data.get('messageType', 'text')
             
             # Clean phone number
             phone = from_jid.replace('@s.whatsapp.net', '').replace('@c.us', '')
@@ -1685,26 +1693,26 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                 contact_name = f"Contato {phone[-4:]}"  # Use last 4 digits as name
                 
                 cursor.execute("""
-                    INSERT INTO contacts (id, name, phone, created_at)
-                    VALUES (?, ?, ?, ?)
-                """, (contact_id, contact_name, phone, timestamp))
+                    INSERT INTO contacts (id, name, phone, instance_id, created_at)
+                    VALUES (?, ?, ?, ?, ?)
+                """, (contact_id, contact_name, phone, instance_id, timestamp))
                 
-                print(f"📞 Novo contato criado: {contact_name} ({phone})")
+                print(f"📞 Novo contato criado: {contact_name} ({phone}) - Instância: {instance_id}")
             else:
                 contact_id, contact_name = contact
             
             # Save message
-            message_id = str(uuid.uuid4())
+            msg_id = str(uuid.uuid4())
             cursor.execute("""
-                INSERT INTO messages (id, contact_name, phone, message, direction, created_at)
-                VALUES (?, ?, ?, ?, ?, ?)
-            """, (message_id, contact_name, phone, message, 'incoming', timestamp))
+                INSERT INTO messages (id, contact_name, phone, message, direction, instance_id, message_type, whatsapp_id, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (msg_id, contact_name, phone, message, 'incoming', instance_id, message_type, message_id, timestamp))
             
             conn.commit()
             conn.close()
             
-            print(f"📥 Mensagem recebida de {contact_name}: {message[:50]}...")
-            self.send_json_response({"success": True})
+            print(f"📥 Mensagem recebida na instância {instance_id} de {contact_name}: {message[:50]}...")
+            self.send_json_response({"success": True, "instanceId": instance_id})
             
         except Exception as e:
             print(f"❌ Erro ao processar mensagem: {e}")
