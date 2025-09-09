@@ -206,6 +206,22 @@ export default function MessagesCenter() {
             </div>
           </div>
 
+          {/* Filtro de Dispositivos */}
+          <div className="device-filter">
+            <label>📱 Dispositivo:</label>
+            <select
+              value={selectedDevice}
+              onChange={(e) => setSelectedDevice(e.target.value)}
+              className="device-select"
+            >
+              {devices.map(device => (
+                <option key={device.device_id} value={device.device_id}>
+                  {device.device_name} ({device.contact_count})
+                </option>
+              ))}
+            </select>
+          </div>
+
           <div className="search-container">
             <input
               type="text"
@@ -234,17 +250,20 @@ export default function MessagesCenter() {
                   <div className="conversation-info">
                     <div className="conversation-name">{conversation.name}</div>
                     <div className="conversation-phone">{conversation.phone_number}</div>
+                    <div className="device-tag">
+                      📱 {conversation.device_name || 'WhatsApp 1'}
+                    </div>
                     <div className="conversation-time">
                       {formatDate(conversation.last_message_at)}
                     </div>
                   </div>
                   <div className="conversation-actions">
-                    {webhooks.map(webhook => (
+                    {webhooks.slice(0, 2).map(webhook => (
                       <button
                         key={webhook.id}
                         onClick={(e) => {
                           e.stopPropagation();
-                          triggerWebhook(webhook, conversation);
+                          triggerMacro(webhook, conversation);
                         }}
                         className="trigger-webhook"
                         title={`Disparar ${webhook.name}`}
