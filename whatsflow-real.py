@@ -397,60 +397,90 @@ HTML_APP = '''<!DOCTYPE html>
                 const qrContainer = document.getElementById('qr-code-container');
                 const statusElement = document.getElementById('connection-status');
                 
-                if (status.connected) {
+                if (status.connected && status.user) {
                     // Connected - show success
                     qrContainer.innerHTML = `
                         <div style="text-align: center; padding: 40px;">
                             <div style="font-size: 4em; margin-bottom: 20px;">✅</div>
                             <h3 style="color: #28a745; margin-bottom: 10px;">WhatsApp Conectado!</h3>
-                            <p style="color: #666;">Usuário: ${status.user?.name || 'Conectado'}</p>
-                            <button class="btn btn-success" onclick="closeQRModal()">Fechar</button>
+                            <p style="color: #666; margin-bottom: 10px;">Usuário: <strong>${status.user.name}</strong></p>
+                            <p style="color: #666; margin-bottom: 20px;">Telefone: <strong>${status.user.phone || status.user.id.split(':')[0]}</strong></p>
+                            <div style="margin-bottom: 20px;">
+                                <button class="btn btn-success" onclick="closeQRModal()">🎉 Continuar</button>
+                            </div>
+                            <p style="font-size: 0.9em; color: #999;">Suas conversas serão importadas automaticamente</p>
                         </div>
                     `;
-                    statusElement.textContent = '✅ Conectado com sucesso!';
+                    statusElement.textContent = '✅ Conectado e sincronizando conversas...';
                     statusElement.style.color = '#28a745';
                     
-                    // Stop polling
+                    // Stop polling and reload conversations after 5 seconds
                     if (qrInterval) {
                         clearInterval(qrInterval);
                         qrInterval = null;
                     }
                     
+                    // Auto-close modal and refresh data after showing success
+                    setTimeout(() => {
+                        closeQRModal();
+                        // Refresh instance list and load conversations
+                        if (document.getElementById('instances').style.display !== 'none') {
+                            loadInstances();
+                        }
+                        // Load messages if on messages tab
+                        if (document.getElementById('messages').style.display !== 'none') {
+                            loadMessages();
+                        }
+                        // Load contacts if on contacts tab
+                        if (document.getElementById('contacts').style.display !== 'none') {
+                            loadContacts();
+                        }
+                    }, 3000);
+                    
                 } else if (status.connecting && qrData.qr) {
-                    // Show QR code
+                    // Show QR code with expiration timer
+                    const expiresIn = qrData.expiresIn || 60;
                     qrContainer.innerHTML = `
                         <div style="text-align: center;">
-                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(qrData.qr)}" 
-                                 alt="QR Code" style="max-width: 250px; max-height: 250px; border: 1px solid #ddd;">
-                            <p style="margin-top: 15px; color: #666;">Escaneie o QR Code com seu WhatsApp</p>
-                            <p style="font-size: 0.9em; color: #999;">QR Code atualiza automaticamente quando expira</p>
+                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(qrData.qr)}" 
+                                 alt="QR Code" style="max-width: 280px; max-height: 280px; border: 2px solid #28a745; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+                            <p style="margin-top: 15px; color: #666; font-weight: bold;">Escaneie o QR Code com seu WhatsApp</p>
+                            <p style="font-size: 0.9em; color: #999; margin-bottom: 15px;">QR Code válido por ${expiresIn} segundos</p>
+                            <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin-top: 15px;">
+                                <p style="margin: 0; font-size: 0.9em; color: #666;">
+                                    💡 <strong>Dica:</strong> Abra WhatsApp → Configurações → Aparelhos conectados → Conectar aparelho
+                                </p>
+                            </div>
                         </div>
                     `;
-                    statusElement.textContent = '📱 Aguardando escaneamento...';
+                    statusElement.textContent = '📱 Aguardando escaneamento do QR Code...';
                     statusElement.style.color = '#007bff';
                     
                 } else if (status.connecting) {
                     // Connecting but no QR yet
                     qrContainer.innerHTML = `
                         <div style="text-align: center; padding: 40px;">
-                            <div class="loading-spinner">🔄</div>
-                            <p>Gerando QR Code...</p>
+                            <div class="loading-spinner" style="font-size: 3em; margin-bottom: 20px;">🔄</div>
+                            <p style="color: #666;">Preparando conexão WhatsApp...</p>
+                            <p style="font-size: 0.9em; color: #999;">QR Code será gerado em instantes</p>
                         </div>
                     `;
-                    statusElement.textContent = '⏳ Gerando QR Code...';
+                    statusElement.textContent = '⏳ Preparando conexão...';
                     statusElement.style.color = '#ffc107';
                     
                 } else {
                     // Not connected, not connecting
                     qrContainer.innerHTML = `
                         <div style="text-align: center; padding: 40px;">
+                            <div style="font-size: 3em; margin-bottom: 20px;">📱</div>
                             <p style="color: #666; margin-bottom: 20px;">Instância não conectada</p>
                             <button class="btn btn-primary" onclick="connectInstance('${currentQRInstance}')">
-                                🔗 Conectar Agora
+                                🔗 Iniciar Conexão
                             </button>
+                            <p style="font-size: 0.9em; color: #999; margin-top: 15px;">Clique para gerar um novo QR Code</p>
                         </div>
                     `;
-                    statusElement.textContent = '❌ Não conectado';
+                    statusElement.textContent = '❌ Desconectado';
                     statusElement.style.color = '#dc3545';
                 }
                 
@@ -458,11 +488,12 @@ HTML_APP = '''<!DOCTYPE html>
                 console.error('Erro ao carregar QR code:', error);
                 document.getElementById('qr-code-container').innerHTML = `
                     <div style="text-align: center; padding: 40px; color: red;">
-                        <p>❌ Erro ao carregar QR Code</p>
-                        <button class="btn btn-primary" onclick="loadQRCode()">Tentar Novamente</button>
+                        <div style="font-size: 3em; margin-bottom: 20px;">❌</div>
+                        <p>Erro ao carregar status da conexão</p>
+                        <button class="btn btn-primary" onclick="loadQRCode()" style="margin-top: 15px;">🔄 Tentar Novamente</button>
                     </div>
                 `;
-                document.getElementById('connection-status').textContent = '❌ Erro de conexão';
+                document.getElementById('connection-status').textContent = '❌ Erro de comunicação';
                 document.getElementById('connection-status').style.color = '#dc3545';
             }
         }
