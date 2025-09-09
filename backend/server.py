@@ -109,6 +109,22 @@ class WebhookTrigger(BaseModel):
     webhook_url: str
     data: Dict[str, Any]
 
+class WhatsAppInstance(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    device_id: str
+    device_name: str
+    connected: bool = False
+    user: Optional[Dict[str, Any]] = None
+    contacts_count: int = 0
+    messages_today: int = 0
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    last_connected_at: Optional[datetime] = None
+
+class WhatsAppInstanceCreate(BaseModel):
+    name: str
+    device_name: Optional[str] = None
+
 # Database helpers
 async def get_or_create_contact(phone_number: str, name: str = None, device_id: str = "whatsapp_1", device_name: str = "WhatsApp 1") -> dict:
     contacts_collection = db.contacts
