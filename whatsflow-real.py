@@ -409,6 +409,23 @@ HTML_APP = '''<!DOCTYPE html>
             }
         }
 
+        async function loadContacts() {
+            try {
+                const response = await fetch('/api/contacts');
+                const contacts = await response.json();
+                renderContacts(contacts);
+            } catch (error) {
+                console.error('Error loading contacts');
+                document.getElementById('contacts-container').innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">❌</div>
+                        <div class="empty-title">Erro ao carregar contatos</div>
+                        <p>Tente novamente em alguns instantes</p>
+                    </div>
+                `;
+            }
+        }
+
         function renderMessages(messages) {
             const container = document.getElementById('messages-container');
             if (!messages || messages.length === 0) {
