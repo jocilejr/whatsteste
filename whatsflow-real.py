@@ -1148,7 +1148,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                 
                 try:
                     data = json.dumps({}).encode('utf-8')
-                    req = urllib.request.Request('http://localhost:3001/connect', data=data, 
+                    req = urllib.request.Request('http://localhost:3002/connect', data=data, 
                                                headers={'Content-Type': 'application/json'})
                     req.get_method = lambda: 'POST'
                     
