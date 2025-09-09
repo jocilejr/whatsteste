@@ -166,6 +166,12 @@ const TagNode = ({ data, isConnectable }) => {
 const MediaNode = ({ data, isConnectable }) => {
   return (
     <div className="flow-node media-node">
+      <Handle
+        type="target"
+        position={Position.Top}
+        style={{ background: '#9f7aea' }}
+        isConnectable={isConnectable}
+      />
       <div className="node-header">
         <span className="node-icon">📁</span>
         <span className="node-title">Mídia</span>
@@ -199,10 +205,12 @@ const MediaNode = ({ data, isConnectable }) => {
           />
         </div>
       </div>
-      <div className="node-handles">
-        <div className="target-handle">📥</div>
-        <div className="source-handle">📤</div>
-      </div>
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        style={{ background: '#9f7aea' }}
+        isConnectable={isConnectable}
+      />
     </div>
   );
 };
