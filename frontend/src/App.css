@@ -1933,3 +1933,470 @@ body {
     min-width: 150px;
   }
 }
+
+/* WhatsApp Instances */
+.whatsapp-instances {
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.instances-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.instances-header h2 {
+  color: #2d3748;
+  font-size: 1.8rem;
+}
+
+.create-instance-btn, .create-first-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.create-instance-btn:hover, .create-first-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.instances-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 1.5rem;
+}
+
+.instance-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+  background: white;
+}
+
+.instance-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.instance-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.instance-info h3 {
+  color: #2d3748;
+  margin-bottom: 0.5rem;
+  font-size: 1.2rem;
+}
+
+.instance-id {
+  font-size: 0.8rem;
+  color: #666;
+  font-family: 'Courier New', monospace;
+}
+
+.instance-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 25px;
+  font-weight: 500;
+  font-size: 0.85rem;
+}
+
+.instance-status.connected {
+  background: #f0fff4;
+  color: #22543d;
+}
+
+.instance-status.connected .status-dot {
+  background: #48bb78;
+}
+
+.instance-status.disconnected {
+  background: #fffaf0;
+  color: #c05621;
+}
+
+.instance-status.disconnected .status-dot {
+  background: #ed8936;
+}
+
+.connected-user {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: #f8fafc;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  border: 1px solid #e2e8f0;
+}
+
+.user-avatar {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.user-details {
+  flex: 1;
+}
+
+.user-name {
+  font-weight: 600;
+  color: #2d3748;
+  margin-bottom: 0.25rem;
+}
+
+.user-phone {
+  font-size: 0.85rem;
+  color: #666;
+  font-family: 'Courier New', monospace;
+}
+
+.instance-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: #f8fafc;
+  border-radius: 8px;
+}
+
+.instance-stats .stat {
+  text-align: center;
+}
+
+.instance-stats .stat-value {
+  font-weight: 600;
+  color: #2d3748;
+  font-size: 1.5rem;
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.instance-stats .stat-label {
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.instance-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.connect-btn, .disconnect-btn, .delete-instance-btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 500;
+}
+
+.connect-btn {
+  background: #48bb78;
+  color: white;
+  flex: 1;
+}
+
+.connect-btn:hover {
+  background: #38a169;
+  transform: translateY(-1px);
+}
+
+.disconnect-btn {
+  background: #ed8936;
+  color: white;
+  flex: 1;
+}
+
+.disconnect-btn:hover {
+  background: #dd6b20;
+  transform: translateY(-1px);
+}
+
+.delete-instance-btn {
+  background: #e53e3e;
+  color: white;
+}
+
+.delete-instance-btn:hover {
+  background: #c53030;
+  transform: translateY(-1px);
+}
+
+.empty-instances {
+  text-align: center;
+  padding: 3rem 2rem;
+  color: #666;
+  grid-column: 1 / -1;
+}
+
+.empty-instances .empty-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+}
+
+.empty-instances h3 {
+  color: #2d3748;
+  margin-bottom: 1rem;
+  font-size: 1.5rem;
+}
+
+.empty-instances p {
+  margin-bottom: 2rem;
+  line-height: 1.6;
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: white;
+  border-radius: 12px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  overflow: hidden;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+}
+
+.modal-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f8fafc;
+}
+
+.modal-header h3 {
+  color: #2d3748;
+  font-size: 1.2rem;
+}
+
+.close-modal {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 4px;
+  transition: background 0.3s ease;
+}
+
+.close-modal:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.modal-content {
+  padding: 1.5rem;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #2d3748;
+  font-weight: 500;
+}
+
+.instance-input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  transition: border-color 0.3s ease;
+}
+
+.instance-input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.form-group small {
+  display: block;
+  margin-top: 0.5rem;
+  color: #666;
+  font-size: 0.8rem;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+}
+
+.cancel-btn, .create-btn {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.cancel-btn {
+  background: #e2e8f0;
+  color: #2d3748;
+}
+
+.cancel-btn:hover {
+  background: #cbd5e0;
+}
+
+.create-btn {
+  background: #48bb78;
+  color: white;
+  flex: 1;
+}
+
+.create-btn:hover:not(:disabled) {
+  background: #38a169;
+}
+
+.create-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* QR Modal Styles */
+.qr-modal {
+  max-width: 600px;
+}
+
+.qr-content {
+  text-align: center;
+}
+
+.qr-instructions {
+  text-align: left;
+  margin-bottom: 2rem;
+  padding: 1rem;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.qr-instructions h4 {
+  color: #2d3748;
+  margin-bottom: 1rem;
+}
+
+.qr-instructions ol {
+  color: #666;
+  line-height: 1.6;
+}
+
+.qr-instructions li {
+  margin-bottom: 0.5rem;
+}
+
+.qr-section {
+  margin: 2rem 0;
+}
+
+.qr-status {
+  margin-bottom: 1rem;
+}
+
+.connecting-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  color: #667eea;
+  font-weight: 500;
+  padding: 0.75rem;
+  background: #ebf8ff;
+  border-radius: 8px;
+}
+
+.qr-footer {
+  margin-top: 1rem;
+}
+
+.qr-footer small {
+  color: #e53e3e;
+  font-weight: 500;
+}
+
+.qr-loading {
+  text-align: center;
+  padding: 2rem;
+  color: #666;
+}
+
+.loading-spinner {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.qr-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 2rem;
+}
+
+.close-qr-btn {
+  background: #e53e3e;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.close-qr-btn:hover {
+  background: #c53030;
+}
