@@ -23,7 +23,7 @@ import urllib.parse
 
 # Configurações
 DB_FILE = "whatsflow.db"
-PORT = 8888
+PORT = 8889
 BAILEYS_PORT = 3001
 BAILEYS_PORT = 3001
 
