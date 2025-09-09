@@ -45,12 +45,22 @@ export default function MessagesCenter() {
 
   const fetchConversations = async () => {
     try {
-      const response = await axios.get(`${API}/contacts`);
+      const deviceParam = selectedDevice !== 'all' ? `?device_id=${selectedDevice}` : '';
+      const response = await axios.get(`${API}/contacts${deviceParam}`);
       setConversations(response.data);
     } catch (error) {
       console.error('Failed to fetch conversations:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchDevices = async () => {
+    try {
+      const response = await axios.get(`${API}/devices`);
+      setDevices(response.data);
+    } catch (error) {
+      console.error('Failed to fetch devices:', error);
     }
   };
 
