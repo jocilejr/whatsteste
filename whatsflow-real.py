@@ -613,6 +613,7 @@ class BaileysManager:
     def __init__(self):
         self.process = None
         self.is_running = False
+        self.baileys_dir = "baileys_service"
         
     def start_baileys(self):
         """Start Baileys service"""
@@ -620,10 +621,12 @@ class BaileysManager:
             return True
             
         try:
+            print("📦 Configurando serviço Baileys...")
+            
             # Create Baileys service directory
-            baileys_dir = "baileys_service"
-            if not os.path.exists(baileys_dir):
-                os.makedirs(baileys_dir)
+            if not os.path.exists(self.baileys_dir):
+                os.makedirs(self.baileys_dir)
+                print(f"✅ Diretório {self.baileys_dir} criado")
             
             # Create package.json
             package_json = {
@@ -632,8 +635,9 @@ class BaileysManager:
                 "description": "WhatsApp Baileys Service for WhatsFlow",
                 "main": "server.js",
                 "dependencies": {
-                    "@whiskeysockets/baileys": "^6.5.0",
+                    "@whiskeysockets/baileys": "^6.7.0",
                     "express": "^4.18.2",
+                    "cors": "^2.8.5",
                     "qrcode-terminal": "^0.12.0"
                 },
                 "scripts": {
@@ -641,17 +645,20 @@ class BaileysManager:
                 }
             }
             
-            with open(f"{baileys_dir}/package.json", 'w') as f:
+            package_path = f"{self.baileys_dir}/package.json"
+            with open(package_path, 'w') as f:
                 json.dump(package_json, f, indent=2)
+            print("✅ package.json criado")
             
             # Create Baileys server
-            baileys_server = '''
-const express = require('express');
+            baileys_server = '''const express = require('express');
+const cors = require('cors');
 const { DisconnectReason, useMultiFileAuthState } = require('@whiskeysockets/baileys');
 const makeWASocket = require('@whiskeysockets/baileys').default;
 const qrTerminal = require('qrcode-terminal');
 
 const app = express();
+app.use(cors());
 app.use(express.json());
 
 let sock = null;
@@ -660,21 +667,15 @@ let isConnected = false;
 let connectedUser = null;
 let isConnecting = false;
 
-// CORS headers
-app.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type');
-    next();
-});
-
 async function connectToWhatsApp() {
     try {
+        console.log('🔄 Iniciando conexão com WhatsApp...');
         const { state, saveCreds } = await useMultiFileAuthState('./auth_info');
         
         sock = makeWASocket({
             auth: state,
-            printQRInTerminal: true
+            printQRInTerminal: true,
+            browser: ['WhatsFlow', 'Chrome', '1.0.0']
         });
 
         sock.ev.on('connection.update', (update) => {
@@ -691,7 +692,7 @@ async function connectToWhatsApp() {
                 console.log('🔌 Conexão fechada. Reconectar?', shouldReconnect);
                 
                 if (shouldReconnect) {
-                    connectToWhatsApp();
+                    setTimeout(connectToWhatsApp, 5000);
                 }
                 isConnected = false;
                 connectedUser = null;
@@ -705,8 +706,23 @@ async function connectToWhatsApp() {
                 // Get user info
                 connectedUser = {
                     id: sock.user.id,
-                    name: sock.user.name || sock.user.id
+                    name: sock.user.name || sock.user.id.split(':')[0]
                 };
+                
+                // Send connected notification to Python backend
+                setTimeout(async () => {
+                    try {
+                        const fetch = (await import('node-fetch')).default;
+                        await fetch('http://localhost:8888/api/whatsapp/connected', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(connectedUser)
+                        });
+                    } catch (err) {
+                        console.log('⚠️ Não foi possível notificar backend:', err.message);
+                    }
+                }, 1000);
+                
             } else if (connection === 'connecting') {
                 console.log('🔄 Conectando ao WhatsApp...');
                 isConnecting = true;
@@ -785,7 +801,8 @@ app.post('/send', async (req, res) => {
     const { to, message } = req.body;
     
     try {
-        await sock.sendMessage(to, { text: message });
+        const jid = to.includes('@') ? to : `${to}@s.whatsapp.net`;
+        await sock.sendMessage(jid, { text: message });
         res.json({ success: true });
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -795,38 +812,85 @@ app.post('/send', async (req, res) => {
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
     console.log(`🚀 Baileys service rodando na porta ${PORT}`);
-});
-'''
+    console.log('⏳ Aguardando comando para conectar...');
+});'''
             
-            with open(f"{baileys_dir}/server.js", 'w') as f:
+            server_path = f"{self.baileys_dir}/server.js"
+            with open(server_path, 'w') as f:
                 f.write(baileys_server)
+            print("✅ server.js criado")
             
-            print("📦 Instalando dependências do Baileys...")
-            subprocess.run(['npm', 'install'], cwd=baileys_dir, capture_output=True)
+            # Install dependencies
+            print("📦 Iniciando instalação das dependências...")
+            print("   Isso pode levar alguns minutos na primeira vez...")
             
+            try:
+                # Try npm first, then yarn
+                result = subprocess.run(['npm', 'install'], cwd=self.baileys_dir, 
+                                      capture_output=True, text=True, timeout=300)
+                if result.returncode != 0:
+                    print("⚠️ npm falhou, tentando yarn...")
+                    result = subprocess.run(['yarn', 'install'], cwd=self.baileys_dir, 
+                                          capture_output=True, text=True, timeout=300)
+                
+                if result.returncode == 0:
+                    print("✅ Dependências instaladas com sucesso!")
+                else:
+                    print(f"❌ Erro na instalação: {result.stderr}")
+                    return False
+                    
+            except subprocess.TimeoutExpired:
+                print("⏰ Timeout na instalação - continuando mesmo assim...")
+            except FileNotFoundError:
+                print("❌ npm/yarn não encontrado. Por favor instale Node.js primeiro.")
+                return False
+            
+            # Start the service
             print("🚀 Iniciando serviço Baileys...")
-            self.process = subprocess.Popen(
-                ['node', 'server.js'],
-                cwd=baileys_dir,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE
-            )
-            
-            self.is_running = True
-            time.sleep(3)  # Wait for service to start
-            
-            return True
+            try:
+                self.process = subprocess.Popen(
+                    ['node', 'server.js'],
+                    cwd=self.baileys_dir,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True
+                )
+                
+                self.is_running = True
+                
+                # Wait a bit and check if it's still running
+                time.sleep(3)
+                if self.process.poll() is None:
+                    print("✅ Baileys iniciado com sucesso!")
+                    return True
+                else:
+                    stdout, stderr = self.process.communicate()
+                    print(f"❌ Baileys falhou ao iniciar:")
+                    print(f"stdout: {stdout}")
+                    print(f"stderr: {stderr}")
+                    return False
+                    
+            except FileNotFoundError:
+                print("❌ Node.js não encontrado no sistema")
+                return False
             
         except Exception as e:
-            print(f"❌ Erro ao iniciar Baileys: {e}")
+            print(f"❌ Erro ao configurar Baileys: {e}")
             return False
     
     def stop_baileys(self):
         """Stop Baileys service"""
         if self.process:
-            self.process.terminate()
-            self.process.wait()
+            try:
+                self.process.terminate()
+                self.process.wait(timeout=10)
+                print("✅ Baileys parado com sucesso")
+            except subprocess.TimeoutExpired:
+                self.process.kill()
+                print("⚠️ Baileys forçadamente terminado")
+            
             self.is_running = False
+            self.process = None
 
 # HTTP Handler with Baileys integration
 class WhatsFlowRealHandler(BaseHTTPRequestHandler):
