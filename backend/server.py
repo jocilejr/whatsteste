@@ -41,6 +41,8 @@ class Contact(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     phone_number: str
     name: str
+    device_id: str = "whatsapp_1"  # Identificador do dispositivo
+    device_name: str = "WhatsApp 1"  # Nome amigável do dispositivo
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     last_message_at: Optional[datetime] = None
     tags: List[str] = []
@@ -50,6 +52,8 @@ class Message(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     contact_id: str
     phone_number: str
+    device_id: str = "whatsapp_1"  # Identificador do dispositivo
+    device_name: str = "WhatsApp 1"  # Nome amigável do dispositivo
     message: str
     direction: str  # 'incoming' or 'outgoing'
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
