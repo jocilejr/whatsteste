@@ -263,23 +263,6 @@ export default function FlowEditor({ flowId, onSave, onClose }) {
     [setEdges]
   );
 
-  const addNode = useCallback((type) => {
-    const id = `${type}_${Date.now()}`;
-    const newNode = {
-      id,
-      type,
-      position: { x: Math.random() * 400 + 100, y: Math.random() * 400 + 100 },
-      data: { 
-        label: `Novo ${type}`,
-        onChange: (value) => updateNodeData(id, 'message', value),
-        onActionChange: (value) => updateNodeData(id, 'action', value),
-        onTypeChange: (value) => updateNodeData(id, 'mediaType', value),
-        onFileChange: (file) => updateNodeData(id, 'file', file),
-      },
-    };
-    setNodes((nodes) => [...nodes, newNode]);
-  }, [setNodes]);
-
   const updateNodeData = useCallback((nodeId, key, value) => {
     setNodes((nodes) =>
       nodes.map((node) => {
@@ -296,6 +279,27 @@ export default function FlowEditor({ flowId, onSave, onClose }) {
       })
     );
   }, [setNodes]);
+
+  const addNode = useCallback((type) => {
+    const id = `${type}_${Date.now()}`;
+    const newNode = {
+      id,
+      type,
+      position: { x: Math.random() * 400 + 100, y: Math.random() * 400 + 100 },
+      data: { 
+        id: id,
+        label: `Novo ${type}`,
+        onChange: (value) => updateNodeData(id, 'message', value),
+        onDelayChange: (value) => updateNodeData(id, 'delay', value),
+        onDelayUnitChange: (value) => updateNodeData(id, 'delayUnit', value),
+        onActionChange: (value) => updateNodeData(id, 'action', value),
+        onTypeChange: (value) => updateNodeData(id, 'mediaType', value),
+        onConditionTypeChange: (value) => updateNodeData(id, 'conditionType', value),
+        onFileChange: (file) => updateNodeData(id, 'file', file),
+      },
+    };
+    setNodes((nodes) => [...nodes, newNode]);
+  }, [setNodes, updateNodeData]);
 
   const handleSave = async () => {
     const flowData = {
