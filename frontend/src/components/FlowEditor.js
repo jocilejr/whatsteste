@@ -26,9 +26,22 @@ const MessageNode = ({ data, isConnectable }) => {
           onChange={(e) => data.onChange?.(e.target.value)}
           className="message-input"
         />
+        <div className="delay-section">
+          <label>⏱️ Delay (segundos):</label>
+          <input
+            type="number"
+            min="0"
+            max="300"
+            placeholder="0"
+            value={data.delay || ''}
+            onChange={(e) => data.onDelayChange?.(e.target.value)}
+            className="delay-input"
+          />
+        </div>
       </div>
       <div className="node-handles">
-        <div className="source-handle"></div>
+        <div className="target-handle">📥</div>
+        <div className="source-handle">📤</div>
       </div>
     </div>
   );
