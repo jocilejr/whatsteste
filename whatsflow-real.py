@@ -2026,6 +2026,117 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
         except Exception as e:
             self.send_json_response({"error": str(e)}, 500)
     
+    def handle_get_chats(self):
+        try:
+            conn = sqlite3.connect(DB_FILE)
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            
+            # Get chats with latest message info
+            cursor.execute("""
+                SELECT DISTINCT
+                    c.phone as contact_phone,
+                    c.name as contact_name, 
+                    c.instance_id,
+                    (SELECT message FROM messages m WHERE m.phone = c.phone ORDER BY m.created_at DESC LIMIT 1) as last_message,
+                    (SELECT created_at FROM messages m WHERE m.phone = c.phone ORDER BY m.created_at DESC LIMIT 1) as last_message_time,
+                    (SELECT COUNT(*) FROM messages m WHERE m.phone = c.phone AND m.direction = 'incoming') as unread_count
+                FROM contacts c
+                WHERE EXISTS (SELECT 1 FROM messages m WHERE m.phone = c.phone)
+                ORDER BY last_message_time DESC
+            """)
+            
+            chats = [dict(row) for row in cursor.fetchall()]
+            conn.close()
+            self.send_json_response(chats)
+            
+        except Exception as e:
+            print(f"❌ Erro ao buscar chats: {e}")
+            self.send_json_response({"error": str(e)}, 500)
+
+    def handle_get_messages_filtered(self):
+        try:
+            # Parse query parameters
+            query_components = urllib.parse.urlparse(self.path)
+            query_params = urllib.parse.parse_qs(query_components.query)
+            
+            phone = query_params.get('phone', [None])[0]
+            instance_id = query_params.get('instance_id', [None])[0]
+            
+            if not phone:
+                self.send_json_response({"error": "Phone parameter required"}, 400)
+                return
+            
+            conn = sqlite3.connect(DB_FILE)
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            
+            if instance_id:
+                cursor.execute("""
+                    SELECT * FROM messages 
+                    WHERE phone = ? AND instance_id = ? 
+                    ORDER BY created_at ASC
+                """, (phone, instance_id))
+            else:
+                cursor.execute("""
+                    SELECT * FROM messages 
+                    WHERE phone = ? 
+                    ORDER BY created_at ASC
+                """, (phone,))
+            
+            messages = [dict(row) for row in cursor.fetchall()]
+            conn.close()
+            
+            self.send_json_response(messages)
+            
+        except Exception as e:
+            print(f"❌ Erro ao buscar mensagens filtradas: {e}")
+            self.send_json_response({"error": str(e)}, 500)
+
+    def handle_send_webhook(self):
+        try:
+            content_length = int(self.headers.get('Content-Length', 0))
+            post_data = self.rfile.read(content_length)
+            data = json.loads(post_data.decode('utf-8'))
+            
+            webhook_url = data.get('url', '')
+            webhook_data = data.get('data', {})
+            
+            if not webhook_url:
+                self.send_json_response({"error": "URL do webhook é obrigatória"}, 400)
+                return
+            
+            # Send webhook using urllib (no external dependencies)
+            import urllib.request
+            import urllib.error
+            
+            try:
+                payload = json.dumps(webhook_data).encode('utf-8')
+                req = urllib.request.Request(
+                    webhook_url, 
+                    data=payload,
+                    headers={
+                        'Content-Type': 'application/json',
+                        'User-Agent': 'WhatsFlow-Real/1.0'
+                    }
+                )
+                
+                with urllib.request.urlopen(req, timeout=10) as response:
+                    if response.status == 200:
+                        print(f"✅ Webhook enviado para: {webhook_url}")
+                        self.send_json_response({"success": True, "message": "Webhook enviado com sucesso"})
+                    else:
+                        print(f"⚠️ Webhook retornou status: {response.status}")
+                        self.send_json_response({"success": True, "message": f"Webhook enviado (status: {response.status})"})
+                        
+            except urllib.error.URLError as e:
+                print(f"❌ Erro ao enviar webhook: {e}")
+                self.send_json_response({"error": f"Erro ao enviar webhook: {str(e)}"}, 500)
+                
+        except Exception as e:
+            print(f"❌ Erro no processamento do webhook: {e}")
+            self.send_json_response({"error": str(e)}, 500)
+
     def handle_get_webhooks(self):
         try:
             # Return a list of configured webhooks
