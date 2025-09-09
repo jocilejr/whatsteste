@@ -1265,7 +1265,14 @@ async function connectInstance(instanceId) {
                 console.log(`📱 Novo QR Code gerado para instância: ${instanceId}`);
                 currentQR = qr;
                 instance.qr = qr;
-                qrTerminal.generate(qr, { small: true });
+                
+                // Manual QR display in terminal (since printQRInTerminal is deprecated)
+                try {
+                    qrTerminal.generate(qr, { small: true });
+                } catch (err) {
+                    console.log('⚠️ QR Terminal não disponível:', err.message);
+                }
+                
                 startQRRefresh(instanceId);
             }
             
