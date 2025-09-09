@@ -181,7 +181,50 @@ const StartNode = ({ data, isConnectable }) => {
         <p>Ponto de início do fluxo</p>
       </div>
       <div className="node-handles">
-        <div className="source-handle"></div>
+        <div className="source-handle">📤</div>
+      </div>
+    </div>
+  );
+};
+
+const DelayNode = ({ data, isConnectable }) => {
+  return (
+    <div className="flow-node delay-node">
+      <div className="node-header">
+        <span className="node-icon">⏱️</span>
+        <span className="node-title">Delay</span>
+      </div>
+      <div className="node-content">
+        <div className="delay-config">
+          <label>Aguardar por:</label>
+          <div className="delay-inputs">
+            <input
+              type="number"
+              min="0"
+              max="3600"
+              placeholder="5"
+              value={data.delay || ''}
+              onChange={(e) => data.onDelayChange?.(e.target.value)}
+              className="delay-input"
+            />
+            <select 
+              value={data.delayUnit || 'seconds'}
+              onChange={(e) => data.onDelayUnitChange?.(e.target.value)}
+              className="delay-unit"
+            >
+              <option value="seconds">Segundos</option>
+              <option value="minutes">Minutos</option>
+              <option value="hours">Horas</option>
+            </select>
+          </div>
+        </div>
+        <div className="delay-description">
+          <small>Pausar o fluxo antes de continuar</small>
+        </div>
+      </div>
+      <div className="node-handles">
+        <div className="target-handle">📥</div>
+        <div className="source-handle">📤</div>
       </div>
     </div>
   );
