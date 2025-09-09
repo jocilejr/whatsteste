@@ -28,9 +28,13 @@ async function initWhatsApp() {
 
         sock = makeWASocket({
             auth: state,
-            printQRInTerminal: false,
+            printQRInTerminal: true,
             browser: ['WhatsFlow Bot', 'Chrome', '1.0.0'],
-            markOnlineOnConnect: false
+            markOnlineOnConnect: false,
+            syncFullHistory: false,
+            defaultQueryTimeoutMs: 60_000,
+            connectTimeoutMs: 60_000,
+            generateHighQualityLinkPreview: true
         })
 
         sock.ev.on('connection.update', async (update) => {
