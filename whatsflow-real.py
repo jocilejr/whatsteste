@@ -1051,9 +1051,16 @@ HTML_APP = '''<!DOCTYPE html>
 
 # Database (same as Pure)
 def init_db():
-    """Initialize SQLite database"""
+    """Initialize SQLite database with WAL mode for better concurrency"""
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
+    
+    # Enable WAL mode for better concurrent access
+    cursor.execute("PRAGMA journal_mode = WAL")
+    cursor.execute("PRAGMA synchronous = NORMAL")
+    cursor.execute("PRAGMA cache_size = 1000")
+    cursor.execute("PRAGMA temp_store = MEMORY")
+    cursor.execute("PRAGMA mmap_size = 268435456")  # 256MB
     
     # Instances table
     cursor.execute("""
