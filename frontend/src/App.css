@@ -945,13 +945,101 @@ body {
   height: 100%;
 }
 
-/* Conversations Sidebar */
+/* Conversations Sidebar - Layout compacto */
 .conversations-sidebar {
-  width: 350px;
+  width: 300px;
   border-right: 1px solid #e2e8f0;
   display: flex;
   flex-direction: column;
   background: #f8fafc;
+}
+
+/* Conversation items compactos */
+.conversation-item.compact {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-bottom: 0.25rem;
+  position: relative;
+}
+
+.conversation-item.compact:hover {
+  background: rgba(102, 126, 234, 0.1);
+}
+
+.conversation-item.compact.active {
+  background: #667eea;
+  color: white;
+}
+
+.conversation-avatar.small {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.conversation-item.compact.active .conversation-avatar.small {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.conversation-item.compact .conversation-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.conversation-item.compact .conversation-name {
+  font-weight: 600;
+  margin-bottom: 0.2rem;
+  color: #2d3748;
+  font-size: 0.9rem;
+}
+
+.conversation-item.compact.active .conversation-name {
+  color: white;
+}
+
+.conversation-item.compact .conversation-phone {
+  font-size: 0.75rem;
+  color: #666;
+  margin-bottom: 0.2rem;
+}
+
+.conversation-item.compact.active .conversation-phone {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.conversation-item.compact .device-tag {
+  font-size: 0.7rem;
+  color: #667eea;
+  font-weight: 500;
+}
+
+.conversation-item.compact.active .device-tag {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.conversation-item.compact .conversation-time {
+  font-size: 0.7rem;
+  color: #999;
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+}
+
+.conversation-item.compact.active .conversation-time {
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .conversations-header {
