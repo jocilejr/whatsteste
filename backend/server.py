@@ -262,14 +262,45 @@ async def connection_update(conn_data: ConnectionUpdate):
 
 # Messages and Contacts Routes
 @api_router.get("/contacts")
-async def get_contacts():
-    """Get all contacts"""
-    contacts = await db.contacts.find().sort("last_message_at", -1).to_list(100)
+async def get_contacts(device_id: Optional[str] = None):
+    """Get all contacts, optionally filtered by device"""
+    query = {}
+    if device_id and device_id != "all":
+        query["device_id"] = device_id
+        
+    contacts = await db.contacts.find(query).sort("last_message_at", -1).to_list(100)
     for contact in contacts:
         contact['id'] = str(contact.get('_id'))
         if '_id' in contact:
             del contact['_id']
     return contacts
+
+@api_router.get("/devices")
+async def get_devices():
+    """Get list of all devices"""
+    pipeline = [
+        {"$group": {"_id": "$device_id", "device_name": {"$first": "$device_name"}, "count": {"$sum": 1}}},
+        {"$sort": {"_id": 1}}
+    ]
+    devices = await db.contacts.aggregate(pipeline).to_list(100)
+    
+    result = []
+    for device in devices:
+        result.append({
+            "device_id": device["_id"],
+            "device_name": device["device_name"],
+            "contact_count": device["count"]
+        })
+    
+    # Add "all" option
+    total_contacts = await db.contacts.count_documents({})
+    result.insert(0, {
+        "device_id": "all",
+        "device_name": "Todos os Dispositivos",
+        "contact_count": total_contacts
+    })
+    
+    return result
 
 @api_router.get("/contacts/{contact_id}/messages")
 async def get_contact_messages(contact_id: str):
