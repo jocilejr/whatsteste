@@ -8,6 +8,8 @@ import ReactFlow, {
   addEdge,
   ConnectionLineType,
   Panel,
+  Handle,
+  Position,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 
