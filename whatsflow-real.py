@@ -1149,25 +1149,51 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             post_data = self.rfile.read(content_length)
             data = json.loads(post_data.decode('utf-8'))
             
-            # Save message to database
+            # Extract contact info
+            from_jid = data.get('from', '')
+            message = data.get('message', '')
+            timestamp = data.get('timestamp', datetime.now(timezone.utc).isoformat())
+            
+            # Clean phone number
+            phone = from_jid.replace('@s.whatsapp.net', '').replace('@c.us', '')
+            
+            # Save message and create contact if needed
             conn = sqlite3.connect(DB_FILE)
             cursor = conn.cursor()
             
-            message_id = str(uuid.uuid4())
-            created_at = datetime.now(timezone.utc).isoformat()
+            # Check if contact exists
+            cursor.execute("SELECT id, name FROM contacts WHERE phone = ?", (phone,))
+            contact = cursor.fetchone()
             
+            if not contact:
+                # Create new contact
+                contact_id = str(uuid.uuid4())
+                contact_name = f"Contato {phone[-4:]}"  # Use last 4 digits as name
+                
+                cursor.execute("""
+                    INSERT INTO contacts (id, name, phone, created_at)
+                    VALUES (?, ?, ?, ?)
+                """, (contact_id, contact_name, phone, timestamp))
+                
+                print(f"📞 Novo contato criado: {contact_name} ({phone})")
+            else:
+                contact_id, contact_name = contact
+            
+            # Save message
+            message_id = str(uuid.uuid4())
             cursor.execute("""
                 INSERT INTO messages (id, contact_name, phone, message, direction, created_at)
                 VALUES (?, ?, ?, ?, ?, ?)
-            """, (message_id, data.get('from', 'Unknown'), data.get('from', ''), 
-                  data.get('message', ''), 'incoming', created_at))
+            """, (message_id, contact_name, phone, message, 'incoming', timestamp))
             
             conn.commit()
             conn.close()
             
+            print(f"📥 Mensagem recebida de {contact_name}: {message[:50]}...")
             self.send_json_response({"success": True})
             
         except Exception as e:
+            print(f"❌ Erro ao processar mensagem: {e}")
             self.send_json_response({"error": str(e)}, 500)
     
     def handle_delete_instance(self, instance_id):
