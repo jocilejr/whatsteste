@@ -71,7 +71,7 @@ fi
 chmod +x whatsflow-real.py
 
 echo "🚀 Iniciando WhatsFlow Real..."
-echo "   Interface: http://localhost:8888"
+echo "   Interface: http://localhost:8889"
 if [ "$NODE_AVAILABLE" = true ]; then
     echo "   WhatsApp Service: Será iniciado automaticamente"
     echo "   Status: Conexão WhatsApp REAL ativada"
