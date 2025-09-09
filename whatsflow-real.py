@@ -547,7 +547,8 @@ HTML_APP = '''<!DOCTYPE html>
                     alert('❌ Erro: Resposta inválida do servidor');
                 }
             } catch (error) {
-                alert('❌ Erro ao criar instância');
+                console.error('❌ Erro ao criar instância:', error);
+                alert('❌ Erro ao criar instância: ' + error.message);
             }
         }
 
