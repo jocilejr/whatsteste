@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
 import axios from 'axios';
+import FlowEditor from './components/FlowEditor';
+import FlowList from './components/FlowList';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -19,6 +21,44 @@ const QRCode = ({ value }) => {
         />
       </div>
     </div>
+  );
+};
+
+// Navigation Component
+const Navigation = ({ currentView, onViewChange }) => {
+  return (
+    <nav className="main-navigation">
+      <div className="nav-items">
+        <button 
+          className={`nav-item ${currentView === 'dashboard' ? 'active' : ''}`}
+          onClick={() => onViewChange('dashboard')}
+        >
+          <span className="nav-icon">📊</span>
+          <span>Dashboard</span>
+        </button>
+        <button 
+          className={`nav-item ${currentView === 'flows' ? 'active' : ''}`}
+          onClick={() => onViewChange('flows')}
+        >
+          <span className="nav-icon">🎯</span>
+          <span>Fluxos</span>
+        </button>
+        <button 
+          className={`nav-item ${currentView === 'contacts' ? 'active' : ''}`}
+          onClick={() => onViewChange('contacts')}
+        >
+          <span className="nav-icon">👥</span>
+          <span>Contatos</span>
+        </button>
+        <button 
+          className={`nav-item ${currentView === 'messages' ? 'active' : ''}`}
+          onClick={() => onViewChange('messages')}
+        >
+          <span className="nav-icon">💬</span>
+          <span>Mensagens</span>
+        </button>
+      </div>
+    </nav>
   );
 };
 
@@ -289,6 +329,42 @@ const ContactsList = () => {
 
 // Main App Component
 function App() {
+  const [currentView, setCurrentView] = useState('dashboard');
+  const [showFlowEditor, setShowFlowEditor] = useState(false);
+  const [editingFlow, setEditingFlow] = useState(null);
+
+  const handleCreateFlow = () => {
+    setEditingFlow(null);
+    setShowFlowEditor(true);
+  };
+
+  const handleEditFlow = (flow) => {
+    setEditingFlow(flow);
+    setShowFlowEditor(true);
+  };
+
+  const handleCloseFlowEditor = () => {
+    setShowFlowEditor(false);
+    setEditingFlow(null);
+  };
+
+  const handleSaveFlow = (flowData) => {
+    console.log('Flow saved:', flowData);
+    // Here we would save to backend
+    setShowFlowEditor(false);
+    setEditingFlow(null);
+  };
+
+  if (showFlowEditor) {
+    return (
+      <FlowEditor
+        flowId={editingFlow?.id}
+        onSave={handleSaveFlow}
+        onClose={handleCloseFlowEditor}
+      />
+    );
+  }
+
   return (
     <div className="app">
       <header className="app-header">
@@ -298,41 +374,49 @@ function App() {
         </div>
       </header>
 
+      <Navigation currentView={currentView} onViewChange={setCurrentView} />
+
       <main className="app-main">
         <div className="container">
-          <WhatsAppConnection />
-          
-          <section className="dashboard-section">
-            <h2>📊 Dashboard</h2>
-            <DashboardStats />
-          </section>
-
-          <section className="contacts-section">
-            <ContactsList />
-          </section>
-
-          <section className="features-preview">
-            <h2>🚀 Em Breve</h2>
-            <div className="features-grid">
-              <div className="feature-card">
-                <div className="feature-icon">🎯</div>
-                <h3>Editor de Funis</h3>
-                <p>Crie fluxos de automação arrastando e soltando componentes</p>
-              </div>
+          {currentView === 'dashboard' && (
+            <>
+              <WhatsAppConnection />
               
-              <div className="feature-card">
-                <div className="feature-icon">🏷️</div>
-                <h3>Sistema de Etiquetas</h3>
-                <p>Organize e segmente seus contatos com etiquetas personalizadas</p>
+              <section className="dashboard-section">
+                <h2>📊 Dashboard</h2>
+                <DashboardStats />
+              </section>
+
+              <section className="contacts-section">
+                <ContactsList />
+              </section>
+            </>
+          )}
+
+          {currentView === 'flows' && (
+            <FlowList
+              onCreateFlow={handleCreateFlow}
+              onEditFlow={handleEditFlow}
+            />
+          )}
+
+          {currentView === 'contacts' && (
+            <section className="contacts-section">
+              <h2>👥 Gerenciamento de Contatos</h2>
+              <ContactsList />
+            </section>
+          )}
+
+          {currentView === 'messages' && (
+            <section className="messages-section">
+              <h2>💬 Central de Mensagens</h2>
+              <div className="coming-soon">
+                <div className="coming-soon-icon">🚧</div>
+                <h3>Em breve!</h3>
+                <p>Central de mensagens em desenvolvimento</p>
               </div>
-              
-              <div className="feature-card">
-                <div className="feature-icon">📱</div>
-                <h3>Mídia Avançada</h3>
-                <p>Envie áudios, imagens e vídeos através dos seus fluxos</p>
-              </div>
-            </div>
-          </section>
+            </section>
+          )}
         </div>
       </main>
     </div>
