@@ -347,6 +347,13 @@ export default function FlowEditor({ flowId, onSave, onClose }) {
           <h3>Componentes</h3>
           <div className="palette-items">
             <button
+              onClick={() => addNode('delayNode')}
+              className="palette-item"
+            >
+              <span className="palette-icon">⏱️</span>
+              <span>Delay</span>
+            </button>
+            <button
               onClick={() => addNode('messageNode')}
               className="palette-item"
             >
