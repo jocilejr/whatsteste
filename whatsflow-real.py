@@ -496,17 +496,23 @@ HTML_APP = '''<!DOCTYPE html>
         }
 
         async function connectInstance(instanceId) {
+            console.log('🔄 Connecting instance:', instanceId);
             try {
                 const response = await fetch(`/api/instances/${instanceId}/connect`, {
                     method: 'POST'
                 });
                 
+                console.log('Response status:', response.status);
+                
                 if (response.ok) {
+                    console.log('✅ Connection started, opening QR modal');
                     showQRModal(instanceId);
                 } else {
+                    console.error('❌ Connection failed:', response.status);
                     alert('❌ Erro ao iniciar conexão');
                 }
             } catch (error) {
+                console.error('❌ Connection error:', error);
                 alert('❌ Erro de conexão');
             }
         }
