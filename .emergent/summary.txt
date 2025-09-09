@@ -1,0 +1,63 @@
+<analysis>
+The previous AI engineer successfully developed WhatsFlow, a WhatsApp automation system, from inception to a feature-rich application. Key challenges included adapting Baileys for a containerized environment, leading to an initial demo-mode implementation. Development was iterative, starting with core backend APIs and a basic frontend dashboard. This evolved into a sophisticated drag-and-drop funnel editor using React Flow, followed by a real-time messaging center with multi-device support and refined macro/webhook functionalities. Extensive installation scripts for local and public deployments were also provided. The current work involves implementing a dedicated Instâncias tab for managing multiple WhatsApp connections. The process was interrupted by a user report that the frontend preview did not update, and the AI engineer was debugging this issue by checking service statuses.
+</analysis>
+
+<product_requirements>
+The user requested WhatsFlow, a WhatsApp automation system, for managing customer interactions and marketing funnels. The application needed:
+1.  **WhatsApp Integration**: Via Baileys, with a demo mode initially due to environment constraints, and a future goal of real-time QR code connection for multiple, named WhatsApp instances.
+2.  **Drag-and-Drop Funnel Builder**: A visual editor using React Flow, including components for text messages, conditional responses, tag management, media (audio, images, videos), with added features for message delays and visual connection ordering.
+3.  **Real-time Messaging Dashboard**: A professional interface displaying active conversations, historical messages, and daily contact statistics.
+4.  **Macro/Webhook System**: The ability to create macros that trigger webhooks, sending lead data (phone, JID, name). This evolved from a simple button to a dedicated right-side panel with multiple configurable buttons that appear only when a contact is selected.
+5.  **Multi-Device Support**: Centralized management of messages from multiple WhatsApp numbers, visually tagged (e.g., WhatsApp 1).
+6.  **Installation**: A simplified, one-command automatic installer for both public servers (with Nginx, SSL) and local environments.
+</product_requirements>
+
+<key_technical_concepts>
+-   **Full-Stack Architecture**: React (Frontend), FastAPI (Backend), MongoDB (Database).
+-   **WhatsApp Integration**: Baileys (Node.js service).
+-   **UI/UX**: Tailwind CSS, React Flow (for drag-and-drop editor).
+-   **Environment Management**: Kubernetes (container environment), Supervisor (process control), Yarn, Pip.
+-   **Data Handling**: Pydantic models, UUIDs, ISO strings for DateTime.
+-   **Deployment**: Nginx, Certbot, PM2.
+</key_technical_concepts>
+
+<code_architecture>
+
+**Summary of Important Files and Changes:**
+*   : Repeatedly modified to add API endpoints for WhatsApp service communication, contact, message, webhook management, and multi-device support, including  and filtered .
+*   : Created and updated to manage the Baileys client lifecycle, QR code generation (including demo mode), message reception/sending, and status updates, relaying information to the FastAPI backend.
+*   : Central to the frontend, updated to handle navigation, routing, and integration of new features like the , , and the currently developed  tab.
+*   : Continuously updated to style new components, refine the layout (e.g., compact contact cards), and ensure a professional UI.
+*   : Implemented the drag-and-drop UI for flow creation, incorporating various node types (Message, Condition, Delay) and connection capabilities using React Flow.
+*   : Developed for the real-time chat dashboard, managing contact lists, message display, input, and integration with the macro sidebar.
+*   : Added to provide the right-hand sidebar for displaying and triggering custom macros for a selected contact, improving the user experience for webhook interaction.
+*   : A new component currently being implemented to manage multiple WhatsApp device connections, including the UI for creating new instances and generating QR codes.
+</code_architecture>
+
+<pending_tasks>
+-   Fully implement the Instâncias tab for creating and managing multiple WhatsApp connections with QR codes.
+-   Debug and resolve the issue where the frontend preview is not updating.
+-   Transition WhatsApp integration from demo mode to real-time QR code connection in a production environment.
+-   Implement automatic import/synchronization of all existing WhatsApp conversations.
+-   Develop advanced webhook functionalities, such as filters by tags or scheduled triggers.
+-   Create a system for message templates.
+-   Add analytics and reporting features for conversations and webhook usage.
+</pending_tasks>
+
+<current_work>
+The previous AI engineer was in the process of implementing a Sistema de Múltiplas Instâncias WhatsApp (Multiple WhatsApp Instances System). This involves creating a dedicated frontend tab named Instâncias where users can create new WhatsApp profiles, assign custom names, and generate unique QR codes for each instance to link their WhatsApp accounts.
+
+Specifically, the AI engineer had just completed creating the initial structure for the  component and updated  to integrate this new tab into the main application navigation.
+
+However, immediately after these modifications, the user reported a critical issue: Como ficou o site depois dessas modificações? O preview não atualizou (How did the site look after these modifications? The preview did not update).
+
+The current work left off with the AI engineer beginning to debug this preview update issue by checking the status of the running services via backend                          RUNNING   pid 26, uptime 0:00:06
+code-server                      RUNNING   pid 28, uptime 0:00:06
+frontend                         STOPPED   Sep 09 05:14 AM
+mongodb                          RUNNING   pid 33, uptime 0:00:06
+supervisor> . This indicates that the  component and its integration were completed, but the changes are not reflecting in the user interface, suggesting a deployment or caching problem.
+</current_work>
+
+<optional_next_step>
+Investigate the frontend preview not updating by checking service statuses and logs.
+</optional_next_step>
