@@ -1120,6 +1120,29 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
         except Exception as e:
             self.send_json_response({"qr": None, "connected": False, "error": str(e)})
     
+    def handle_whatsapp_connected(self):
+        try:
+            content_length = int(self.headers.get('Content-Length', 0))
+            post_data = self.rfile.read(content_length)
+            data = json.loads(post_data.decode('utf-8'))
+            
+            # Update instance connection status
+            conn = sqlite3.connect(DB_FILE)
+            cursor = conn.cursor()
+            
+            # Update all instances to connected (for now, single instance support)
+            cursor.execute("UPDATE instances SET connected = 1")
+            
+            conn.commit()
+            conn.close()
+            
+            print(f"✅ WhatsApp conectado: {data.get('name', data.get('id', 'Unknown'))}")
+            self.send_json_response({"success": True})
+            
+        except Exception as e:
+            print(f"❌ Erro ao processar conexão: {e}")
+            self.send_json_response({"error": str(e)}, 500)
+    
     def handle_receive_message(self):
         try:
             content_length = int(self.headers.get('Content-Length', 0))
