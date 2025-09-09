@@ -110,14 +110,21 @@ class WebhookTrigger(BaseModel):
     data: Dict[str, Any]
 
 # Database helpers
-async def get_or_create_contact(phone_number: str, name: str = None) -> dict:
+async def get_or_create_contact(phone_number: str, name: str = None, device_id: str = "whatsapp_1", device_name: str = "WhatsApp 1") -> dict:
     contacts_collection = db.contacts
     
-    contact = await contacts_collection.find_one({"phone_number": phone_number})
+    # Buscar contato baseado em phone_number E device_id
+    contact = await contacts_collection.find_one({
+        "phone_number": phone_number,
+        "device_id": device_id
+    })
+    
     if not contact:
         contact_data = Contact(
             phone_number=phone_number,
             name=name or f"Contact {phone_number[-4:]}",
+            device_id=device_id,
+            device_name=device_name,
             last_message_at=datetime.now(timezone.utc)
         )
         result = await contacts_collection.insert_one(contact_data.dict())
@@ -126,19 +133,21 @@ async def get_or_create_contact(phone_number: str, name: str = None) -> dict:
     else:
         # Update last message time
         await contacts_collection.update_one(
-            {"phone_number": phone_number},
+            {"phone_number": phone_number, "device_id": device_id},
             {"$set": {"last_message_at": datetime.now(timezone.utc)}}
         )
         contact['id'] = str(contact.get('_id', contact.get('id')))
     
     return contact
 
-async def save_message(contact_id: str, phone_number: str, message: str, direction: str, message_id: str = None):
+async def save_message(contact_id: str, phone_number: str, message: str, direction: str, device_id: str = "whatsapp_1", device_name: str = "WhatsApp 1", message_id: str = None):
     messages_collection = db.messages
     
     message_data = Message(
         contact_id=contact_id,
         phone_number=phone_number,
+        device_id=device_id,
+        device_name=device_name,
         message=message,
         direction=direction,
         message_id=message_id
