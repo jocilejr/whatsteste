@@ -661,24 +661,77 @@ HTML_APP = '''<!DOCTYPE html>
 
 # Database (same as Pure)
 def init_db():
+    """Initialize SQLite database"""
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     
-    cursor.execute('''CREATE TABLE IF NOT EXISTS instances (
-        id TEXT PRIMARY KEY, name TEXT NOT NULL, connected INTEGER DEFAULT 0,
-        contacts_count INTEGER DEFAULT 0, messages_today INTEGER DEFAULT 0,
-        created_at TEXT NOT NULL)''')
+    # Instances table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS instances (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            connected INTEGER DEFAULT 0,
+            user_name TEXT,
+            user_id TEXT,
+            created_at TEXT
+        )
+    """)
     
-    cursor.execute('''CREATE TABLE IF NOT EXISTS contacts (
-        id TEXT PRIMARY KEY, name TEXT NOT NULL, phone TEXT NOT NULL,
-        instance_id TEXT, created_at TEXT NOT NULL)''')
+    # Contacts table (updated with instance_id)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS contacts (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            phone TEXT NOT NULL,
+            instance_id TEXT DEFAULT 'default',
+            avatar_url TEXT,
+            created_at TEXT
+        )
+    """)
     
-    cursor.execute('''CREATE TABLE IF NOT EXISTS messages (
-        id TEXT PRIMARY KEY, contact_name TEXT, phone TEXT, message TEXT NOT NULL, 
-        direction TEXT, instance_id TEXT, created_at TEXT NOT NULL)''')
+    # Messages table (updated with instance support)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS messages (
+            id TEXT PRIMARY KEY,
+            contact_name TEXT NOT NULL,
+            phone TEXT NOT NULL,
+            message TEXT NOT NULL,
+            direction TEXT NOT NULL,
+            instance_id TEXT DEFAULT 'default',
+            message_type TEXT DEFAULT 'text',
+            whatsapp_id TEXT,
+            created_at TEXT
+        )
+    """)
+    
+    # Webhooks table (new)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS webhooks (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            url TEXT NOT NULL,
+            enabled INTEGER DEFAULT 1,
+            created_at TEXT
+        )
+    """)
+    
+    # Chats table (new for conversation management)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS chats (
+            id TEXT PRIMARY KEY,
+            contact_phone TEXT NOT NULL,
+            contact_name TEXT NOT NULL,
+            instance_id TEXT NOT NULL,
+            last_message TEXT,
+            last_message_time TEXT,
+            unread_count INTEGER DEFAULT 0,
+            created_at TEXT
+        )
+    """)
     
     conn.commit()
     conn.close()
+    print("✅ Banco de dados inicializado")
 
 def add_sample_data():
     conn = sqlite3.connect(DB_FILE)
