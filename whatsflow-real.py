@@ -900,7 +900,7 @@ app.post('/send', async (req, res) => {
     }
 });
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3002;
 app.listen(PORT, () => {
     console.log(`🚀 Baileys service rodando na porta ${PORT}`);
     console.log('⏳ Aguardando comando para conectar...');
