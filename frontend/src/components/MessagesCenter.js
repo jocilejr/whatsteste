@@ -201,7 +201,7 @@ export default function MessagesCenter() {
                 onClick={() => setShowWebhookModal(true)}
                 className="webhook-button"
               >
-                🔗 Webhooks
+                ⚙️ Config
               </button>
             </div>
           </div>
@@ -241,10 +241,10 @@ export default function MessagesCenter() {
               filteredConversations.map(conversation => (
                 <div
                   key={conversation.id}
-                  className={`conversation-item ${selectedConversation?.id === conversation.id ? 'active' : ''}`}
+                  className={`conversation-item compact ${selectedConversation?.id === conversation.id ? 'active' : ''}`}
                   onClick={() => handleConversationSelect(conversation)}
                 >
-                  <div className="conversation-avatar">
+                  <div className="conversation-avatar small">
                     {conversation.name.charAt(0).toUpperCase()}
                   </div>
                   <div className="conversation-info">
@@ -253,24 +253,9 @@ export default function MessagesCenter() {
                     <div className="device-tag">
                       📱 {conversation.device_name || 'WhatsApp 1'}
                     </div>
-                    <div className="conversation-time">
-                      {formatDate(conversation.last_message_at)}
-                    </div>
                   </div>
-                  <div className="conversation-actions">
-                    {webhooks.slice(0, 2).map(webhook => (
-                      <button
-                        key={webhook.id}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          triggerMacro(webhook, conversation);
-                        }}
-                        className="trigger-webhook"
-                        title={`Disparar ${webhook.name}`}
-                      >
-                        🚀
-                      </button>
-                    ))}
+                  <div className="conversation-time">
+                    {formatDate(conversation.last_message_at)}
                   </div>
                 </div>
               ))
@@ -295,30 +280,6 @@ export default function MessagesCenter() {
                     </div>
                     <p className="jid">JID: {selectedConversation.phone_number}@s.whatsapp.net</p>
                   </div>
-                </div>
-                
-                {/* Botões de Macros */}
-                <div className="macro-buttons">
-                  {webhooks.map(webhook => (
-                    <button
-                      key={webhook.id}
-                      onClick={() => triggerMacro(webhook, selectedConversation)}
-                      className="macro-button"
-                      title={webhook.description}
-                    >
-                      🎯 {webhook.name}
-                    </button>
-                  ))}
-                  {webhooks.length === 0 && (
-                    <div className="no-macros">
-                      <button
-                        onClick={() => setShowWebhookModal(true)}
-                        className="add-macro-button"
-                      >
-                        ➕ Criar Macro
-                      </button>
-                    </div>
-                  )}
                 </div>
               </div>
 
@@ -378,6 +339,16 @@ export default function MessagesCenter() {
             </div>
           )}
         </div>
+
+        {/* Sidebar de Macros - só aparece com conversa selecionada */}
+        {selectedConversation && (
+          <MacrosSidebar
+            selectedConversation={selectedConversation}
+            webhooks={webhooks}
+            onTriggerMacro={triggerMacro}
+            onRefreshWebhooks={fetchWebhooks}
+          />
+        )}
       </div>
 
       {/* Modal de Webhooks */}
