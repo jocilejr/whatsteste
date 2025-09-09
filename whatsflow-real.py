@@ -1175,6 +1175,10 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
         elif self.path.startswith('/api/instances/') and self.path.endswith('/connect'):
             instance_id = self.path.split('/')[-2]
             self.handle_connect_instance(instance_id)
+        elif self.path == '/api/messages/receive':
+            self.handle_receive_message()
+        elif self.path == '/api/whatsapp/connected':
+            self.handle_whatsapp_connected()
         elif self.path == '/api/chats/import':
             self.handle_import_chats()
         elif self.path.startswith('/api/whatsapp/connect/'):
