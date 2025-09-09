@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Depends
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, BackgroundTasks
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -6,10 +6,11 @@ import os
 import logging
 from pathlib import Path
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 import uuid
 from datetime import datetime, timezone
 import httpx
+import asyncio
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -78,6 +79,24 @@ class ConnectionUpdate(BaseModel):
     connected: bool
     user: Optional[dict] = None
 
+class Webhook(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    url: str
+    description: Optional[str] = ""
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    active: bool = True
+
+class WebhookCreate(BaseModel):
+    name: str
+    url: str
+    description: Optional[str] = ""
+
+class WebhookTrigger(BaseModel):
+    webhook_id: str
+    webhook_url: str
+    data: Dict[str, Any]
+
 # Database helpers
 async def get_or_create_contact(phone_number: str, name: str = None) -> dict:
     contacts_collection = db.contacts
@@ -116,6 +135,24 @@ async def save_message(contact_id: str, phone_number: str, message: str, directi
     await messages_collection.insert_one(message_data.dict())
     return message_data
 
+# Background task for webhook triggers
+async def trigger_webhook_async(webhook_url: str, data: Dict[str, Any]):
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.post(
+                webhook_url,
+                json=data,
+                headers={"Content-Type": "application/json"}
+            )
+            
+            # Log webhook response
+            logging.info(f"Webhook triggered: {webhook_url} - Status: {response.status_code}")
+            return {"success": True, "status_code": response.status_code}
+            
+    except Exception as e:
+        logging.error(f"Webhook trigger failed: {webhook_url} - Error: {str(e)}")
+        return {"success": False, "error": str(e)}
+
 # WhatsApp Routes
 @api_router.post("/whatsapp/message", response_model=MessageResponse)
 async def handle_whatsapp_message(message_data: IncomingMessage):
@@ -138,7 +175,7 @@ async def handle_whatsapp_message(message_data: IncomingMessage):
         )
         
         # Simple auto-reply for now
-        reply = f"Olá! Recebi sua mensagem: '{message_text}'. Em breve implementaremos os fluxos automáticos!"
+        reply = f"Mensagem recebida: '{message_text}'"
         
         # Save outgoing message
         await save_message(contact['id'], phone_number, reply, 'outgoing')
@@ -191,16 +228,14 @@ async def get_whatsapp_status():
 @api_router.post("/whatsapp/qr-update")
 async def qr_update(qr_data: QRUpdate):
     """Receive QR code updates from WhatsApp service"""
-    # Store QR in memory or database for frontend access
     return {"status": "received"}
 
 @api_router.post("/whatsapp/connection-update")
 async def connection_update(conn_data: ConnectionUpdate):
     """Receive connection status updates from WhatsApp service"""
-    # Handle connection status changes
     return {"status": "received"}
 
-# Dashboard Routes
+# Messages and Contacts Routes
 @api_router.get("/contacts")
 async def get_contacts():
     """Get all contacts"""
@@ -214,7 +249,7 @@ async def get_contacts():
 @api_router.get("/contacts/{contact_id}/messages")
 async def get_contact_messages(contact_id: str):
     """Get messages for a specific contact"""
-    messages = await db.messages.find({"contact_id": contact_id}).sort("timestamp", -1).to_list(100)
+    messages = await db.messages.find({"contact_id": contact_id}).sort("timestamp", 1).to_list(1000)
     for message in messages:
         message['id'] = str(message.get('_id'))
         if '_id' in message:
@@ -248,6 +283,69 @@ async def get_dashboard_stats():
             "messages_today": messages_today
         }
     except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Webhook Routes
+@api_router.get("/webhooks")
+async def get_webhooks():
+    """Get all webhooks"""
+    webhooks = await db.webhooks.find({"active": True}).to_list(100)
+    for webhook in webhooks:
+        webhook['id'] = str(webhook.get('_id'))
+        if '_id' in webhook:
+            del webhook['_id']
+    return webhooks
+
+@api_router.post("/webhooks")
+async def create_webhook(webhook: WebhookCreate):
+    """Create a new webhook"""
+    try:
+        webhook_data = Webhook(**webhook.dict())
+        result = await db.webhooks.insert_one(webhook_data.dict())
+        webhook_data.id = str(result.inserted_id)
+        return webhook_data.dict()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.delete("/webhooks/{webhook_id}")
+async def delete_webhook(webhook_id: str):
+    """Delete a webhook"""
+    try:
+        result = await db.webhooks.update_one(
+            {"_id": webhook_id},
+            {"$set": {"active": False}}
+        )
+        if result.modified_count == 0:
+            raise HTTPException(status_code=404, detail="Webhook not found")
+        return {"message": "Webhook deleted successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/webhooks/trigger")
+async def trigger_webhook(webhook_trigger: WebhookTrigger, background_tasks: BackgroundTasks):
+    """Trigger a webhook with contact data"""
+    try:
+        # Add background task to trigger webhook
+        background_tasks.add_task(
+            trigger_webhook_async,
+            webhook_trigger.webhook_url,
+            webhook_trigger.data
+        )
+        
+        # Log webhook trigger
+        webhook_log = {
+            "webhook_id": webhook_trigger.webhook_id,
+            "webhook_url": webhook_trigger.webhook_url,
+            "data": webhook_trigger.data,
+            "triggered_at": datetime.now(timezone.utc),
+            "status": "triggered"
+        }
+        await db.webhook_logs.insert_one(webhook_log)
+        
+        return {"message": "Webhook triggered successfully", "status": "processing"}
+        
+    except Exception as e:
+        logging.error(f"Error triggering webhook: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 # Original routes
