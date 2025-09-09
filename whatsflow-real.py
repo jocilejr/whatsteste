@@ -2001,38 +2001,82 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             instance_id = data.get('instanceId', 'default')
             chats = data.get('chats', [])
             user = data.get('user', {})
+            batch_number = data.get('batchNumber', 1)
+            total_batches = data.get('totalBatches', 1)
             
             conn = sqlite3.connect(DB_FILE)
             cursor = conn.cursor()
             
-            # Update instance with user info
-            cursor.execute("""
-                UPDATE instances SET connected = 1, user_name = ?, user_id = ? 
-                WHERE id = ?
-            """, (user.get('name', ''), user.get('id', ''), instance_id))
+            # Update instance with user info on first batch
+            if batch_number == 1:
+                cursor.execute("""
+                    UPDATE instances SET connected = 1, user_name = ?, user_id = ? 
+                    WHERE id = ?
+                """, (user.get('name', ''), user.get('id', ''), instance_id))
+                print(f"👤 Usuário atualizado: {user.get('name', '')} ({user.get('phone', '')})")
             
-            # Import contacts from chats
-            imported_count = 0
+            # Import contacts and chats from this batch
+            imported_contacts = 0
+            imported_chats = 0
+            
             for chat in chats:
-                if chat.get('id') and not chat['id'].endswith('@g.us'):  # Skip groups
+                if chat.get('id') and not chat['id'].endswith('@g.us'):  # Skip groups for now
                     phone = chat['id'].replace('@s.whatsapp.net', '').replace('@c.us', '')
                     contact_name = chat.get('name') or f"Contato {phone[-4:]}"
                     
                     # Check if contact exists
-                    cursor.execute("SELECT id FROM contacts WHERE phone = ?", (phone,))
+                    cursor.execute("SELECT id FROM contacts WHERE phone = ? AND instance_id = ?", (phone, instance_id))
                     if not cursor.fetchone():
                         contact_id = str(uuid.uuid4())
                         cursor.execute("""
                             INSERT INTO contacts (id, name, phone, instance_id, created_at)
                             VALUES (?, ?, ?, ?, ?)
                         """, (contact_id, contact_name, phone, instance_id, datetime.now(timezone.utc).isoformat()))
-                        imported_count += 1
+                        imported_contacts += 1
+                    
+                    # Create/update chat entry
+                    last_message = None
+                    last_message_time = None
+                    unread_count = chat.get('unreadCount', 0)
+                    
+                    # Try to get last message from chat
+                    if chat.get('messages') and len(chat['messages']) > 0:
+                        last_msg = chat['messages'][-1]
+                        if last_msg.get('message'):
+                            last_message = last_msg['message'].get('conversation') or 'Mídia'
+                            last_message_time = datetime.now(timezone.utc).isoformat()
+                    
+                    # Insert or update chat
+                    cursor.execute("SELECT id FROM chats WHERE contact_phone = ? AND instance_id = ?", (phone, instance_id))
+                    if cursor.fetchone():
+                        cursor.execute("""
+                            UPDATE chats SET contact_name = ?, last_message = ?, last_message_time = ?, unread_count = ?
+                            WHERE contact_phone = ? AND instance_id = ?
+                        """, (contact_name, last_message, last_message_time, unread_count, phone, instance_id))
+                    else:
+                        chat_id = str(uuid.uuid4())
+                        cursor.execute("""
+                            INSERT INTO chats (id, contact_phone, contact_name, instance_id, last_message, last_message_time, unread_count, created_at)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                        """, (chat_id, phone, contact_name, instance_id, last_message, last_message_time, unread_count, datetime.now(timezone.utc).isoformat()))
+                        imported_chats += 1
             
             conn.commit()
             conn.close()
             
-            print(f"📥 Importados {imported_count} contatos da instância {instance_id}")
-            self.send_json_response({"success": True, "imported": imported_count})
+            print(f"📦 Lote {batch_number}/{total_batches} processado: {imported_contacts} contatos, {imported_chats} chats - Instância: {instance_id}")
+            
+            # If this is the last batch, log completion
+            if batch_number == total_batches:
+                print(f"✅ Importação completa para instância {instance_id}!")
+            
+            self.send_json_response({
+                "success": True, 
+                "imported_contacts": imported_contacts,
+                "imported_chats": imported_chats,
+                "batch": batch_number,
+                "total_batches": total_batches
+            })
             
         except Exception as e:
             print(f"❌ Erro ao importar chats: {e}")
