@@ -1304,6 +1304,15 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
         except Exception as e:
             self.send_json_response({"error": str(e)}, 500)
     
+    def handle_get_webhooks(self):
+        try:
+            # Return a list of configured webhooks
+            # For now, return an empty list as this is a placeholder implementation
+            webhooks = []
+            self.send_json_response(webhooks)
+        except Exception as e:
+            self.send_json_response({"error": str(e)}, 500)
+    
     def handle_delete_instance(self, instance_id):
         try:
             conn = sqlite3.connect(DB_FILE)
