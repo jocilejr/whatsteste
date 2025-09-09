@@ -1236,7 +1236,6 @@ async function connectInstance(instanceId) {
         
         const sock = makeWASocket({
             auth: state,
-            printQRInTerminal: true,
             browser: ['WhatsFlow', 'Desktop', '1.0.0'],
             connectTimeoutMs: 60000,
             defaultQueryTimeoutMs: 0,
@@ -1245,10 +1244,7 @@ async function connectInstance(instanceId) {
             markOnlineOnConnect: true,
             syncFullHistory: true,
             retryRequestDelayMs: 5000,
-            maxRetries: 5,
-            logger: {
-                level: 'silent'
-            }
+            maxRetries: 5
         });
 
         // Initialize instance
