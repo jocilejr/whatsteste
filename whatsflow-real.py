@@ -349,19 +349,118 @@ HTML_APP = '''<!DOCTYPE html>
             document.getElementById('instanceName').value = '';
         }
 
-        function showQRModal(instanceId) {
-            currentInstanceId = instanceId;
-            document.getElementById('qrModal').classList.add('show');
-            startQRPolling();
+        let qrInterval = null;
+        let currentQRInstance = null;
+
+        async function showQRModal(instanceId) {
+            currentQRInstance = instanceId;
+            document.getElementById('qr-instance-name').textContent = instanceId;
+            document.getElementById('qr-modal').style.display = 'flex';
+            
+            // Start QR polling
+            loadQRCode();
+            qrInterval = setInterval(loadQRCode, 3000); // Check every 3 seconds
         }
 
-        function hideQRModal() {
-            document.getElementById('qrModal').classList.remove('show');
-            if (qrPollingInterval) {
-                clearInterval(qrPollingInterval);
-                qrPollingInterval = null;
+        async function loadQRCode() {
+            if (!currentQRInstance) return;
+            
+            try {
+                const [statusResponse, qrResponse] = await Promise.all([
+                    fetch(`/api/whatsapp/status/${currentQRInstance}`),
+                    fetch(`/api/whatsapp/qr/${currentQRInstance}`)
+                ]);
+                
+                const status = await statusResponse.json();
+                const qrData = await qrResponse.json();
+                
+                const qrContainer = document.getElementById('qr-code-container');
+                const statusElement = document.getElementById('connection-status');
+                
+                if (status.connected) {
+                    // Connected - show success
+                    qrContainer.innerHTML = `
+                        <div style="text-align: center; padding: 40px;">
+                            <div style="font-size: 4em; margin-bottom: 20px;">✅</div>
+                            <h3 style="color: #28a745; margin-bottom: 10px;">WhatsApp Conectado!</h3>
+                            <p style="color: #666;">Usuário: ${status.user?.name || 'Conectado'}</p>
+                            <button class="btn btn-success" onclick="closeQRModal()">Fechar</button>
+                        </div>
+                    `;
+                    statusElement.textContent = '✅ Conectado com sucesso!';
+                    statusElement.style.color = '#28a745';
+                    
+                    // Stop polling
+                    if (qrInterval) {
+                        clearInterval(qrInterval);
+                        qrInterval = null;
+                    }
+                    
+                } else if (status.connecting && qrData.qr) {
+                    // Show QR code
+                    qrContainer.innerHTML = `
+                        <div style="text-align: center;">
+                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(qrData.qr)}" 
+                                 alt="QR Code" style="max-width: 250px; max-height: 250px; border: 1px solid #ddd;">
+                            <p style="margin-top: 15px; color: #666;">Escaneie o QR Code com seu WhatsApp</p>
+                            <p style="font-size: 0.9em; color: #999;">QR Code atualiza automaticamente quando expira</p>
+                        </div>
+                    `;
+                    statusElement.textContent = '📱 Aguardando escaneamento...';
+                    statusElement.style.color = '#007bff';
+                    
+                } else if (status.connecting) {
+                    // Connecting but no QR yet
+                    qrContainer.innerHTML = `
+                        <div style="text-align: center; padding: 40px;">
+                            <div class="loading-spinner">🔄</div>
+                            <p>Gerando QR Code...</p>
+                        </div>
+                    `;
+                    statusElement.textContent = '⏳ Gerando QR Code...';
+                    statusElement.style.color = '#ffc107';
+                    
+                } else {
+                    // Not connected, not connecting
+                    qrContainer.innerHTML = `
+                        <div style="text-align: center; padding: 40px;">
+                            <p style="color: #666; margin-bottom: 20px;">Instância não conectada</p>
+                            <button class="btn btn-primary" onclick="connectInstance('${currentQRInstance}')">
+                                🔗 Conectar Agora
+                            </button>
+                        </div>
+                    `;
+                    statusElement.textContent = '❌ Não conectado';
+                    statusElement.style.color = '#dc3545';
+                }
+                
+            } catch (error) {
+                console.error('Erro ao carregar QR code:', error);
+                document.getElementById('qr-code-container').innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: red;">
+                        <p>❌ Erro ao carregar QR Code</p>
+                        <button class="btn btn-primary" onclick="loadQRCode()">Tentar Novamente</button>
+                    </div>
+                `;
+                document.getElementById('connection-status').textContent = '❌ Erro de conexão';
+                document.getElementById('connection-status').style.color = '#dc3545';
             }
-            currentInstanceId = null;
+        }
+
+        function closeQRModal() {
+            document.getElementById('qr-modal').style.display = 'none';
+            currentQRInstance = null;
+            
+            // Stop QR polling
+            if (qrInterval) {
+                clearInterval(qrInterval);
+                qrInterval = null;
+            }
+            
+            // Reload instances to update status
+            if (document.getElementById('instances').style.display !== 'none') {
+                loadInstances();
+            }
         }
 
         async function loadInstances() {
