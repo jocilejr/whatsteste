@@ -67,10 +67,18 @@ class IncomingMessage(BaseModel):
     message_id: str
     timestamp: int
     push_name: Optional[str] = None
+    device_id: Optional[str] = "whatsapp_1"
+    device_name: Optional[str] = "WhatsApp 1"
 
 class OutgoingMessage(BaseModel):
     phone_number: str
     message: str
+    device_id: Optional[str] = "whatsapp_1"
+
+class MacroTrigger(BaseModel):
+    contact_id: str
+    macro_name: str
+    webhook_url: str
 
 class MessageResponse(BaseModel):
     reply: Optional[str] = None
