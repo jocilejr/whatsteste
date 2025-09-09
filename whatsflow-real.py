@@ -1397,6 +1397,7 @@ def main():
         server = HTTPServer(('0.0.0.0', PORT), WhatsFlowRealHandler)
         print(f"✅ Servidor rodando na porta {PORT}")
         print("🔗 Pronto para conectar WhatsApp REAL!")
+        print(f"🌐 Acesse: http://localhost:{PORT}")
         server.serve_forever()
     except KeyboardInterrupt:
         print("\n👋 WhatsFlow Real finalizado!")
