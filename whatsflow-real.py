@@ -1964,6 +1964,34 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
         except Exception as e:
             self.send_json_response({"qr": None, "connected": False, "error": str(e)})
     
+    def handle_whatsapp_disconnected(self):
+        try:
+            content_length = int(self.headers.get('Content-Length', 0))
+            post_data = self.rfile.read(content_length)
+            data = json.loads(post_data.decode('utf-8'))
+            
+            instance_id = data.get('instanceId', 'default')
+            reason = data.get('reason', 'unknown')
+            
+            # Update instance connection status
+            conn = sqlite3.connect(DB_FILE)
+            cursor = conn.cursor()
+            
+            cursor.execute("""
+                UPDATE instances SET connected = 0, user_name = NULL, user_id = NULL
+                WHERE id = ?
+            """, (instance_id,))
+            
+            conn.commit()
+            conn.close()
+            
+            print(f"❌ WhatsApp desconectado na instância {instance_id} - Razão: {reason}")
+            self.send_json_response({"success": True, "instanceId": instance_id})
+            
+        except Exception as e:
+            print(f"❌ Erro ao processar desconexão: {e}")
+            self.send_json_response({"error": str(e)}, 500)
+
     def handle_import_chats(self):
         try:
             content_length = int(self.headers.get('Content-Length', 0))
