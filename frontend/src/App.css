@@ -1020,11 +1020,9 @@ body {
   margin-bottom: 0.25rem;
 }
 
-.device-info {
-  font-size: 0.85rem;
-  color: #667eea;
-  font-weight: 500;
-  margin-bottom: 0.25rem;
+.search-container {
+  padding: 1rem;
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .search-input {
