@@ -189,6 +189,22 @@ HTML_APP = '''<!DOCTYPE html>
             </div>
         </div>
         
+        <!-- Contacts Section -->
+        <div id="contacts" class="section">
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2>👥 Central de Contatos</h2>
+                    <button class="btn btn-primary" onclick="loadContacts()">🔄 Atualizar</button>
+                </div>
+                <div id="contacts-container">
+                    <div class="loading">
+                        <div class="loading-spinner">🔄</div>
+                        <p>Carregando contatos...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
         <div id="messages" class="section">
             <div class="card">
                 <h2>💬 Mensagens Recebidas</h2>
