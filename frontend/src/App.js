@@ -28,12 +28,14 @@ const WhatsAppConnection = () => {
   const [status, setStatus] = useState('disconnected');
   const [loading, setLoading] = useState(false);
   const [connectedUser, setConnectedUser] = useState(null);
+  const [isDemoMode, setIsDemoMode] = useState(false);
 
   const checkStatus = async () => {
     try {
       const response = await axios.get(`${API}/whatsapp/status`);
       setStatus(response.data.connected ? 'connected' : 'disconnected');
       setConnectedUser(response.data.user);
+      setIsDemoMode(response.data.demo || false);
       return response.data.connected;
     } catch (error) {
       console.error('Status check failed:', error);
@@ -52,6 +54,17 @@ const WhatsAppConnection = () => {
       }
     } catch (error) {
       console.error('QR fetch failed:', error);
+    }
+  };
+
+  const simulateConnection = async () => {
+    try {
+      const response = await axios.post('http://localhost:3001/demo/connect');
+      if (response.data.success) {
+        await checkStatus();
+      }
+    } catch (error) {
+      console.error('Demo connection failed:', error);
     }
   };
 
@@ -94,9 +107,16 @@ const WhatsAppConnection = () => {
           <span className="status-text">
             {status === 'connected' ? 'Conectado' : 
              status === 'disconnected' ? 'Desconectado' : 'Erro'}
+            {isDemoMode && ' (Demo)'}
           </span>
         </div>
       </div>
+
+      {isDemoMode && (
+        <div className="demo-badge">
+          🚧 <strong>Modo Demonstração</strong> - Simulando funcionalidade WhatsApp para testes
+        </div>
+      )}
 
       {status === 'connected' && connectedUser && (
         <div className="connected-info">
@@ -112,7 +132,7 @@ const WhatsAppConnection = () => {
       {status === 'disconnected' && (
         <div className="qr-section">
           <div className="warning-badge">
-            ⚠️ WhatsApp não está conectado. Escaneie o QR code para conectar.
+            ⚠️ WhatsApp não está conectado. {isDemoMode ? 'Clique para simular conexão ou ' : ''}Escaneie o QR code para conectar.
           </div>
           
           {qrCode && (
@@ -125,13 +145,25 @@ const WhatsAppConnection = () => {
             </div>
           )}
           
-          <button 
-            className="connect-button"
-            onClick={handleConnect}
-            disabled={loading}
-          >
-            {loading ? 'Conectando...' : 'Conectar WhatsApp'}
-          </button>
+          <div className="button-group">
+            <button 
+              className="connect-button"
+              onClick={handleConnect}
+              disabled={loading}
+            >
+              {loading ? 'Conectando...' : 'Conectar WhatsApp'}
+            </button>
+            
+            {isDemoMode && (
+              <button 
+                className="demo-button"
+                onClick={simulateConnection}
+                disabled={loading}
+              >
+                🎯 Simular Conexão (Demo)
+              </button>
+            )}
+          </div>
         </div>
       )}
 
