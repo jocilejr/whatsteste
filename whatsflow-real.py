@@ -476,6 +476,33 @@ HTML_APP = '''<!DOCTYPE html>
             `).join('');
         }
 
+        function startChat(phone, name) {
+            const message = prompt(`💬 Enviar mensagem para ${name} (${phone}):`);
+            if (message && message.trim()) {
+                sendMessage(phone, message.trim());
+            }
+        }
+
+        async function sendMessage(phone, message) {
+            try {
+                const response = await fetch('http://localhost:3001/send', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ to: phone, message: message })
+                });
+                
+                if (response.ok) {
+                    alert('✅ Mensagem enviada com sucesso!');
+                } else {
+                    const error = await response.json();
+                    alert(`❌ Erro ao enviar: ${error.error || 'Erro desconhecido'}`);
+                }
+            } catch (error) {
+                alert('❌ Erro de conexão ao enviar mensagem');
+                console.error('Send error:', error);
+            }
+        }
+
         async function checkConnectionStatus() {
             try {
                 const response = await fetch('/api/whatsapp/status');
