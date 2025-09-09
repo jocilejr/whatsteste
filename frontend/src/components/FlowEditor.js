@@ -225,9 +225,12 @@ const StartNode = ({ data, isConnectable }) => {
       <div className="node-content">
         <p>Ponto de início do fluxo</p>
       </div>
-      <div className="node-handles">
-        <div className="source-handle">📤</div>
-      </div>
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        style={{ background: '#38b2ac' }}
+        isConnectable={isConnectable}
+      />
     </div>
   );
 };
@@ -235,6 +238,12 @@ const StartNode = ({ data, isConnectable }) => {
 const DelayNode = ({ data, isConnectable }) => {
   return (
     <div className="flow-node delay-node">
+      <Handle
+        type="target"
+        position={Position.Top}
+        style={{ background: '#f6ad55' }}
+        isConnectable={isConnectable}
+      />
       <div className="node-header">
         <span className="node-icon">⏱️</span>
         <span className="node-title">Delay</span>
@@ -267,10 +276,12 @@ const DelayNode = ({ data, isConnectable }) => {
           <small>Pausar o fluxo antes de continuar</small>
         </div>
       </div>
-      <div className="node-handles">
-        <div className="target-handle">📥</div>
-        <div className="source-handle">📤</div>
-      </div>
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        style={{ background: '#f6ad55' }}
+        isConnectable={isConnectable}
+      />
     </div>
   );
 };
