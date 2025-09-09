@@ -740,8 +740,7 @@ cat > frontend/package.json << 'EOF'
     "react-dom": "^18.2.0",
     "react-scripts": "5.0.1",
     "axios": "^1.6.0",
-    "reactflow": "^11.10.0",
-    "@tailwindcss/forms": "^0.5.7"
+    "reactflow": "^11.10.0"
   },
   "scripts": {
     "start": "react-scripts start",
@@ -766,7 +765,51 @@ cat > frontend/package.json << 'EOF'
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.17"
   }
+}
+EOF
+
+# Criar configuração TailwindCSS simplificada
+cat > frontend/tailwind.config.js << 'EOF'
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+  content: [
+    "./src/**/*.{js,jsx,ts,tsx}",
+    "./public/index.html"
+  ],
+  theme: {
+    extend: {
+      colors: {
+        primary: {
+          50: '#f0f9ff',
+          100: '#e0f2fe',
+          500: '#0ea5e9',
+          600: '#0284c7',
+          700: '#0369a1'
+        }
+      },
+      animation: {
+        'spin': 'spin 1s linear infinite',
+        'pulse': 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        'bounce': 'bounce 1s infinite'
+      }
+    }
+  },
+  plugins: []
+};
+EOF
+
+cat > frontend/postcss.config.js << 'EOF'
+module.exports = {
+  plugins: {
+    tailwindcss: {},
+    autoprefixer: {},
+  },
 }
 EOF
 
