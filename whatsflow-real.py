@@ -120,6 +120,9 @@ HTML_APP = '''<!DOCTYPE html>
         .connected-user { background: #d1fae5; padding: 15px; border-radius: 8px; 
                          margin: 15px 0; border: 2px solid #10b981; }
         
+        .loading { text-align: center; padding: 40px; color: #6b7280; }
+        .loading-spinner { font-size: 2rem; margin-bottom: 15px; animation: pulse 1s infinite; }
+        
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
         
         @media (max-width: 768px) {
