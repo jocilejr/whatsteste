@@ -539,7 +539,12 @@ HTML_APP = '''<!DOCTYPE html>
                 if (response.ok) {
                     hideCreateModal();
                     loadInstances();
+                    // Show both alert and console log for debugging
+                    console.log(`✅ Instância "${name}" criada com sucesso!`);
                     alert(`✅ Instância "${name}" criada!`);
+                } else {
+                    console.error('❌ Response not OK:', response.status);
+                    alert('❌ Erro: Resposta inválida do servidor');
                 }
             } catch (error) {
                 alert('❌ Erro ao criar instância');
