@@ -182,9 +182,11 @@ async def handle_whatsapp_message(message_data: IncomingMessage):
         phone_number = message_data.phone_number
         message_text = message_data.message
         push_name = message_data.push_name
+        device_id = message_data.device_id or "whatsapp_1"
+        device_name = message_data.device_name or "WhatsApp 1"
         
         # Get or create contact
-        contact = await get_or_create_contact(phone_number, push_name)
+        contact = await get_or_create_contact(phone_number, push_name, device_id, device_name)
         
         # Save incoming message
         await save_message(
@@ -192,14 +194,16 @@ async def handle_whatsapp_message(message_data: IncomingMessage):
             phone_number, 
             message_text, 
             'incoming',
+            device_id,
+            device_name,
             message_data.message_id
         )
         
         # Simple auto-reply for now
-        reply = f"Mensagem recebida: '{message_text}'"
+        reply = f"Mensagem recebida via {device_name}: '{message_text}'"
         
         # Save outgoing message
-        await save_message(contact['id'], phone_number, reply, 'outgoing')
+        await save_message(contact['id'], phone_number, reply, 'outgoing', device_id, device_name)
         
         return MessageResponse(reply=reply)
         
