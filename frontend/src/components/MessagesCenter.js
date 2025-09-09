@@ -116,6 +116,32 @@ export default function MessagesCenter() {
     }
   };
 
+  const triggerWebhook = async (webhook, contact) => {
+    try {
+      const webhookData = {
+        contact_name: contact.name,
+        phone_number: contact.phone_number,
+        device_id: contact.device_id || 'whatsapp_1',
+        device_name: contact.device_name || 'WhatsApp 1',
+        jid: `${contact.phone_number}@s.whatsapp.net`,
+        timestamp: new Date().toISOString(),
+        webhook_name: webhook.name,
+        tags: contact.tags || []
+      };
+
+      await axios.post(`${API}/webhooks/trigger`, {
+        webhook_id: webhook.id,
+        webhook_url: webhook.url,
+        data: webhookData
+      });
+
+      alert(`Webhook "${webhook.name}" disparado com sucesso!`);
+    } catch (error) {
+      console.error('Failed to trigger webhook:', error);
+      alert('Erro ao disparar webhook');
+    }
+  };
+
   const triggerMacro = async (webhook, contact) => {
     try {
       await axios.post(`${API}/macros/trigger`, {
