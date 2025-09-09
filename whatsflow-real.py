@@ -1865,7 +1865,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             conn = sqlite3.connect(DB_FILE)
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
-            cursor.execute("SELECT * FROM messages ORDER BY timestamp DESC LIMIT 50")
+            cursor.execute("SELECT * FROM messages ORDER BY created_at DESC LIMIT 50")
             messages = [dict(row) for row in cursor.fetchall()]
             conn.close()
             self.send_json_response(messages)
