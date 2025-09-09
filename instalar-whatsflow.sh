@@ -23,7 +23,7 @@ mkdir -p "$INSTALL_DIR"
 cd "$INSTALL_DIR"
 
 # Baixar WhatsFlow
-echo "⬇️ Baixando WhatsFlow Local..."
+echo "⬇️ Criando WhatsFlow Local..."
 cat > whatsflow.py << 'WHATSFLOW_CODE'#!/usr/bin/env python3
 """
 WhatsFlow Local - Versão Ultra-Simplificada
