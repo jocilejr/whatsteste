@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter
+from fastapi import FastAPI, APIRouter, HTTPException, Depends
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -6,10 +6,10 @@ import os
 import logging
 from pathlib import Path
 from pydantic import BaseModel, Field
-from typing import List
+from typing import List, Optional
 import uuid
-from datetime import datetime
-
+from datetime import datetime, timezone
+import httpx
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -25,20 +25,235 @@ app = FastAPI()
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 
+WHATSAPP_SERVICE_URL = "http://localhost:3001"
 
 # Define Models
 class StatusCheck(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     client_name: str
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class StatusCheckCreate(BaseModel):
     client_name: str
 
-# Add your routes to the router instead of directly to app
+class Contact(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    phone_number: str
+    name: str
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    last_message_at: Optional[datetime] = None
+    tags: List[str] = []
+    is_active: bool = True
+
+class Message(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    contact_id: str
+    phone_number: str
+    message: str
+    direction: str  # 'incoming' or 'outgoing'
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    message_id: Optional[str] = None
+    delivered: bool = False
+    read: bool = False
+
+class IncomingMessage(BaseModel):
+    phone_number: str
+    message: str
+    message_id: str
+    timestamp: int
+    push_name: Optional[str] = None
+
+class OutgoingMessage(BaseModel):
+    phone_number: str
+    message: str
+
+class MessageResponse(BaseModel):
+    reply: Optional[str] = None
+    success: bool = True
+
+class QRUpdate(BaseModel):
+    qr: str
+
+class ConnectionUpdate(BaseModel):
+    connected: bool
+    user: Optional[dict] = None
+
+# Database helpers
+async def get_or_create_contact(phone_number: str, name: str = None) -> dict:
+    contacts_collection = db.contacts
+    
+    contact = await contacts_collection.find_one({"phone_number": phone_number})
+    if not contact:
+        contact_data = Contact(
+            phone_number=phone_number,
+            name=name or f"Contact {phone_number[-4:]}",
+            last_message_at=datetime.now(timezone.utc)
+        )
+        result = await contacts_collection.insert_one(contact_data.dict())
+        contact_data.id = str(result.inserted_id)
+        return contact_data.dict()
+    else:
+        # Update last message time
+        await contacts_collection.update_one(
+            {"phone_number": phone_number},
+            {"$set": {"last_message_at": datetime.now(timezone.utc)}}
+        )
+        contact['id'] = str(contact.get('_id', contact.get('id')))
+    
+    return contact
+
+async def save_message(contact_id: str, phone_number: str, message: str, direction: str, message_id: str = None):
+    messages_collection = db.messages
+    
+    message_data = Message(
+        contact_id=contact_id,
+        phone_number=phone_number,
+        message=message,
+        direction=direction,
+        message_id=message_id
+    )
+    
+    await messages_collection.insert_one(message_data.dict())
+    return message_data
+
+# WhatsApp Routes
+@api_router.post("/whatsapp/message", response_model=MessageResponse)
+async def handle_whatsapp_message(message_data: IncomingMessage):
+    """Process incoming WhatsApp messages"""
+    try:
+        phone_number = message_data.phone_number
+        message_text = message_data.message
+        push_name = message_data.push_name
+        
+        # Get or create contact
+        contact = await get_or_create_contact(phone_number, push_name)
+        
+        # Save incoming message
+        await save_message(
+            contact['id'], 
+            phone_number, 
+            message_text, 
+            'incoming',
+            message_data.message_id
+        )
+        
+        # Simple auto-reply for now
+        reply = f"Olá! Recebi sua mensagem: '{message_text}'. Em breve implementaremos os fluxos automáticos!"
+        
+        # Save outgoing message
+        await save_message(contact['id'], phone_number, reply, 'outgoing')
+        
+        return MessageResponse(reply=reply)
+        
+    except Exception as e:
+        logging.error(f"Error processing message: {str(e)}")
+        return MessageResponse(
+            reply="Desculpe, ocorreu um erro ao processar sua mensagem.",
+            success=False
+        )
+
+@api_router.post("/whatsapp/send")
+async def send_whatsapp_message(message: OutgoingMessage):
+    """Send message via WhatsApp service"""
+    try:
+        async with httpx.AsyncClient() as http_client:
+            response = await http_client.post(
+                f"{WHATSAPP_SERVICE_URL}/send",
+                json={
+                    "phone_number": message.phone_number,
+                    "message": message.message
+                }
+            )
+            return response.json()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/whatsapp/qr")
+async def get_qr_code():
+    """Get current QR code for authentication"""
+    try:
+        async with httpx.AsyncClient() as http_client:
+            response = await http_client.get(f"{WHATSAPP_SERVICE_URL}/qr")
+            return response.json()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/whatsapp/status")
+async def get_whatsapp_status():
+    """Get WhatsApp connection status"""
+    try:
+        async with httpx.AsyncClient() as http_client:
+            response = await http_client.get(f"{WHATSAPP_SERVICE_URL}/status")
+            return response.json()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/whatsapp/qr-update")
+async def qr_update(qr_data: QRUpdate):
+    """Receive QR code updates from WhatsApp service"""
+    # Store QR in memory or database for frontend access
+    return {"status": "received"}
+
+@api_router.post("/whatsapp/connection-update")
+async def connection_update(conn_data: ConnectionUpdate):
+    """Receive connection status updates from WhatsApp service"""
+    # Handle connection status changes
+    return {"status": "received"}
+
+# Dashboard Routes
+@api_router.get("/contacts")
+async def get_contacts():
+    """Get all contacts"""
+    contacts = await db.contacts.find().sort("last_message_at", -1).to_list(100)
+    for contact in contacts:
+        contact['id'] = str(contact.get('_id'))
+        if '_id' in contact:
+            del contact['_id']
+    return contacts
+
+@api_router.get("/contacts/{contact_id}/messages")
+async def get_contact_messages(contact_id: str):
+    """Get messages for a specific contact"""
+    messages = await db.messages.find({"contact_id": contact_id}).sort("timestamp", -1).to_list(100)
+    for message in messages:
+        message['id'] = str(message.get('_id'))
+        if '_id' in message:
+            del message['_id']
+    return messages
+
+@api_router.get("/dashboard/stats")
+async def get_dashboard_stats():
+    """Get dashboard statistics"""
+    try:
+        today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+        
+        # Count new contacts today
+        new_contacts_today = await db.contacts.count_documents({
+            "created_at": {"$gte": today}
+        })
+        
+        # Count total active conversations
+        active_conversations = await db.contacts.count_documents({
+            "is_active": True
+        })
+        
+        # Count messages today
+        messages_today = await db.messages.count_documents({
+            "timestamp": {"$gte": today}
+        })
+        
+        return {
+            "new_contacts_today": new_contacts_today,
+            "active_conversations": active_conversations,
+            "messages_today": messages_today
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Original routes
 @api_router.get("/")
 async def root():
-    return {"message": "Hello World"}
+    return {"message": "WhatsFlow API - Sistema de Automação WhatsApp"}
 
 @api_router.post("/status", response_model=StatusCheck)
 async def create_status_check(input: StatusCheckCreate):
