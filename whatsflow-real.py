@@ -298,6 +298,7 @@ HTML_APP = '''<!DOCTYPE html>
             
             if (name === 'instances') loadInstances();
             if (name === 'dashboard') loadStats();
+            if (name === 'contacts') loadContacts();
             if (name === 'messages') loadMessages();
         }
 
