@@ -355,7 +355,7 @@ HTML_APP = '''<!DOCTYPE html>
         async function showQRModal(instanceId) {
             currentQRInstance = instanceId;
             document.getElementById('qr-instance-name').textContent = instanceId;
-            document.getElementById('qr-modal').style.display = 'flex';
+            document.getElementById('qrModal').classList.add('show');
             
             // Start QR polling
             loadQRCode();
