@@ -246,7 +246,7 @@ async def connect_whatsapp_instance(instance_id: str):
     """Start connection process for a WhatsApp instance"""
     try:
         # Get instance from database
-        instance = await db.whatsapp_instances.find_one({"_id": instance_id})
+        instance = await db.whatsapp_instances.find_one({"id": instance_id})
         if not instance:
             raise HTTPException(status_code=404, detail="Instance not found")
         
@@ -260,7 +260,7 @@ async def get_instance_qr(instance_id: str):
     """Get QR code for specific instance"""
     try:
         # Get instance from database
-        instance = await db.whatsapp_instances.find_one({"_id": instance_id})
+        instance = await db.whatsapp_instances.find_one({"id": instance_id})
         if not instance:
             raise HTTPException(status_code=404, detail="Instance not found")
         
@@ -277,7 +277,7 @@ async def disconnect_whatsapp_instance(instance_id: str):
     """Disconnect a WhatsApp instance"""
     try:
         result = await db.whatsapp_instances.update_one(
-            {"_id": instance_id},
+            {"id": instance_id},
             {"$set": {
                 "connected": False,
                 "user": None,
@@ -296,7 +296,7 @@ async def disconnect_whatsapp_instance(instance_id: str):
 async def delete_whatsapp_instance(instance_id: str):
     """Delete a WhatsApp instance"""
     try:
-        result = await db.whatsapp_instances.delete_one({"_id": instance_id})
+        result = await db.whatsapp_instances.delete_one({"id": instance_id})
         
         if result.deleted_count == 0:
             raise HTTPException(status_code=404, detail="Instance not found")
