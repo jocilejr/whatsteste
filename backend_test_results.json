@@ -28,85 +28,85 @@
       "test": "Server Connectivity",
       "status": "PASS",
       "details": "Server responding on port 8889",
-      "timestamp": "2025-09-09T16:56:58.848579"
-    },
-    {
-      "test": "GET /api/instances",
-      "status": "PASS",
-      "details": "Retrieved 2 instances",
-      "timestamp": "2025-09-09T16:56:58.850541"
-    },
-    {
-      "test": "GET /api/contacts",
-      "status": "FAIL",
-      "details": "HTTP 500: {\n  \"error\": \"no such column: created_at\"\n}",
-      "timestamp": "2025-09-09T16:56:58.852169"
-    },
-    {
-      "test": "GET /api/messages",
-      "status": "FAIL",
-      "details": "HTTP 500: {\n  \"error\": \"no such column: created_at\"\n}",
-      "timestamp": "2025-09-09T16:56:58.853847"
-    },
-    {
-      "test": "GET /api/stats",
-      "status": "PASS",
-      "details": "Statistics retrieved - Contacts: 3, Messages: 5",
-      "timestamp": "2025-09-09T16:56:58.855543"
-    },
-    {
-      "test": "GET /api/whatsapp/status",
-      "status": "PASS",
-      "details": "WhatsApp status: Disconnected",
-      "timestamp": "2025-09-09T16:56:58.859663"
-    },
-    {
-      "test": "GET /api/whatsapp/qr",
-      "status": "PASS",
-      "details": "QR code: Not available",
-      "timestamp": "2025-09-09T16:56:58.863827"
-    },
-    {
-      "test": "GET /api/webhooks",
-      "status": "PASS",
-      "details": "Retrieved 0 webhooks",
-      "timestamp": "2025-09-09T16:56:58.865340"
-    },
-    {
-      "test": "POST /api/instances",
-      "status": "PASS",
-      "details": "Created instance: Test Instance 5f1251fd",
-      "timestamp": "2025-09-09T16:56:58.870190"
-    },
-    {
-      "test": "POST /api/instances/{id}/connect",
-      "status": "PASS",
-      "details": "Connection initiated successfully",
-      "timestamp": "2025-09-09T16:56:58.875468"
-    },
-    {
-      "test": "POST /api/instances",
-      "status": "PASS",
-      "details": "Created instance: Test Instance 78f87d62",
-      "timestamp": "2025-09-09T16:56:58.880169"
+      "timestamp": "2025-09-09T16:58:36.547093"
     },
     {
       "test": "GET /api/instances",
       "status": "PASS",
       "details": "Retrieved 4 instances",
-      "timestamp": "2025-09-09T16:56:59.882522"
+      "timestamp": "2025-09-09T16:58:36.549250"
+    },
+    {
+      "test": "GET /api/contacts",
+      "status": "FAIL",
+      "details": "HTTP 500: {\n  \"error\": \"no such column: created_at\"\n}",
+      "timestamp": "2025-09-09T16:58:36.551194"
+    },
+    {
+      "test": "GET /api/messages",
+      "status": "FAIL",
+      "details": "HTTP 500: {\n  \"error\": \"no such column: created_at\"\n}",
+      "timestamp": "2025-09-09T16:58:36.553011"
+    },
+    {
+      "test": "GET /api/stats",
+      "status": "PASS",
+      "details": "Statistics retrieved - Contacts: 3, Messages: 5",
+      "timestamp": "2025-09-09T16:58:36.554719"
+    },
+    {
+      "test": "GET /api/whatsapp/status",
+      "status": "PASS",
+      "details": "WhatsApp status: Connecting",
+      "timestamp": "2025-09-09T16:58:36.558955"
+    },
+    {
+      "test": "GET /api/whatsapp/qr",
+      "status": "PASS",
+      "details": "QR code: Available",
+      "timestamp": "2025-09-09T16:58:36.562785"
+    },
+    {
+      "test": "GET /api/webhooks",
+      "status": "PASS",
+      "details": "Retrieved 0 webhooks",
+      "timestamp": "2025-09-09T16:58:36.564332"
+    },
+    {
+      "test": "POST /api/instances",
+      "status": "PASS",
+      "details": "Created instance: Test Instance 5665c1f9",
+      "timestamp": "2025-09-09T16:58:36.569294"
+    },
+    {
+      "test": "POST /api/instances/{id}/connect",
+      "status": "PASS",
+      "details": "Connection initiated successfully",
+      "timestamp": "2025-09-09T16:58:36.573602"
+    },
+    {
+      "test": "POST /api/instances",
+      "status": "PASS",
+      "details": "Created instance: Test Instance 6cd89f39",
+      "timestamp": "2025-09-09T16:58:36.578086"
+    },
+    {
+      "test": "GET /api/instances",
+      "status": "PASS",
+      "details": "Retrieved 6 instances",
+      "timestamp": "2025-09-09T16:58:37.580369"
     },
     {
       "test": "Database Persistence",
       "status": "PASS",
       "details": "SQLite database working correctly",
-      "timestamp": "2025-09-09T16:56:59.882567"
+      "timestamp": "2025-09-09T16:58:37.580416"
     },
     {
       "test": "Baileys Service Integration",
       "status": "PASS",
       "details": "Baileys service is running and accessible",
-      "timestamp": "2025-09-09T16:56:59.885236"
+      "timestamp": "2025-09-09T16:58:37.582770"
     }
   ]
 }
