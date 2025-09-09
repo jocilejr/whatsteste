@@ -116,27 +116,18 @@ export default function MessagesCenter() {
     }
   };
 
-  const triggerWebhook = async (webhook, contact) => {
+  const triggerMacro = async (webhook, contact) => {
     try {
-      const webhookData = {
-        contact_name: contact.name,
-        phone_number: contact.phone_number,
-        jid: `${contact.phone_number}@s.whatsapp.net`,
-        timestamp: new Date().toISOString(),
-        webhook_name: webhook.name,
-        tags: contact.tags || []
-      };
-
-      await axios.post(`${API}/webhooks/trigger`, {
-        webhook_id: webhook.id,
-        webhook_url: webhook.url,
-        data: webhookData
+      await axios.post(`${API}/macros/trigger`, {
+        contact_id: contact.id,
+        macro_name: webhook.name,
+        webhook_url: webhook.url
       });
 
-      alert(`Webhook "${webhook.name}" disparado com sucesso!`);
+      alert(`Macro "${webhook.name}" disparada com sucesso!`);
     } catch (error) {
-      console.error('Failed to trigger webhook:', error);
-      alert('Erro ao disparar webhook');
+      console.error('Failed to trigger macro:', error);
+      alert('Erro ao disparar macro');
     }
   };
 
