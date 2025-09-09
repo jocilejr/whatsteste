@@ -1396,6 +1396,244 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
         except Exception as e:
             self.send_json_response({"qr": None, "connected": False, "error": str(e)})
     
+    def handle_import_chats(self):
+        try:
+            content_length = int(self.headers.get('Content-Length', 0))
+            post_data = self.rfile.read(content_length)
+            data = json.loads(post_data.decode('utf-8'))
+            
+            instance_id = data.get('instanceId', 'default')
+            chats = data.get('chats', [])
+            user = data.get('user', {})
+            
+            conn = sqlite3.connect(DB_FILE)
+            cursor = conn.cursor()
+            
+            # Update instance with user info
+            cursor.execute("""
+                UPDATE instances SET connected = 1, user_name = ?, user_id = ? 
+                WHERE id = ?
+            """, (user.get('name', ''), user.get('id', ''), instance_id))
+            
+            # Import contacts from chats
+            imported_count = 0
+            for chat in chats:
+                if chat.get('id') and not chat['id'].endswith('@g.us'):  # Skip groups
+                    phone = chat['id'].replace('@s.whatsapp.net', '').replace('@c.us', '')
+                    contact_name = chat.get('name') or f"Contato {phone[-4:]}"
+                    
+                    # Check if contact exists
+                    cursor.execute("SELECT id FROM contacts WHERE phone = ?", (phone,))
+                    if not cursor.fetchone():
+                        contact_id = str(uuid.uuid4())
+                        cursor.execute("""
+                            INSERT INTO contacts (id, name, phone, instance_id, created_at)
+                            VALUES (?, ?, ?, ?, ?)
+                        """, (contact_id, contact_name, phone, instance_id, datetime.now(timezone.utc).isoformat()))
+                        imported_count += 1
+            
+            conn.commit()
+            conn.close()
+            
+            print(f"📥 Importados {imported_count} contatos da instância {instance_id}")
+            self.send_json_response({"success": True, "imported": imported_count})
+            
+        except Exception as e:
+            print(f"❌ Erro ao importar chats: {e}")
+            self.send_json_response({"error": str(e)}, 500)
+
+    def handle_connect_instance(self, instance_id):
+        try:
+            # Start Baileys connection for specific instance
+            try:
+                import requests
+                response = requests.post(f'http://localhost:3002/connect/{instance_id}', timeout=5)
+                
+                if response.status_code == 200:
+                    self.send_json_response({"success": True, "message": f"Conexão da instância {instance_id} iniciada"})
+                else:
+                    self.send_json_response({"error": "Erro ao iniciar conexão"}, 500)
+            except ImportError:
+                # Fallback usando urllib se requests não estiver disponível
+                import urllib.request
+                import urllib.error
+                
+                try:
+                    data = json.dumps({}).encode('utf-8')
+                    req = urllib.request.Request(f'http://localhost:3002/connect/{instance_id}', data=data, 
+                                               headers={'Content-Type': 'application/json'})
+                    req.get_method = lambda: 'POST'
+                    
+                    with urllib.request.urlopen(req, timeout=5) as response:
+                        if response.status == 200:
+                            self.send_json_response({"success": True, "message": f"Conexão da instância {instance_id} iniciada"})
+                        else:
+                            self.send_json_response({"error": "Erro ao iniciar conexão"}, 500)
+                except urllib.error.URLError as e:
+                    self.send_json_response({"error": f"Serviço WhatsApp indisponível: {str(e)}"}, 500)
+                
+        except Exception as e:
+            self.send_json_response({"error": str(e)}, 500)
+
+    def handle_disconnect_instance(self, instance_id):
+        try:
+            try:
+                import requests
+                response = requests.post(f'http://localhost:3002/disconnect/{instance_id}', timeout=5)
+                
+                if response.status_code == 200:
+                    # Update database
+                    conn = sqlite3.connect(DB_FILE)
+                    cursor = conn.cursor()
+                    cursor.execute("UPDATE instances SET connected = 0 WHERE id = ?", (instance_id,))
+                    conn.commit()
+                    conn.close()
+                    
+                    self.send_json_response({"success": True, "message": f"Instância {instance_id} desconectada"})
+                else:
+                    self.send_json_response({"error": "Erro ao desconectar"}, 500)
+            except ImportError:
+                # Fallback usando urllib
+                import urllib.request
+                data = json.dumps({}).encode('utf-8')
+                req = urllib.request.Request(f'http://localhost:3002/disconnect/{instance_id}', data=data,
+                                           headers={'Content-Type': 'application/json'})
+                req.get_method = lambda: 'POST'
+                
+                with urllib.request.urlopen(req, timeout=5) as response:
+                    if response.status == 200:
+                        conn = sqlite3.connect(DB_FILE)
+                        cursor = conn.cursor()
+                        cursor.execute("UPDATE instances SET connected = 0 WHERE id = ?", (instance_id,))
+                        conn.commit()
+                        conn.close()
+                        self.send_json_response({"success": True, "message": f"Instância {instance_id} desconectada"})
+                    else:
+                        self.send_json_response({"error": "Erro ao desconectar"}, 500)
+                        
+        except Exception as e:
+            self.send_json_response({"error": str(e)}, 500)
+
+    def handle_whatsapp_status(self, instance_id):
+        try:
+            try:
+                import requests
+                response = requests.get(f'http://localhost:3002/status/{instance_id}', timeout=5)
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    self.send_json_response(data)
+                else:
+                    self.send_json_response({"connected": False, "connecting": False, "instanceId": instance_id})
+            except ImportError:
+                # Fallback usando urllib
+                try:
+                    with urllib.request.urlopen(f'http://localhost:3002/status/{instance_id}', timeout=5) as response:
+                        if response.status == 200:
+                            data = json.loads(response.read().decode('utf-8'))
+                            self.send_json_response(data)
+                        else:
+                            self.send_json_response({"connected": False, "connecting": False, "instanceId": instance_id})
+                except:
+                    self.send_json_response({"connected": False, "connecting": False, "instanceId": instance_id})
+                
+        except Exception as e:
+            self.send_json_response({"connected": False, "connecting": False, "error": str(e), "instanceId": instance_id})
+
+    def handle_whatsapp_qr(self, instance_id):
+        try:
+            try:
+                import requests
+                response = requests.get(f'http://localhost:3002/qr/{instance_id}', timeout=5)
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    self.send_json_response(data)
+                else:
+                    self.send_json_response({"qr": None, "connected": False, "instanceId": instance_id})
+            except ImportError:
+                # Fallback usando urllib
+                try:
+                    with urllib.request.urlopen(f'http://localhost:3002/qr/{instance_id}', timeout=5) as response:
+                        if response.status == 200:
+                            data = json.loads(response.read().decode('utf-8'))
+                            self.send_json_response(data)
+                        else:
+                            self.send_json_response({"qr": None, "connected": False, "instanceId": instance_id})
+                except:
+                    self.send_json_response({"qr": None, "connected": False, "instanceId": instance_id})
+                
+        except Exception as e:
+            self.send_json_response({"qr": None, "connected": False, "error": str(e), "instanceId": instance_id})
+
+    def handle_send_message(self, instance_id):
+        try:
+            content_length = int(self.headers.get('Content-Length', 0))
+            post_data = self.rfile.read(content_length)
+            data = json.loads(post_data.decode('utf-8'))
+            
+            to = data.get('to', '')
+            message = data.get('message', '')
+            message_type = data.get('type', 'text')
+            
+            try:
+                import requests
+                response = requests.post(f'http://localhost:3002/send/{instance_id}', 
+                                       json=data, timeout=10)
+                
+                if response.status_code == 200:
+                    # Save message to database
+                    conn = sqlite3.connect(DB_FILE)
+                    cursor = conn.cursor()
+                    
+                    message_id = str(uuid.uuid4())
+                    phone = to.replace('@s.whatsapp.net', '').replace('@c.us', '')
+                    
+                    cursor.execute("""
+                        INSERT INTO messages (id, contact_name, phone, message, direction, instance_id, created_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                    """, (message_id, f"Para {phone[-4:]}", phone, message, 'outgoing', instance_id, 
+                          datetime.now(timezone.utc).isoformat()))
+                    
+                    conn.commit()
+                    conn.close()
+                    
+                    self.send_json_response({"success": True, "instanceId": instance_id})
+                else:
+                    self.send_json_response({"error": "Erro ao enviar mensagem"}, 500)
+            except ImportError:
+                # Fallback usando urllib
+                import urllib.request
+                req_data = json.dumps(data).encode('utf-8')
+                req = urllib.request.Request(f'http://localhost:3002/send/{instance_id}', 
+                                           data=req_data, 
+                                           headers={'Content-Type': 'application/json'})
+                req.get_method = lambda: 'POST'
+                
+                with urllib.request.urlopen(req, timeout=10) as response:
+                    if response.status == 200:
+                        conn = sqlite3.connect(DB_FILE)
+                        cursor = conn.cursor()
+                        
+                        message_id = str(uuid.uuid4())
+                        phone = to.replace('@s.whatsapp.net', '').replace('@c.us', '')
+                        
+                        cursor.execute("""
+                            INSERT INTO messages (id, contact_name, phone, message, direction, instance_id, created_at)
+                            VALUES (?, ?, ?, ?, ?, ?, ?)
+                        """, (message_id, f"Para {phone[-4:]}", phone, message, 'outgoing', instance_id,
+                              datetime.now(timezone.utc).isoformat()))
+                        
+                        conn.commit()
+                        conn.close()
+                        
+                        self.send_json_response({"success": True, "instanceId": instance_id})
+                    else:
+                        self.send_json_response({"error": "Erro ao enviar mensagem"}, 500)
+                
+        except Exception as e:
+            self.send_json_response({"error": str(e)}, 500)
+    
     def handle_whatsapp_connected(self):
         try:
             content_length = int(self.headers.get('Content-Length', 0))
