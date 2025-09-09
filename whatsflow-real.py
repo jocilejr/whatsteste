@@ -1167,7 +1167,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
         try:
             try:
                 import requests
-                response = requests.get('http://localhost:3001/status', timeout=5)
+                response = requests.get('http://localhost:3002/status', timeout=5)
                 
                 if response.status_code == 200:
                     data = response.json()
