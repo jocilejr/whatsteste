@@ -126,6 +126,12 @@ const ConditionNode = ({ data, isConnectable }) => {
 const TagNode = ({ data, isConnectable }) => {
   return (
     <div className="flow-node tag-node">
+      <Handle
+        type="target"
+        position={Position.Top}
+        style={{ background: '#48bb78' }}
+        isConnectable={isConnectable}
+      />
       <div className="node-header">
         <span className="node-icon">🏷️</span>
         <span className="node-title">Etiqueta</span>
@@ -147,10 +153,12 @@ const TagNode = ({ data, isConnectable }) => {
           <option value="remove">➖ Remover</option>
         </select>
       </div>
-      <div className="node-handles">
-        <div className="target-handle">📥</div>
-        <div className="source-handle">📤</div>
-      </div>
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        style={{ background: '#48bb78' }}
+        isConnectable={isConnectable}
+      />
     </div>
   );
 };
