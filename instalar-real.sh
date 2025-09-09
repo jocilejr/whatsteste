@@ -81,7 +81,7 @@ fi
 
 echo
 echo "📋 Como usar:"
-echo "   1. Abra http://localhost:8888 no navegador"
+echo "   1. Abra http://localhost:8889 no navegador"
 if [ "$NODE_AVAILABLE" = true ]; then
     echo "   2. Vá na aba 'Instâncias'"
     echo "   3. Crie uma instância e clique 'Conectar Real'"
