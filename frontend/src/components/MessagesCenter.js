@@ -363,7 +363,131 @@ export default function MessagesCenter() {
   );
 }
 
-// Componente do Modal de Webhooks
+// Componente da Sidebar de Macros
+const MacrosSidebar = ({ selectedConversation, webhooks, onTriggerMacro, onRefreshWebhooks }) => {
+  const [isAddingMacro, setIsAddingMacro] = useState(false);
+  const [newMacro, setNewMacro] = useState({ name: '', url: '', description: '' });
+
+  const addMacro = async () => {
+    if (!newMacro.name || !newMacro.url) {
+      alert('Nome e URL são obrigatórios');
+      return;
+    }
+
+    try {
+      await axios.post(`${BACKEND_URL}/api/webhooks`, newMacro);
+      setNewMacro({ name: '', url: '', description: '' });
+      setIsAddingMacro(false);
+      onRefreshWebhooks();
+      alert('Macro adicionada com sucesso!');
+    } catch (error) {
+      console.error('Failed to add macro:', error);
+      alert('Erro ao adicionar macro');
+    }
+  };
+
+  const deleteMacro = async (macroId) => {
+    if (!confirm('Tem certeza que deseja excluir esta macro?')) return;
+
+    try {
+      await axios.delete(`${BACKEND_URL}/api/webhooks/${macroId}`);
+      onRefreshWebhooks();
+      alert('Macro excluída com sucesso!');
+    } catch (error) {
+      console.error('Failed to delete macro:', error);
+      alert('Erro ao excluir macro');
+    }
+  };
+
+  return (
+    <div className="macros-sidebar">
+      <div className="macros-header">
+        <h3>🎯 Macros</h3>
+        <div className="contact-selected">
+          <div className="selected-contact-avatar">
+            {selectedConversation.name.charAt(0).toUpperCase()}
+          </div>
+          <div className="selected-contact-info">
+            <div className="selected-contact-name">{selectedConversation.name}</div>
+            <div className="selected-contact-device">📱 {selectedConversation.device_name}</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="macros-content">
+        {isAddingMacro ? (
+          <div className="add-macro-form">
+            <h4>➕ Nova Macro</h4>
+            <input
+              type="text"
+              placeholder="Nome da macro (ex: Entrega - Amuleto)"
+              value={newMacro.name}
+              onChange={(e) => setNewMacro({...newMacro, name: e.target.value})}
+              className="macro-input"
+            />
+            <input
+              type="url"
+              placeholder="URL do webhook"
+              value={newMacro.url}
+              onChange={(e) => setNewMacro({...newMacro, url: e.target.value})}
+              className="macro-input"
+            />
+            <textarea
+              placeholder="Descrição (opcional)"
+              value={newMacro.description}
+              onChange={(e) => setNewMacro({...newMacro, description: e.target.value})}
+              className="macro-textarea"
+            />
+            <div className="macro-form-actions">
+              <button onClick={addMacro} className="save-macro">💾 Salvar</button>
+              <button onClick={() => setIsAddingMacro(false)} className="cancel-macro">❌ Cancelar</button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="macros-list">
+              {webhooks.length === 0 ? (
+                <div className="no-macros-message">
+                  <p>Nenhuma macro criada ainda</p>
+                </div>
+              ) : (
+                webhooks.map(webhook => (
+                  <div key={webhook.id} className="macro-item">
+                    <button
+                      onClick={() => onTriggerMacro(webhook, selectedConversation)}
+                      className={`macro-trigger-button ${webhook.name.toLowerCase().includes('entrega') ? 'delivery' : 'default'}`}
+                      title={webhook.description}
+                    >
+                      <span className="macro-icon">
+                        {webhook.name.toLowerCase().includes('entrega') ? '📦' : 
+                         webhook.name.toLowerCase().includes('link') ? '🔗' : '🎯'}
+                      </span>
+                      <span className="macro-name">{webhook.name}</span>
+                    </button>
+                    <button
+                      onClick={() => deleteMacro(webhook.id)}
+                      className="delete-macro-btn"
+                      title="Excluir macro"
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <button
+              onClick={() => setIsAddingMacro(true)}
+              className="add-macro-btn"
+            >
+              ➕ Nova Macro
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
 const WebhookModal = ({ webhooks, onClose, onWebhookChange }) => {
   const [newWebhook, setNewWebhook] = useState({ name: '', url: '', description: '' });
   const [isAdding, setIsAdding] = useState(false);
