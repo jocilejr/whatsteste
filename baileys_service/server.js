@@ -49,7 +49,6 @@ async function connectInstance(instanceId) {
         
         const sock = makeWASocket({
             auth: state,
-            printQRInTerminal: true,
             browser: ['WhatsFlow', 'Desktop', '1.0.0'],
             connectTimeoutMs: 60000,
             defaultQueryTimeoutMs: 0,
@@ -58,10 +57,7 @@ async function connectInstance(instanceId) {
             markOnlineOnConnect: true,
             syncFullHistory: true,
             retryRequestDelayMs: 5000,
-            maxRetries: 5,
-            logger: {
-                level: 'silent'
-            }
+            maxRetries: 5
         });
 
         // Initialize instance
@@ -82,7 +78,14 @@ async function connectInstance(instanceId) {
                 console.log(`📱 Novo QR Code gerado para instância: ${instanceId}`);
                 currentQR = qr;
                 instance.qr = qr;
-                qrTerminal.generate(qr, { small: true });
+                
+                // Manual QR display in terminal (since printQRInTerminal is deprecated)
+                try {
+                    qrTerminal.generate(qr, { small: true });
+                } catch (err) {
+                    console.log('⚠️ QR Terminal não disponível:', err.message);
+                }
+                
                 startQRRefresh(instanceId);
             }
             
