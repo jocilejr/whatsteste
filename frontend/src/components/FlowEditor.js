@@ -17,6 +17,12 @@ import 'reactflow/dist/style.css';
 const MessageNode = ({ data, isConnectable }) => {
   return (
     <div className="flow-node message-node">
+      <Handle
+        type="target"
+        position={Position.Top}
+        style={{ background: '#667eea' }}
+        isConnectable={isConnectable}
+      />
       <div className="node-header">
         <span className="node-icon">💬</span>
         <span className="node-title">Mensagem</span>
@@ -41,10 +47,12 @@ const MessageNode = ({ data, isConnectable }) => {
           />
         </div>
       </div>
-      <div className="node-handles">
-        <div className="target-handle">📥</div>
-        <div className="source-handle">📤</div>
-      </div>
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        style={{ background: '#667eea' }}
+        isConnectable={isConnectable}
+      />
     </div>
   );
 };
