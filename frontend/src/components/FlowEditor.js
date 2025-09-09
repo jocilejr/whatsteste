@@ -114,12 +114,13 @@ const TagNode = ({ data, isConnectable }) => {
           onChange={(e) => data.onActionChange?.(e.target.value)}
           className="tag-action"
         >
-          <option value="add">Adicionar</option>
-          <option value="remove">Remover</option>
+          <option value="add">➕ Adicionar</option>
+          <option value="remove">➖ Remover</option>
         </select>
       </div>
       <div className="node-handles">
-        <div className="source-handle"></div>
+        <div className="target-handle">📥</div>
+        <div className="source-handle">📤</div>
       </div>
     </div>
   );
