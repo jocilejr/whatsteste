@@ -473,7 +473,7 @@ app.get('/groups/:instanceId', async (req, res) => {
                     owner: metadata.owner,
                     created: metadata.creation,
                     lastMessage: group.conversationTimestamp,
-                    unreadCount: chat.unreadCount || 0
+                    unreadCount: group.unreadCount || 0
                 };
             } catch (err) {
                 console.log(`⚠️ Erro ao obter metadados do grupo ${group.id}:`, err.message);
