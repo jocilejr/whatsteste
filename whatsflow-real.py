@@ -11,7 +11,7 @@ Acesso: http://localhost:8888
 import json
 import sqlite3
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import os
 import subprocess
 import sys
@@ -1841,6 +1841,9 @@ HTML_APP = r'''<!DOCTYPE html>
             <button class="nav-btn" onclick="showSection('flows')">
                 <span>🎯</span> Fluxos
             </button>
+            <button class="nav-btn" onclick="showSection('campaigns')">
+                <span>📢</span> Campanhas
+            </button>
         </nav>
         
         <div id="dashboard" class="section active">
@@ -2044,8 +2047,14 @@ HTML_APP = r'''<!DOCTYPE html>
                 </div>
             </div>
         </div>
+        <div id="campaigns" class="section">
+            <div class="card">
+                <h2>📢 Campanhas</h2>
+                <p>Utilize a interface React para gerenciar campanhas.</p>
+            </div>
+        </div>
     </div>
-    
+
     <div id="createModal" class="modal">
         <div class="modal-content">
             <h3>➕ Nova Instância WhatsApp</h3>
@@ -3738,14 +3747,33 @@ def init_db():
     """)
 
     cursor.execute("""
+        CREATE TABLE IF NOT EXISTS campaigns (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            description TEXT,
+            recurrence_type TEXT NOT NULL,
+            send_time TEXT NOT NULL,
+            instance_id TEXT,
+            created_at TEXT,
+            updated_at TEXT,
+            last_sent_at TEXT
+        )
+    """)
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS campaign_groups (
+            campaign_id TEXT NOT NULL,
+            group_id TEXT NOT NULL,
+            PRIMARY KEY (campaign_id, group_id)
+        )
+    """)
+
+    cursor.execute("""
         CREATE TABLE IF NOT EXISTS campaign_messages (
             id TEXT PRIMARY KEY,
-            phone TEXT NOT NULL,
-            message TEXT NOT NULL,
-            instance_id TEXT DEFAULT 'default',
-            send_time TEXT NOT NULL,
-            weekdays TEXT,
-            last_sent_at TEXT
+            campaign_id TEXT NOT NULL,
+            message_text TEXT NOT NULL,
+            attachment TEXT
         )
     """)
     
@@ -3804,6 +3832,7 @@ def send_via_baileys(phone: str, message: str, instance_id: str = "default") -> 
     return success
 
 
+ codex/add-background-task-for-campaign-messages
 async def campaign_scheduler():
     """Periodically check and send scheduled campaign messages."""
     while True:
@@ -3846,6 +3875,7 @@ async def campaign_scheduler():
             logger.error(f"Erro no agendador: {e}")
 
         await asyncio.sleep(60)
+
 
 # WebSocket Server Functions
 if WEBSOCKETS_AVAILABLE:
@@ -4643,6 +4673,9 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             self.handle_get_chats()
         elif self.path == '/api/flows':
             self.handle_get_flows()
+        elif self.path.startswith('/api/campaigns/'):
+            campaign_id = self.path.split('/')[-1]
+            self.handle_get_campaign(campaign_id)
         elif self.path == '/api/campaigns':
             self.handle_get_campaigns()
         elif self.path.startswith('/api/groups/'):
@@ -5744,6 +5777,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                     'instance_id': row[5],
                     'created_at': row[6],
                     'updated_at': row[7],
+                    'last_sent_at': row[8],
                     'groups': groups,
                     'messages': messages
                 })
@@ -5753,6 +5787,58 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
 
         except Exception as e:
             print(f"❌ Erro ao obter campanhas: {e}")
+            self.send_json_response({'error': str(e)}, 500)
+
+    def handle_get_campaign(self, campaign_id):
+        """Get a single campaign"""
+        try:
+            conn = sqlite3.connect(DB_FILE)
+            cursor = conn.cursor()
+
+            cursor.execute("SELECT * FROM campaigns WHERE id = ?", (campaign_id,))
+            row = cursor.fetchone()
+            if not row:
+                conn.close()
+                self.send_json_response({'error': 'Campanha não encontrada'}, 404)
+                return
+
+            cursor.execute(
+                "SELECT group_id FROM campaign_groups WHERE campaign_id = ?",
+                (campaign_id,),
+            )
+            groups = [g[0] for g in cursor.fetchall()]
+
+            cursor.execute(
+                "SELECT id, message_text, attachment FROM campaign_messages WHERE campaign_id = ?",
+                (campaign_id,),
+            )
+            messages = []
+            for m in cursor.fetchall():
+                messages.append({
+                    'id': m[0],
+                    'text': m[1],
+                    'attachment': m[2]
+                })
+
+            campaign = {
+                'id': row[0],
+                'name': row[1],
+                'description': row[2],
+                'recurrence_type': row[3],
+                'send_time': row[4],
+                'instance_id': row[5],
+                'created_at': row[6],
+                'updated_at': row[7],
+                'last_sent_at': row[8],
+                'groups': groups,
+                'messages': messages
+            }
+
+            conn.close()
+            self.send_json_response(campaign)
+
+        except Exception as e:
+            print(f"❌ Erro ao obter campanha: {e}")
             self.send_json_response({'error': str(e)}, 500)
 
     def handle_create_campaign(self):
@@ -5768,8 +5854,8 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             cursor = conn.cursor()
 
             cursor.execute("""
-                INSERT INTO campaigns (id, name, description, recurrence_type, send_time, instance_id, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO campaigns (id, name, description, recurrence_type, send_time, instance_id, created_at, updated_at, last_sent_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 campaign_id,
                 data['name'],
@@ -5778,7 +5864,8 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                 data.get('send_time'),
                 data.get('instance_id'),
                 datetime.now(timezone.utc).isoformat(),
-                datetime.now(timezone.utc).isoformat()
+                datetime.now(timezone.utc).isoformat(),
+                None
             ))
 
             for group_id in data.get('groups', []):
