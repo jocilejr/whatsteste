@@ -4730,10 +4730,9 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                 # Fallback usando urllib se requests não estiver disponível
                 import urllib.request
                 import urllib.error
-                
+
                 try:
                     data = json.dumps({}).encode('utf-8')
- codex/add-error-handling-for-fetch-requests-tdpmgk
                     req = urllib.request.Request(
                         'http://127.0.0.1:3002/connect',
                         data=data,
@@ -4741,7 +4740,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                     )
 
                     req.get_method = lambda: 'POST'
-                    
+
                     with urllib.request.urlopen(req, timeout=5) as response:
                         if response.status == 200:
                             self.send_json_response({"success": True, "message": "Conexão iniciada"})
@@ -4938,10 +4937,9 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                 # Fallback usando urllib se requests não estiver disponível
                 import urllib.request
                 import urllib.error
-                
+
                 try:
                     data = json.dumps({}).encode('utf-8')
- codex/add-error-handling-for-fetch-requests-tdpmgk
                     req = urllib.request.Request(
                         f'http://127.0.0.1:3002/connect/{instance_id}',
                         data=data,
@@ -4949,7 +4947,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                     )
 
                     req.get_method = lambda: 'POST'
-                    
+
                     with urllib.request.urlopen(req, timeout=5) as response:
                         if response.status == 200:
                             self.send_json_response({"success": True, "message": f"Conexão da instância {instance_id} iniciada"})
@@ -4982,7 +4980,6 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                 # Fallback usando urllib
                 import urllib.request
                 data = json.dumps({}).encode('utf-8')
-codex/add-error-handling-for-fetch-requests-tdpmgk
                 req = urllib.request.Request(
                     f'http://127.0.0.1:3002/disconnect/{instance_id}',
                     data=data,
@@ -5069,7 +5066,6 @@ codex/add-error-handling-for-fetch-requests-tdpmgk
             
             try:
                 import requests
-codex/add-error-handling-for-fetch-requests-tdpmgk
                 try:
                     response = requests.post(
                         f'http://127.0.0.1:3002/send/{instance_id}',
