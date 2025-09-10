@@ -2207,7 +2207,6 @@ HTML_APP = '''<!DOCTYPE html>
 
         
         // Messages and Instance Selection Functions
-        let currentInstanceId = null;
         let currentChat = null;
         
         async function loadInstancesForSelect() {
