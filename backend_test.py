@@ -574,8 +574,8 @@ class WhatsFlowRealTester:
     
     def run_all_tests(self):
         """Run all backend tests"""
-        print("🚀 Starting WhatsFlow Real Backend Tests")
-        print("=" * 60)
+        print("🚀 Starting WhatsFlow Real Backend Tests - Enhanced Suite")
+        print("=" * 70)
         
         # Test server connectivity first
         if not self.test_server_connectivity():
@@ -589,10 +589,20 @@ class WhatsFlowRealTester:
         messages = self.test_get_messages()
         stats = self.test_get_stats()
         
+        # Enhanced API tests
+        print("\n🔍 Testing Enhanced API Endpoints:")
+        chats = self.test_chats_endpoint()
+        filtered_messages = self.test_filtered_messages()
+        
         # WhatsApp specific tests
         print("\n📱 Testing WhatsApp Integration:")
         whatsapp_status = self.test_whatsapp_status()
         qr_data = self.test_whatsapp_qr()
+        
+        # Message system tests
+        print("\n💬 Testing Message System:")
+        self.test_message_receiving_system()
+        self.test_contact_names_system()
         
         # Additional endpoints
         print("\n🔗 Testing Additional Endpoints:")
@@ -611,7 +621,13 @@ class WhatsFlowRealTester:
         # Database and integration tests
         print("\n🗄️ Testing System Integration:")
         self.test_database_persistence()
+        self.test_database_schema()
         self.test_baileys_service_integration()
+        
+        # Advanced functionality tests
+        print("\n🔧 Testing Advanced Features:")
+        self.test_websocket_status()
+        self.test_logs_verification()
         
         return self.generate_report()
     
