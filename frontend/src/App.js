@@ -5,6 +5,7 @@ import FlowEditor from './components/FlowEditor';
 import FlowList from './components/FlowList';
 import MessagesCenter from './components/MessagesCenter';
 import WhatsAppInstances from './components/WhatsAppInstances';
+import Campaigns from './components/Campaigns';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -38,14 +39,21 @@ const Navigation = ({ currentView, onViewChange }) => {
           <span className="nav-icon">📊</span>
           <span>Dashboard</span>
         </button>
-        <button 
+        <button
           className={`nav-item ${currentView === 'flows' ? 'active' : ''}`}
           onClick={() => onViewChange('flows')}
         >
           <span className="nav-icon">🎯</span>
           <span>Fluxos</span>
         </button>
-        <button 
+        <button
+          className={`nav-item ${currentView === 'campaigns' ? 'active' : ''}`}
+          onClick={() => onViewChange('campaigns')}
+        >
+          <span className="nav-icon">📢</span>
+          <span>Campanhas</span>
+        </button>
+        <button
           className={`nav-item ${currentView === 'contacts' ? 'active' : ''}`}
           onClick={() => onViewChange('contacts')}
         >
@@ -407,6 +415,10 @@ function App() {
               onCreateFlow={handleCreateFlow}
               onEditFlow={handleEditFlow}
             />
+          )}
+
+          {currentView === 'campaigns' && (
+            <Campaigns />
           )}
 
           {currentView === 'contacts' && (
