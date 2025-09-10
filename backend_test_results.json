@@ -41,147 +41,147 @@
       "test": "Server Connectivity",
       "status": "PASS",
       "details": "WhatsFlow Real server responding on port 8889",
-      "timestamp": "2025-09-10T03:36:22.980557",
+      "timestamp": "2025-09-10T04:20:36.617237",
       "is_critical": true
     },
     {
       "test": "Instance Selector Data",
       "status": "PASS",
-      "details": "Retrieved 24 instances, 24 valid for selector",
-      "timestamp": "2025-09-10T03:36:22.983144",
+      "details": "Retrieved 26 instances, 26 valid for selector",
+      "timestamp": "2025-09-10T04:20:36.620027",
       "is_critical": true
     },
     {
       "test": "GET /api/flows",
       "status": "PASS",
       "details": "Retrieved 2 flows",
-      "timestamp": "2025-09-10T03:36:22.985304",
+      "timestamp": "2025-09-10T04:20:36.622314",
       "is_critical": true
     },
     {
       "test": "POST /api/flows",
       "status": "PASS",
-      "details": "Created flow with ID: e9ed717e-3031-4a0e-b084-1ad697c0e031",
-      "timestamp": "2025-09-10T03:36:22.993298",
+      "details": "Created flow with ID: 0f7f544d-49f6-4a34-8530-b7cbb1cf4cfc",
+      "timestamp": "2025-09-10T04:20:36.631089",
       "is_critical": true
     },
     {
       "test": "PUT /api/flows/{id}",
       "status": "PASS",
-      "details": "Updated flow e9ed717e-3031-4a0e-b084-1ad697c0e031",
-      "timestamp": "2025-09-10T03:36:23.000508",
+      "details": "Updated flow 0f7f544d-49f6-4a34-8530-b7cbb1cf4cfc",
+      "timestamp": "2025-09-10T04:20:36.639193",
       "is_critical": true
     },
     {
       "test": "DELETE /api/flows/{id}",
       "status": "PASS",
-      "details": "Deleted flow e9ed717e-3031-4a0e-b084-1ad697c0e031",
-      "timestamp": "2025-09-10T03:36:23.009876",
+      "details": "Deleted flow 0f7f544d-49f6-4a34-8530-b7cbb1cf4cfc",
+      "timestamp": "2025-09-10T04:20:36.646685",
       "is_critical": true
     },
     {
       "test": "GET /api/chats",
       "status": "PASS",
       "details": "Retrieved 5 chats, 5 with real names",
-      "timestamp": "2025-09-10T03:36:23.012597",
+      "timestamp": "2025-09-10T04:20:36.649067",
       "is_critical": true
     },
     {
       "test": "GET /api/chats (filtering)",
       "status": "SKIP",
       "details": "Instance filtering not implemented in current version",
-      "timestamp": "2025-09-10T03:36:23.012639",
+      "timestamp": "2025-09-10T04:20:36.649102",
       "is_critical": false
     },
     {
       "test": "Filtered Messages System",
       "status": "PASS",
       "details": "Retrieved 0 filtered messages for 5511888888888",
-      "timestamp": "2025-09-10T03:36:23.017027",
+      "timestamp": "2025-09-10T04:20:36.653464",
       "is_critical": true
     },
     {
       "test": "Message Filtering with Instance",
       "status": "PASS",
       "details": "Retrieved 0 messages with instance filter",
-      "timestamp": "2025-09-10T03:36:23.019155",
+      "timestamp": "2025-09-10T04:20:36.655547",
       "is_critical": false
     },
     {
       "test": "Database Flows Table",
       "status": "PASS",
       "details": "flows table exists with 2 records, all required columns present",
-      "timestamp": "2025-09-10T03:36:23.019936",
+      "timestamp": "2025-09-10T04:20:36.656346",
       "is_critical": true
     },
     {
       "test": "Database Real Names",
       "status": "PASS",
       "details": "Found 10 real names. Examples: ['Jo\u00e3o Silva', 'Maria Santos', 'Pedro Costa', 'Jo\u00e3o Silva', 'Maria Santos', 'Pedro Costa']",
-      "timestamp": "2025-09-10T03:36:23.020549",
+      "timestamp": "2025-09-10T04:20:36.656909",
       "is_critical": true
     },
     {
       "test": "GET /api/contacts",
       "status": "PASS",
       "details": "Retrieved 6 contacts",
-      "timestamp": "2025-09-10T03:36:23.022706",
+      "timestamp": "2025-09-10T04:20:36.658938",
       "is_critical": false
     },
     {
       "test": "GET /api/messages",
       "status": "PASS",
       "details": "Retrieved 8 messages",
-      "timestamp": "2025-09-10T03:36:23.024843",
+      "timestamp": "2025-09-10T04:20:36.660960",
       "is_critical": false
     },
     {
       "test": "GET /api/stats",
       "status": "PASS",
       "details": "Statistics retrieved - Contacts: 6, Messages: 8",
-      "timestamp": "2025-09-10T03:36:23.026883",
+      "timestamp": "2025-09-10T04:20:36.662880",
       "is_critical": false
     },
     {
       "test": "GET /api/whatsapp/status",
       "status": "PASS",
       "details": "WhatsApp status: Disconnected",
-      "timestamp": "2025-09-10T03:36:23.031490",
+      "timestamp": "2025-09-10T04:20:36.667200",
       "is_critical": false
     },
     {
       "test": "GET /api/whatsapp/qr",
       "status": "PASS",
       "details": "QR code: Not available",
-      "timestamp": "2025-09-10T03:36:23.035110",
+      "timestamp": "2025-09-10T04:20:36.671371",
       "is_critical": false
     },
     {
       "test": "POST /api/instances",
       "status": "PASS",
-      "details": "Created instance: Test Instance 82042199",
-      "timestamp": "2025-09-10T03:36:23.042498",
+      "details": "Created instance: Test Instance b4672c06",
+      "timestamp": "2025-09-10T04:20:36.679182",
       "is_critical": false
     },
     {
       "test": "POST /api/instances",
       "status": "PASS",
-      "details": "Created instance: Test Instance 829da902",
-      "timestamp": "2025-09-10T03:36:23.049671",
+      "details": "Created instance: Test Instance d19cf3c0",
+      "timestamp": "2025-09-10T04:20:36.686736",
       "is_critical": false
     },
     {
       "test": "Database Persistence",
       "status": "PASS",
       "details": "SQLite database working correctly",
-      "timestamp": "2025-09-10T03:36:24.052699",
+      "timestamp": "2025-09-10T04:20:37.689751",
       "is_critical": false
     },
     {
       "test": "Baileys Service Integration",
       "status": "PASS",
       "details": "Baileys service is running and accessible",
-      "timestamp": "2025-09-10T03:36:24.055901",
+      "timestamp": "2025-09-10T04:20:37.693038",
       "is_critical": false
     }
   ]
