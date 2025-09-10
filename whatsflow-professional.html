@@ -1,0 +1,1093 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsFlow Professional - Sistema Avançado</title>
+    <style>
+        /* Professional WhatsFlow Design - Ultra Modern */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        :root {
+            --primary: #128c7e;
+            --primary-dark: #075e54;
+            --primary-light: #25d366;
+            --bg-primary: #f0f2f5;
+            --bg-secondary: #ffffff;
+            --bg-chat: #e5ddd5;
+            --text-primary: #111b21;
+            --text-secondary: #667781;
+            --border: #e9edef;
+            --shadow: 0 1px 3px rgba(11,20,26,.13);
+            --shadow-lg: 0 2px 10px rgba(11,20,26,.2);
+            --gradient-primary: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+            --gradient-success: linear-gradient(135deg, var(--primary-light) 0%, var(--primary) 100%);
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+            min-height: 100vh;
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+        
+        .container { 
+            max-width: 1400px; 
+            margin: 0 auto; 
+            padding: 1.5rem; 
+        }
+        
+        /* Header Design Moderno */
+        .header { 
+            text-align: center; 
+            color: white; 
+            margin-bottom: 2rem;
+            padding: 1.5rem 0;
+        }
+        .header h1 { 
+            font-size: 2.5rem; 
+            font-weight: 800;
+            margin-bottom: 0.5rem; 
+            background: linear-gradient(45deg, #ffffff, var(--primary-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .header p { 
+            font-size: 1.1rem; 
+            opacity: 0.9; 
+            font-weight: 300;
+        }
+        .subtitle { 
+            background: rgba(37, 211, 102, 0.2); 
+            border: 1px solid rgba(37, 211, 102, 0.3);
+            padding: 0.5rem 1rem; 
+            border-radius: 2rem; 
+            display: inline-block; 
+            margin-top: 0.5rem; 
+            font-size: 0.85rem;
+            backdrop-filter: blur(10px);
+        }
+        
+        /* Navigation Ultra Moderna */
+        .nav { 
+            display: flex; 
+            gap: 0.25rem; 
+            margin-bottom: 1.5rem; 
+            flex-wrap: wrap; 
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 0.75rem;
+            border-radius: 1rem;
+            backdrop-filter: blur(10px);
+        }
+        .nav-btn { 
+            background: rgba(255, 255, 255, 0.1); 
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 0.6rem 1.2rem; 
+            border-radius: 0.6rem; 
+            cursor: pointer; 
+            font-weight: 500; 
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            color: white;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .nav-btn:hover { 
+            background: rgba(255, 255, 255, 0.2); 
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+        .nav-btn.active { 
+            background: var(--primary-light); 
+            color: white;
+            box-shadow: var(--shadow-lg);
+        }
+        
+        /* Cards com design avançado */
+        .card { 
+            background: white; 
+            border-radius: 1rem; 
+            padding: 1.5rem; 
+            box-shadow: var(--shadow-lg);
+            margin-bottom: 1.5rem;
+            border: 1px solid var(--border);
+        }
+        
+        /* ===================== INSTÂNCIAS - DESIGN PROFISSIONAL ===================== */
+        .instances-section {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--border);
+        }
+        
+        .instances-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--bg-primary);
+        }
+        
+        .instances-header h2 {
+            color: var(--text-primary);
+            font-size: 1.5rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .instances-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); 
+            gap: 1.25rem; 
+        }
+        
+        .instance-card { 
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+            border: 2px solid var(--border); 
+            border-radius: 1rem; 
+            padding: 1.5rem; 
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .instance-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--border);
+            transition: all 0.3s ease;
+        }
+        
+        .instance-card:hover { 
+            transform: translateY(-4px); 
+            box-shadow: 0 8px 25px rgba(11,20,26,.15);
+            border-color: var(--primary);
+        }
+        
+        .instance-card:hover::before {
+            background: var(--primary);
+        }
+        
+        .instance-card.connected { 
+            border-color: var(--primary-light); 
+            background: linear-gradient(135deg, rgba(37, 211, 102, 0.03) 0%, #ffffff 100%);
+        }
+        
+        .instance-card.connected::before {
+            background: var(--primary-light);
+        }
+        
+        .instance-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+        
+        .instance-info h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+        }
+        
+        .instance-id {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            font-family: 'Monaco', monospace;
+        }
+        
+        .instance-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+            margin: 1rem 0;
+        }
+        
+        .stat-box {
+            text-align: center;
+            padding: 0.75rem;
+            background: var(--bg-primary);
+            border-radius: 0.5rem;
+            border: 1px solid var(--border);
+        }
+        
+        .stat-number {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 0.25rem;
+        }
+        
+        .stat-label {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+        }
+        
+        .instance-actions {
+            display: grid;
+            grid-template-columns: 1fr auto auto;
+            gap: 0.5rem;
+            align-items: center;
+        }
+        
+        /* ===================== MENSAGENS - DESIGN WHATSAPP WEB ===================== */
+        .messages-section {
+            background: white;
+            border-radius: 1rem;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--border);
+            height: 600px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .messages-header {
+            padding: 1rem 1.5rem;
+            border-bottom: 2px solid var(--bg-primary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .messages-header h2 {
+            color: var(--text-primary);
+            font-size: 1.5rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .instance-selector {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .instance-selector select {
+            padding: 0.5rem 0.75rem;
+            border: 2px solid var(--border);
+            border-radius: 0.5rem;
+            background: white;
+            color: var(--text-primary);
+            font-weight: 500;
+            min-width: 150px;
+        }
+        
+        .messages-content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        .conversations-panel {
+            width: 320px;
+            border-right: 2px solid var(--bg-primary);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .conversations-header {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .search-box {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid var(--border);
+            border-radius: 0.5rem;
+            font-size: 0.9rem;
+            background: var(--bg-primary);
+        }
+        
+        .search-box:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        
+        .conversations-list {
+            flex: 1;
+            overflow-y: auto;
+        }
+        
+        .conversation-item {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .conversation-item:hover {
+            background: var(--bg-primary);
+        }
+        
+        .conversation-item.active {
+            background: var(--primary-light);
+            color: white;
+        }
+        
+        .conversation-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: var(--gradient-primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+        
+        .conversation-info {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .conversation-name {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .conversation-last-message {
+            font-size: 0.85rem;
+            opacity: 0.8;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .conversation-meta {
+            text-align: right;
+            flex-shrink: 0;
+        }
+        
+        .conversation-time {
+            font-size: 0.75rem;
+            opacity: 0.7;
+            margin-bottom: 0.25rem;
+        }
+        
+        .unread-badge {
+            background: var(--primary-light);
+            color: white;
+            border-radius: 50%;
+            padding: 0.15rem 0.4rem;
+            font-size: 0.7rem;
+            font-weight: 600;
+            min-width: 18px;
+            text-align: center;
+        }
+        
+        .chat-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .chat-header {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-primary);
+            display: none;
+        }
+        
+        .chat-header.active {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .chat-contact-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--gradient-primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+        }
+        
+        .chat-contact-info h4 {
+            font-weight: 600;
+            margin-bottom: 0.15rem;
+        }
+        
+        .chat-contact-info p {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin: 0;
+        }
+        
+        .messages-container {
+            flex: 1;
+            padding: 1rem;
+            overflow-y: auto;
+            background: linear-gradient(to bottom, var(--bg-chat) 0%, #efeae2 100%);
+            background-image: 
+                radial-gradient(circle at 25% 25%, rgba(255,255,255,0.1) 2px, transparent 2px),
+                radial-gradient(circle at 75% 75%, rgba(255,255,255,0.1) 2px, transparent 2px);
+            background-size: 60px 60px;
+        }
+        
+        .message-bubble {
+            max-width: 70%;
+            margin-bottom: 0.75rem;
+            display: flex;
+        }
+        
+        .message-bubble.outgoing {
+            justify-content: flex-end;
+        }
+        
+        .message-bubble.incoming {
+            justify-content: flex-start;
+        }
+        
+        .message-content {
+            padding: 0.75rem 1rem;
+            border-radius: 1rem;
+            position: relative;
+            word-wrap: break-word;
+        }
+        
+        .message-content.outgoing {
+            background: var(--primary-light);
+            color: white;
+            border-bottom-right-radius: 0.25rem;
+        }
+        
+        .message-content.incoming {
+            background: white;
+            color: var(--text-primary);
+            border-bottom-left-radius: 0.25rem;
+            box-shadow: var(--shadow);
+        }
+        
+        .message-text {
+            line-height: 1.4;
+            margin-bottom: 0.25rem;
+        }
+        
+        .message-time {
+            font-size: 0.7rem;
+            opacity: 0.8;
+            text-align: right;
+        }
+        
+        .message-input-area {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid var(--border);
+            background: var(--bg-secondary);
+            display: none;
+        }
+        
+        .message-input-area.active {
+            display: flex;
+            gap: 0.75rem;
+            align-items: flex-end;
+        }
+        
+        .message-input {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border: 2px solid var(--border);
+            border-radius: 1.5rem;
+            font-size: 0.9rem;
+            resize: none;
+            max-height: 100px;
+            font-family: inherit;
+        }
+        
+        .message-input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        
+        .empty-chat-state {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            color: var(--text-secondary);
+            text-align: center;
+        }
+        
+        .empty-chat-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+        
+        /* Status Indicators Profissionais */
+        .status-indicator { 
+            display: inline-flex; 
+            align-items: center; 
+            gap: 0.4rem; 
+            padding: 0.4rem 0.8rem; 
+            border-radius: 1.5rem; 
+            font-weight: 500;
+            font-size: 0.8rem;
+        }
+        .status-connected { 
+            background: rgba(37, 211, 102, 0.1); 
+            color: var(--primary-light);
+            border: 1px solid rgba(37, 211, 102, 0.2);
+        }
+        .status-disconnected { 
+            background: rgba(239, 68, 68, 0.1); 
+            color: #dc2626;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+        .status-connecting { 
+            background: rgba(245, 158, 11, 0.1); 
+            color: #f59e0b;
+            border: 1px solid rgba(245, 158, 11, 0.2);
+        }
+        .status-dot { 
+            width: 6px; 
+            height: 6px; 
+            border-radius: 50%; 
+        }
+        .status-connected .status-dot { background: var(--primary-light); }
+        .status-disconnected .status-dot { background: #dc2626; }
+        .status-connecting .status-dot { 
+            background: #f59e0b; 
+            animation: pulse 2s infinite; 
+        }
+        
+        /* Buttons Profissionais */
+        .btn { 
+            padding: 0.6rem 1.2rem; 
+            border: none; 
+            border-radius: 0.6rem; 
+            cursor: pointer; 
+            font-weight: 600; 
+            font-size: 0.85rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            justify-content: center;
+        }
+        .btn-primary { 
+            background: var(--gradient-primary); 
+            color: white;
+            box-shadow: var(--shadow);
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+        .btn-success { 
+            background: var(--gradient-success); 
+            color: white;
+            box-shadow: var(--shadow);
+        }
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+        .btn-danger { 
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); 
+            color: white;
+            box-shadow: var(--shadow);
+        }
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+        .btn-secondary {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+        .btn-secondary:hover {
+            background: var(--border);
+        }
+        .btn:disabled { 
+            opacity: 0.5; 
+            cursor: not-allowed; 
+            transform: none;
+        }
+        .btn-sm {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.75rem;
+        }
+        
+        /* Modal Profissional */
+        .modal { 
+            display: none; 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            right: 0; 
+            bottom: 0; 
+            background: rgba(17, 24, 39, 0.8); 
+            backdrop-filter: blur(8px);
+            z-index: 1000; 
+            align-items: center; 
+            justify-content: center; 
+        }
+        .modal.show { display: flex; }
+        .modal-content { 
+            background: white; 
+            padding: 2rem; 
+            border-radius: 1.5rem; 
+            width: 90%; 
+            max-width: 500px; 
+            position: relative; 
+            z-index: 1002;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+            border: 1px solid var(--border);
+        }
+        
+        /* Forms Profissionais */
+        .form-input { 
+            width: 100%; 
+            padding: 0.875rem; 
+            border: 2px solid var(--border); 
+            border-radius: 0.6rem; 
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            background: white;
+        }
+        .form-input:focus { 
+            outline: none; 
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(18, 140, 126, 0.1);
+        }
+        
+        /* Stats Grid Moderno */
+        .stats-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+            gap: 1rem; 
+            margin: 1.5rem 0; 
+        }
+        .stat-card { 
+            text-align: center; 
+            padding: 1.5rem; 
+            background: linear-gradient(135deg, var(--bg-primary) 0%, white 100%);
+            border-radius: 1rem; 
+            border: 1px solid var(--border);
+            transition: all 0.3s ease;
+        }
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+        }
+        .stat-number { 
+            font-size: 2rem; 
+            font-weight: 800; 
+            color: var(--primary); 
+            margin-bottom: 0.5rem; 
+        }
+        .stat-label { 
+            color: var(--text-secondary); 
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        
+        /* Empty State Profissional */
+        .empty-state { 
+            text-align: center; 
+            padding: 3rem 1.5rem; 
+            color: var(--text-secondary); 
+        }
+        .empty-icon { 
+            font-size: 3rem; 
+            margin-bottom: 1rem; 
+            opacity: 0.5; 
+        }
+        .empty-title { 
+            font-size: 1.25rem; 
+            font-weight: 600; 
+            color: var(--text-primary); 
+            margin-bottom: 0.5rem; 
+        }
+        
+        /* Section Management */
+        .section { display: none; }
+        .section.active { display: block; }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container { padding: 1rem; }
+            .header h1 { font-size: 2rem; }
+            .nav { padding: 0.5rem; flex-direction: column; }
+            .instances-grid { grid-template-columns: 1fr; }
+            .messages-content { flex-direction: column; }
+            .conversations-panel { width: 100%; }
+            .instance-actions { grid-template-columns: 1fr; }
+        }
+        
+        /* Animations */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-out;
+        }
+        
+        /* WebSocket Status */
+        .websocket-status {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-size: 0.8rem;
+            font-weight: 500;
+            z-index: 1000;
+        }
+        .websocket-connected {
+            background: rgba(37, 211, 102, 0.1);
+            color: var(--primary-light);
+            border: 1px solid rgba(37, 211, 102, 0.2);
+        }
+        .websocket-disconnected {
+            background: rgba(239, 68, 68, 0.1);
+            color: #dc2626;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        /* Flows Section */
+        .flows-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.25rem;
+        }
+
+        .flow-card {
+            background: white;
+            border: 2px solid var(--border);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .flow-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--primary);
+        }
+
+        .flow-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .flow-status {
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .flow-status.active {
+            background: rgba(37, 211, 102, 0.1);
+            color: var(--primary-light);
+        }
+
+        .flow-status.inactive {
+            background: rgba(239, 68, 68, 0.1);
+            color: #dc2626;
+        }
+
+        .flow-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+<body>
+    <div class="websocket-status" id="websocketStatus">🔄 Conectando...</div>
+    
+    <div class="container">
+        <div class="header">
+            <h1>🚀 WhatsFlow Professional</h1>
+            <p>Sistema Avançado de Automação WhatsApp</p>
+            <div class="subtitle">✅ WebSocket • Tempo Real • Design Profissional</div>
+        </div>
+        
+        <nav class="nav">
+            <button class="nav-btn active" onclick="showSection('dashboard')">
+                <span>📊</span> Dashboard
+            </button>
+            <button class="nav-btn" onclick="showSection('instances')">
+                <span>📱</span> Instâncias
+            </button>
+            <button class="nav-btn" onclick="showSection('contacts')">
+                <span>👥</span> Contatos
+            </button>
+            <button class="nav-btn" onclick="showSection('messages')">
+                <span>💬</span> Mensagens
+            </button>
+            <button class="nav-btn" onclick="showSection('flows')">
+                <span>🎯</span> Fluxos
+            </button>
+        </nav>
+        
+        <!-- Dashboard Section -->
+        <div id="dashboard" class="section active">
+            <div class="card">
+                <h2>🔗 Status da Conexão WhatsApp</h2>
+                <div id="connection-status" class="status-indicator status-disconnected">
+                    <div class="status-dot"></div>
+                    <span>Verificando conexão...</span>
+                </div>
+                <div class="subtitle" style="margin-top: 1rem;">
+                    🚀 Conexão REAL com WhatsApp via Baileys + WebSocket em tempo real
+                </div>
+                <div id="connected-user-info" style="display: none;"></div>
+            </div>
+            
+            <div class="card">
+                <h2>📊 Estatísticas do Sistema</h2>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number" id="contacts-count">0</div>
+                        <div class="stat-label">Contatos</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="conversations-count">0</div>
+                        <div class="stat-label">Conversas</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="messages-count">0</div>
+                        <div class="stat-label">Mensagens</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="instances-count">0</div>
+                        <div class="stat-label">Instâncias</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Instances Section - Design Profissional -->
+        <div id="instances" class="section">
+            <div class="instances-section">
+                <div class="instances-header">
+                    <h2>📱 Gerenciar Instâncias</h2>
+                    <button class="btn btn-primary" onclick="showCreateModal()">
+                        <span>➕</span> Nova Instância
+                    </button>
+                </div>
+                <div id="instances-container" class="instances-grid">
+                    <div class="loading" style="grid-column: 1 / -1;">
+                        <div style="text-align: center; padding: 2rem;">Carregando instâncias...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Messages Section - Design WhatsApp Web -->
+        <div id="messages" class="section">
+            <div class="messages-section">
+                <div class="messages-header">
+                    <h2>💬 Central de Mensagens</h2>
+                    <div class="instance-selector">
+                        <label for="instanceSelect">Instância:</label>
+                        <select id="instanceSelect" onchange="switchInstance()">
+                            <option value="">Selecione uma instância</option>
+                        </select>
+                        <button class="btn btn-sm btn-secondary" onclick="refreshMessages()">
+                            🔄 Atualizar
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="messages-content">
+                    <div class="conversations-panel">
+                        <div class="conversations-header">
+                            <input type="text" class="search-box" placeholder="🔍 Buscar conversas..." 
+                                   id="searchConversations" onkeyup="searchConversations()">
+                        </div>
+                        <div class="conversations-list" id="conversationsList">
+                            <div class="empty-state">
+                                <div class="empty-icon">💬</div>
+                                <div class="empty-title">Nenhuma conversa</div>
+                                <p>Selecione uma instância para ver as conversas</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="chat-panel">
+                        <div class="chat-header" id="chatHeader">
+                            <div class="chat-contact-avatar" id="chatAvatar">?</div>
+                            <div class="chat-contact-info">
+                                <h4 id="chatContactName">Nome do Contato</h4>
+                                <p id="chatContactPhone">+55 11 99999-9999</p>
+                            </div>
+                        </div>
+                        
+                        <div class="messages-container" id="messagesContainer">
+                            <div class="empty-chat-state">
+                                <div class="empty-chat-icon">💭</div>
+                                <h3>Selecione uma conversa</h3>
+                                <p>Escolha uma conversa da lista para visualizar mensagens</p>
+                            </div>
+                        </div>
+                        
+                        <div class="message-input-area" id="messageInputArea">
+                            <textarea class="message-input" id="messageInput" 
+                                      placeholder="Digite sua mensagem..." 
+                                      onkeypress="handleMessageKeyPress(event)"></textarea>
+                            <button class="btn btn-success" onclick="sendMessage()">
+                                📤 Enviar
+                            </button>
+                            <button class="btn btn-secondary" onclick="sendWebhook()" title="Enviar Webhook">
+                                🔗 Webhook
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Contacts Section -->
+        <div id="contacts" class="section">
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <h2>👥 Central de Contatos</h2>
+                    <button class="btn btn-primary" onclick="loadContacts()">🔄 Atualizar</button>
+                </div>
+                <div id="contacts-container">
+                    <div class="loading">
+                        <div style="text-align: center; padding: 2rem;">Carregando contatos...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Flows Section - Nova funcionalidade -->
+        <div id="flows" class="section">
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <h2>🎯 Fluxos de Automação</h2>
+                    <button class="btn btn-primary" onclick="createNewFlow()">
+                        ➕ Criar Novo Fluxo
+                    </button>
+                </div>
+                <div id="flows-container">
+                    <div class="empty-state">
+                        <div class="empty-icon">🎯</div>
+                        <div class="empty-title">Nenhum fluxo criado ainda</div>
+                        <p>Crie fluxos de automação drag-and-drop para otimizar seu atendimento</p>
+                        <br>
+                        <button class="btn btn-primary" onclick="createNewFlow()">
+                            🚀 Criar Primeiro Fluxo
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal para Nova Instância -->
+    <div id="createModal" class="modal">
+        <div class="modal-content">
+            <h3>➕ Nova Instância WhatsApp</h3>
+            <form onsubmit="createInstance(event)">
+                <div style="margin: 1.5rem 0;">
+                    <input type="text" id="instanceName" class="form-input" 
+                           placeholder="Nome da instância" required>
+                </div>
+                <div style="display: flex; gap: 0.75rem;">
+                    <button type="button" class="btn btn-secondary" onclick="hideCreateModal()">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-success" style="flex: 1;">
+                        ✅ Criar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Modal para QR Code -->
+    <div id="qrModal" class="modal">
+        <div class="modal-content">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 1.5rem;">
+                <h3>📱 Conectar WhatsApp - <span id="qr-instance-name">Instância</span></h3>
+                <button onclick="closeQRModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
+            </div>
+            
+            <div id="connection-status-modal" style="text-align: center; margin-bottom: 1rem; font-weight: bold;">
+                ⏳ Preparando conexão...
+            </div>
+            
+            <div style="background: var(--bg-primary); padding: 1rem; border-radius: 0.75rem; margin-bottom: 1rem;">
+                <h4>📲 Como conectar:</h4>
+                <ol style="margin: 0.5rem 0; padding-left: 1.5rem;">
+                    <li>Abra o <strong>WhatsApp</strong> no seu celular</li>
+                    <li>Toque em <strong>Configurações ⚙️</strong></li>
+                    <li>Toque em <strong>Aparelhos conectados</strong></li>
+                    <li>Toque em <strong>Conectar um aparelho</strong></li>
+                    <li><strong>Escaneie o QR Code</strong> abaixo</li>
+                </ol>
+            </div>
+            
+            <div id="qr-code-container" style="text-align: center; margin: 1.5rem 0;">
+                <div style="padding: 2rem;">
+                    <div style="font-size: 2rem; margin-bottom: 1rem;">⏳</div>
+                    <p>Gerando QR Code...</p>
+                </div>
+            </div>
+            
+            <div style="text-align: center;">
+                <button class="btn btn-danger" onclick="closeQRModal()">🚫 Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/app/whatsflow-professional.js"></script>
+</body>
+</html>
