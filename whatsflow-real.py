@@ -12,6 +12,7 @@ import json
 import sqlite3
 import uuid
 from datetime import datetime, timezone, timedelta
+from zoneinfo import ZoneInfo
 import os
 import subprocess
 import sys
@@ -38,6 +39,9 @@ except ImportError:
 DB_FILE = "whatsflow.db"
 PORT = 8889
 BAILEYS_PORT = 3002
+
+# Brazil timezone
+BR_TZ = ZoneInfo("America/Sao_Paulo")
 BAILEYS_URL = os.getenv("BAILEYS_URL", f"http://127.0.0.1:{BAILEYS_PORT}")
 WEBSOCKET_PORT = 8890
 
@@ -3906,7 +3910,7 @@ def send_via_baileys(phone: str, message: str, instance_id: str = "default") -> 
                 message,
                 "outgoing",
                 instance_id,
-                datetime.now(timezone.utc).isoformat(),
+                datetime.now(BR_TZ).astimezone(timezone.utc).isoformat(),
             ),
         )
         conn.commit()
@@ -3937,7 +3941,9 @@ def send_scheduled_message(instance_id: str, group_id: str, content: str, media_
 
 def calculate_next_run(recurrence: str, send_time: str, weekday: int | None = None, base_dt: datetime | None = None) -> str:
     """Calculate next run datetime based on recurrence."""
-    now = base_dt or datetime.now()
+    now = base_dt or datetime.now(BR_TZ)
+    if now.tzinfo is None:
+        now = now.replace(tzinfo=BR_TZ)
     if recurrence == "once":
         return send_time
     hour, minute = map(int, send_time.split(":"))
@@ -3950,18 +3956,21 @@ def calculate_next_run(recurrence: str, send_time: str, weekday: int | None = No
         target = target + timedelta(days=days_ahead)
         if target <= now:
             target += timedelta(days=7)
-    return target.isoformat()
+    return target.astimezone(timezone.utc).isoformat()
 
 
 def process_scheduled_messages(now: datetime | None = None) -> None:
     """Process due scheduled messages once."""
-    current = now or datetime.now()
+    current = now or datetime.now(BR_TZ)
+    if current.tzinfo is None:
+        current = current.replace(tzinfo=BR_TZ)
+    current_utc = current.astimezone(timezone.utc)
     conn = sqlite3.connect(DB_FILE)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     cursor.execute(
         "SELECT * FROM scheduled_messages WHERE next_run <= ?",
-        (current.isoformat(),),
+        (current_utc.isoformat(),),
     )
     rows = cursor.fetchall()
     for row in rows:
@@ -3976,7 +3985,7 @@ def process_scheduled_messages(now: datetime | None = None) -> None:
             if row["recurrence"] == "once":
                 cursor.execute("DELETE FROM scheduled_messages WHERE id = ?", (row["id"],))
             else:
-                next_run = calculate_next_run(row["recurrence"], row["send_time"], row["weekday"])
+                next_run = calculate_next_run(row["recurrence"], row["send_time"], row["weekday"], base_dt=current)
                 cursor.execute(
                     "UPDATE scheduled_messages SET next_run = ? WHERE id = ?",
                     (next_run, row["id"]),
@@ -3998,7 +4007,7 @@ async def campaign_scheduler():
     """Periodically check and send scheduled campaign messages."""
     while True:
         try:
-            now = datetime.now()
+            now = datetime.now(BR_TZ)
             current_time = now.strftime("%H:%M")
             weekday = now.weekday()  # Monday = 0
 
@@ -4028,7 +4037,7 @@ async def campaign_scheduler():
                 if send_via_baileys(phone, message, instance_id or 'default'):
                     cursor.execute(
                         "UPDATE campaign_messages SET last_sent_at = ? WHERE id = ?",
-                        (now.isoformat(), msg_id),
+                        (now.astimezone(timezone.utc).isoformat(), msg_id),
                     )
             conn.commit()
             conn.close()
@@ -4112,7 +4121,7 @@ def add_sample_data():
         conn.close()
         return
     
-    current_time = datetime.now(timezone.utc).isoformat()
+    current_time = datetime.now(BR_TZ).astimezone(timezone.utc).isoformat()
     
     # Sample instance
     instance_id = str(uuid.uuid4())
@@ -5101,7 +5110,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                 return
             
             instance_id = str(uuid.uuid4())
-            created_at = datetime.now(timezone.utc).isoformat()
+            created_at = datetime.now(BR_TZ).astimezone(timezone.utc).isoformat()
             
             conn = sqlite3.connect(DB_FILE)
             cursor = conn.cursor()
@@ -5283,7 +5292,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                         cursor.execute("""
                             INSERT INTO contacts (id, name, phone, instance_id, created_at)
                             VALUES (?, ?, ?, ?, ?)
-                        """, (contact_id, contact_name, phone, instance_id, datetime.now(timezone.utc).isoformat()))
+                        """, (contact_id, contact_name, phone, instance_id, datetime.now(BR_TZ).astimezone(timezone.utc).isoformat()))
                         imported_contacts += 1
                     
                     # Create/update chat entry
@@ -5296,7 +5305,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                         last_msg = chat['messages'][-1]
                         if last_msg.get('message'):
                             last_message = last_msg['message'].get('conversation') or 'Mídia'
-                            last_message_time = datetime.now(timezone.utc).isoformat()
+                            last_message_time = datetime.now(BR_TZ).astimezone(timezone.utc).isoformat()
                     
                     # Insert or update chat
                     cursor.execute("SELECT id FROM chats WHERE contact_phone = ? AND instance_id = ?", (phone, instance_id))
@@ -5310,7 +5319,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                         cursor.execute("""
                             INSERT INTO chats (id, contact_phone, contact_name, instance_id, last_message, last_message_time, unread_count, created_at)
                             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                        """, (chat_id, phone, contact_name, instance_id, last_message, last_message_time, unread_count, datetime.now(timezone.utc).isoformat()))
+                        """, (chat_id, phone, contact_name, instance_id, last_message, last_message_time, unread_count, datetime.now(BR_TZ).astimezone(timezone.utc).isoformat()))
                         imported_chats += 1
             
             conn.commit()
@@ -5529,7 +5538,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                         INSERT INTO messages (id, contact_name, phone, message, direction, instance_id, created_at)
                         VALUES (?, ?, ?, ?, ?, ?, ?)
                     """, (message_id, f"Para {phone[-4:]}", phone, message, 'outgoing', instance_id, 
-                          datetime.now(timezone.utc).isoformat()))
+                          datetime.now(BR_TZ).astimezone(timezone.utc).isoformat()))
                     
                     conn.commit()
                     conn.close()
@@ -5561,7 +5570,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                                 INSERT INTO messages (id, contact_name, phone, message, direction, instance_id, created_at)
                                 VALUES (?, ?, ?, ?, ?, ?, ?)
                             """, (message_id, f"Para {phone[-4:]}", phone, message, 'outgoing', instance_id,
-                                  datetime.now(timezone.utc).isoformat()))
+                                  datetime.now(BR_TZ).astimezone(timezone.utc).isoformat()))
 
                             conn.commit()
                             conn.close()
@@ -5614,7 +5623,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             instance_id = data.get('instanceId', 'default')
             from_jid = data.get('from', '')
             message = data.get('message', '')
-            timestamp = data.get('timestamp', datetime.now(timezone.utc).isoformat())
+            timestamp = data.get('timestamp', datetime.now(BR_TZ).astimezone(timezone.utc).isoformat())
             message_id = data.get('messageId', str(uuid.uuid4()))
             message_type = data.get('messageType', 'text')
             
@@ -5897,7 +5906,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             """, (flow_id, data['name'], data.get('description', ''), 
                   json.dumps(data.get('nodes', [])), json.dumps(data.get('edges', [])),
                   data.get('active', False), data.get('instance_id'),
-                  datetime.now(timezone.utc).isoformat(), datetime.now(timezone.utc).isoformat()))
+                  datetime.now(BR_TZ).astimezone(timezone.utc).isoformat(), datetime.now(BR_TZ).astimezone(timezone.utc).isoformat()))
             
             conn.commit()
             conn.close()
@@ -5952,7 +5961,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                 values.append(data['instance_id'])
             
             update_fields.append('updated_at = ?')
-            values.append(datetime.now(timezone.utc).isoformat())
+            values.append(datetime.now(BR_TZ).astimezone(timezone.utc).isoformat())
             
             values.append(flow_id)
             
@@ -6125,8 +6134,8 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                 data.get('recurrence_type'),
                 data.get('send_time'),
                 data.get('instance_id'),
-                datetime.now(timezone.utc).isoformat(),
-                datetime.now(timezone.utc).isoformat(),
+                datetime.now(BR_TZ).astimezone(timezone.utc).isoformat(),
+                datetime.now(BR_TZ).astimezone(timezone.utc).isoformat(),
                 None
             ))
 
@@ -6191,7 +6200,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                 values.append(data['instance_id'])
 
             update_fields.append('updated_at = ?')
-            values.append(datetime.now(timezone.utc).isoformat())
+            values.append(datetime.now(BR_TZ).astimezone(timezone.utc).isoformat())
             values.append(campaign_id)
 
             cursor.execute(f"""
