@@ -1473,17 +1473,36 @@ HTML_APP = '''<!DOCTYPE html>
         let statusPollingInterval = null;
 
         function showSection(name) {
+            console.log('📄 Tentando mostrar seção:', name);
+            
             // Hide all sections
-            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            const sections = document.querySelectorAll('.section');
+            sections.forEach(s => {
+                s.classList.remove('active');
+                s.style.display = 'none';
+            });
+            
+            // Remove active class from all nav buttons
+            const navButtons = document.querySelectorAll('.nav-btn');
+            navButtons.forEach(b => b.classList.remove('active'));
             
             // Show selected section
-            document.getElementById(name).classList.add('active');
+            const targetSection = document.getElementById(name);
+            if (targetSection) {
+                targetSection.classList.add('active');
+                targetSection.style.display = 'block';
+                console.log('✅ Seção', name, 'ativada');
+            } else {
+                console.error('❌ Seção não encontrada:', name);
+                return;
+            }
             
-            // Find and activate the correct button
-            document.querySelectorAll('.nav-btn').forEach(b => {
-                if (b.onclick && b.onclick.toString().includes(`'${name}'`)) {
-                    b.classList.add('active');
+            // Find and activate the correct button by checking onclick attribute
+            navButtons.forEach(button => {
+                const onclickAttr = button.getAttribute('onclick');
+                if (onclickAttr && onclickAttr.includes(`'${name}'`)) {
+                    button.classList.add('active');
+                    console.log('✅ Botão ativo:', name);
                 }
             });
             
