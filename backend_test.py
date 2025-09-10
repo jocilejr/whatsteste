@@ -154,7 +154,11 @@ class WhatsFlowRealTester:
             
             if response.status_code in [200, 201]:
                 data = response.json()
-                if "id" in data:
+                # WhatsFlow Real returns flow_id instead of id
+                if "flow_id" in data:
+                    flow_id = data["flow_id"]
+                    self.log_test("POST /api/flows", "PASS", f"Created flow with ID: {flow_id}")
+                elif "id" in data:
                     flow_id = data["id"]
                     self.log_test("POST /api/flows", "PASS", f"Created flow with ID: {flow_id}")
                 else:
