@@ -1220,19 +1220,31 @@ HTML_APP = '''<!DOCTYPE html>
     </style>
 </head>
 <body>
+    <div class="websocket-status" id="websocketStatus">🔄 Conectando...</div>
+    
     <div class="container">
         <div class="header">
-            <h1>🤖 WhatsFlow Real</h1>
-            <p>Sistema de Automação WhatsApp - Conexão Verdadeira</p>
-            <div class="subtitle">✅ Baileys integrado • WhatsApp real • Mensagens reais</div>
+            <h1>🚀 WhatsFlow Professional</h1>
+            <p>Sistema Avançado de Automação WhatsApp</p>
+            <div class="subtitle">✅ WebSocket • Tempo Real • Design Profissional</div>
         </div>
         
         <nav class="nav">
-            <button class="nav-btn active" onclick="showSection('dashboard')">📊 Dashboard</button>
-            <button class="nav-btn" onclick="showSection('instances')">📱 Instâncias</button>
-            <button class="nav-btn" onclick="showSection('contacts')">👥 Contatos</button>
-            <button class="nav-btn" onclick="showSection('messages')">💬 Mensagens</button>
-            <button class="nav-btn" onclick="showSection('info')">ℹ️ Info</button>
+            <button class="nav-btn active" onclick="showSection('dashboard')">
+                <span>📊</span> Dashboard
+            </button>
+            <button class="nav-btn" onclick="showSection('instances')">
+                <span>📱</span> Instâncias
+            </button>
+            <button class="nav-btn" onclick="showSection('contacts')">
+                <span>👥</span> Contatos
+            </button>
+            <button class="nav-btn" onclick="showSection('messages')">
+                <span>💬</span> Mensagens
+            </button>
+            <button class="nav-btn" onclick="showSection('flows')">
+                <span>🎯</span> Fluxos
+            </button>
         </nav>
         
         <div id="dashboard" class="section active">
