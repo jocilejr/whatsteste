@@ -255,7 +255,14 @@ async function connectInstance(instanceId) {
                                       message.message.extendedTextMessage?.text || 
                                       'Mídia recebida';
                     
-                    console.log(`📥 Nova mensagem na instância ${instanceId} de: ${from.split('@')[0]} - ${messageText.substring(0, 50)}...`);
+                    // Extract contact name from WhatsApp
+                    const pushName = message.pushName || '';
+                    const contact = await sock.onWhatsApp(from);
+                    const contactName = pushName || contact[0]?.name || '';
+                    
+                    console.log(`📥 Nova mensagem na instância ${instanceId}`);
+                    console.log(`👤 Contato: ${contactName || from.split('@')[0]} (${from.split('@')[0]})`);
+                    console.log(`💬 Mensagem: ${messageText.substring(0, 50)}...`);
                     
                     // Send to Python backend with retry logic
                     let retries = 3;
@@ -269,10 +276,13 @@ async function connectInstance(instanceId) {
                                     instanceId: instanceId,
                                     from: from,
                                     message: messageText,
+                                    pushName: pushName,
+                                    contactName: contactName,
                                     timestamp: new Date().toISOString(),
                                     messageId: message.key.id,
                                     messageType: message.message.conversation ? 'text' : 'media'
                                 })
+                            });
                             });
                             
                             if (response.ok) {
