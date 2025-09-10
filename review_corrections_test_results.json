@@ -1,0 +1,103 @@
+{
+  "summary": {
+    "total_tests": 13,
+    "passed": 13,
+    "failed": 0,
+    "critical_issues": 0,
+    "success_rate": 100.0
+  },
+  "test_results": [
+    {
+      "test": "WhatsFlow Real Service",
+      "success": true,
+      "details": "Service running on port 8889, status: 200",
+      "timestamp": "2025-09-10T05:19:27.877733",
+      "critical": false
+    },
+    {
+      "test": "Baileys Service",
+      "success": true,
+      "details": "Service running on port 3002, status: 200",
+      "timestamp": "2025-09-10T05:19:27.887916",
+      "critical": false
+    },
+    {
+      "test": "Database Clean Check",
+      "success": true,
+      "details": "No test instances found. Total instances: 1",
+      "timestamp": "2025-09-10T05:19:27.888764",
+      "critical": false
+    },
+    {
+      "test": "Database Schema",
+      "success": true,
+      "details": "All required tables present: instances, webhooks, chats, contacts, messages, flows",
+      "timestamp": "2025-09-10T05:19:27.889443",
+      "critical": false
+    },
+    {
+      "test": "WhatsFlow API - Instance listing",
+      "success": true,
+      "details": "Endpoint /api/instances returned 1",
+      "timestamp": "2025-09-10T05:19:27.891987",
+      "critical": false
+    },
+    {
+      "test": "WhatsFlow API - Contacts listing",
+      "success": true,
+      "details": "Endpoint /api/contacts returned 6",
+      "timestamp": "2025-09-10T05:19:27.894255",
+      "critical": false
+    },
+    {
+      "test": "WhatsFlow API - Chats listing",
+      "success": true,
+      "details": "Endpoint /api/chats returned 0",
+      "timestamp": "2025-09-10T05:19:27.896543",
+      "critical": false
+    },
+    {
+      "test": "WhatsFlow API - Messages listing",
+      "success": true,
+      "details": "Endpoint /api/messages returned 0",
+      "timestamp": "2025-09-10T05:19:27.898602",
+      "critical": false
+    },
+    {
+      "test": "WhatsFlow API - Statistics",
+      "success": true,
+      "details": "Endpoint /api/stats returned data",
+      "timestamp": "2025-09-10T05:19:27.900658",
+      "critical": false
+    },
+    {
+      "test": "Baileys Groups Endpoint",
+      "success": true,
+      "details": "Groups endpoint responding correctly: 404",
+      "timestamp": "2025-09-10T05:19:27.903499",
+      "critical": false
+    },
+    {
+      "test": "Baileys Send Message Endpoint",
+      "success": true,
+      "details": "Send message endpoint responding: 400",
+      "timestamp": "2025-09-10T05:19:27.914694",
+      "critical": false
+    },
+    {
+      "test": "WhatsFlow UI Layout",
+      "success": true,
+      "details": "Professional layout elements found (4/4 checks passed)",
+      "timestamp": "2025-09-10T05:19:27.918405",
+      "critical": false
+    },
+    {
+      "test": "System Integration",
+      "success": true,
+      "details": "Both services responding and can integrate",
+      "timestamp": "2025-09-10T05:19:27.922800",
+      "critical": false
+    }
+  ],
+  "timestamp": "2025-09-10T05:19:27.923016"
+}
