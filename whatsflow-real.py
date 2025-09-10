@@ -1618,6 +1618,8 @@ HTML_APP = '''<!DOCTYPE html>
                 if (!document.getElementById('instanceSelect').innerHTML.includes('option')) {
                     loadInstancesForSelect();
                 }
+            } else if (name === 'groups') {
+                loadInstancesForGroups();
             } else if (name === 'flows') {
                 loadFlows();
             }
