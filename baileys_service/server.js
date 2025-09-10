@@ -180,9 +180,67 @@ async function connectInstance(instanceId) {
                     try {
                         console.log('📥 Importando conversas existentes...');
                         
-                        // Get all chats
+                        // Get all chats with enhanced contact info
                         const chats = await sock.getChats();
                         console.log(`📊 ${chats.length} conversas encontradas`);
+                        
+                        // Enhance chats with contact names and profile pictures
+                        const enhancedChats = [];
+                        for (const chat of chats) {
+                            try {
+                                let contactName = chat.name || chat.pushName || chat.notify;
+                                let profilePicUrl = null;
+                                
+                                // Try to get contact info from WhatsApp
+                                if (chat.id && !chat.id.endsWith('@g.us')) { // Skip groups
+                                    try {
+                                        // Get contact name from WhatsApp
+                                        const contact = await sock.onWhatsApp(chat.id);
+                                        if (contact && contact[0]) {
+                                            contactName = contact[0].notify || contactName;
+                                        }
+                                        
+                                        // Try to get profile picture
+                                        try {
+                                            profilePicUrl = await sock.profilePictureUrl(chat.id, 'image');
+                                        } catch (ppErr) {
+                                            // Profile picture not available - that's ok
+                                        }
+                                        
+                                        // Get stored contact name if available
+                                        const storedContact = await sock.getContact(chat.id);
+                                        if (storedContact && storedContact.name) {
+                                            contactName = storedContact.name;
+                                        }
+                                        
+                                    } catch (contactErr) {
+                                        console.log(`⚠️ Erro ao obter info do contato ${chat.id}: ${contactErr.message}`);
+                                    }
+                                }
+                                
+                                // If still no name, extract from phone number
+                                if (!contactName && chat.id) {
+                                    const phone = chat.id.replace('@s.whatsapp.net', '').replace('@c.us', '');
+                                    contactName = `Contato ${phone.slice(-4)}`;
+                                }
+                                
+                                enhancedChats.push({
+                                    ...chat,
+                                    enhancedName: contactName,
+                                    profilePicUrl: profilePicUrl
+                                });
+                                
+                            } catch (err) {
+                                console.log(`⚠️ Erro ao processar chat ${chat.id}: ${err.message}`);
+                                enhancedChats.push({
+                                    ...chat,
+                                    enhancedName: chat.name || `Contato ${chat.id?.slice(-4) || 'Desconhecido'}`,
+                                    profilePicUrl: null
+                                });
+                            }
+                        }
+                        
+                        console.log(`📊 ${enhancedChats.length} conversas processadas com nomes melhorados`);
                         
                         // Process chats in batches to avoid overwhelming the system
                         const batchSize = 20;
