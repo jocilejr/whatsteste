@@ -1,11 +1,7 @@
 #!/usr/bin/env python3
 """
-WhatsFlow Real - Versão com Baileys REAL
-Sistema de Automação WhatsApp com conexão verdadeira
-
-Requisitos: Python 3 + Node.js (para Baileys)
-Instalação: python3 whatsflow-real.py
-Acesso: http://localhost:8888
+WhatsFlow Real - Professional Version
+Sistema de Automação WhatsApp com conexão verdadeira e design profissional
 """
 
 import json
@@ -26,957 +22,723 @@ DB_FILE = "whatsflow.db"
 PORT = 8889
 BAILEYS_PORT = 3002
 
-# HTML da aplicação (mesmo do Pure, mas com conexão real)
+# HTML da aplicação profissional - Similar ao design enviado
 HTML_APP = '''<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WhatsFlow Real - Conexão Verdadeira</title>
+    <title>WhatsFlow - Plataforma Profissional</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        /* Modern Professional Design for WhatsFlow */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
         :root {
-            --primary: #0f172a;
-            --primary-light: #1e293b;
-            --accent: #22c55e;
-            --accent-light: #16a34a;
-            --success: #22c55e;
-            --danger: #ef4444;
-            --warning: #f59e0b;
-            --info: #3b82f6;
-            --light: #f8fafc;
-            --gray-50: #f9fafb;
-            --gray-100: #f3f4f6;
-            --gray-200: #e5e7eb;
-            --gray-300: #d1d5db;
-            --gray-600: #4b5563;
-            --gray-700: #374151;
-            --gray-800: #1f2937;
-            --gray-900: #111827;
-            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-            --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-            --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+            --primary: #128c7e;
+            --primary-dark: #075e54;
+            --primary-light: #25d366;
+            --bg-primary: #f0f2f5;
+            --bg-secondary: #ffffff;
+            --bg-chat: #e5ddd5;
+            --text-primary: #111b21;
+            --text-secondary: #667781;
+            --border: #e9edef;
+            --shadow: 0 1px 3px rgba(11,20,26,.13);
+            --shadow-lg: 0 2px 10px rgba(11,20,26,.2);
         }
         
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
-            min-height: 100vh;
-            color: var(--gray-800);
-            line-height: 1.6;
-        }
-        
-        .container { 
-            max-width: 1400px; 
-            margin: 0 auto; 
-            padding: 2rem; 
-        }
-        
-        /* Header Design */
-        .header { 
-            text-align: center; 
-            color: white; 
-            margin-bottom: 3rem;
-            padding: 2rem 0;
-        }
-        .header h1 { 
-            font-size: 3rem; 
-            font-weight: 800;
-            margin-bottom: 1rem; 
-            background: linear-gradient(45deg, #ffffff, #22c55e);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-        .header p { 
-            font-size: 1.2rem; 
-            opacity: 0.9; 
-            font-weight: 300;
-        }
-        .subtitle { 
-            background: rgba(34, 197, 94, 0.2); 
-            border: 1px solid rgba(34, 197, 94, 0.3);
-            padding: 0.75rem 1.5rem; 
-            border-radius: 2rem; 
-            display: inline-block; 
-            margin-top: 1rem; 
-            font-size: 0.9rem;
-            backdrop-filter: blur(10px);
-        }
-        
-        /* Navigation */
-        .nav { 
-            display: flex; 
-            gap: 0.5rem; 
-            margin-bottom: 2rem; 
-            flex-wrap: wrap; 
-            justify-content: center;
-            background: rgba(255, 255, 255, 0.1);
-            padding: 1rem;
-            border-radius: 1rem;
-            backdrop-filter: blur(10px);
-        }
-        .nav-btn { 
-            background: rgba(255, 255, 255, 0.1); 
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            padding: 0.75rem 1.5rem; 
-            border-radius: 0.75rem; 
-            cursor: pointer; 
-            font-weight: 500; 
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            color: white;
-            font-size: 0.9rem;
-        }
-        .nav-btn:hover { 
-            background: rgba(255, 255, 255, 0.2); 
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-lg);
-        }
-        .nav-btn.active { 
-            background: var(--accent); 
-            color: white;
-            box-shadow: var(--shadow-lg);
-        }
-        
-        /* Cards */
-        .card { 
-            background: white; 
-            border-radius: 1rem; 
-            padding: 2rem; 
-            box-shadow: var(--shadow-xl);
-            margin-bottom: 2rem;
-            border: 1px solid var(--gray-200);
-        }
-        
-        /* Status Indicators */
-        .status-indicator { 
-            display: inline-flex; 
-            align-items: center; 
-            gap: 0.5rem; 
-            padding: 0.5rem 1rem; 
-            border-radius: 2rem; 
-            font-weight: 500;
-            font-size: 0.9rem;
-        }
-        .status-connected { 
-            background: rgba(34, 197, 94, 0.1); 
-            color: var(--accent-light);
-            border: 1px solid rgba(34, 197, 94, 0.2);
-        }
-        .status-disconnected { 
-            background: rgba(239, 68, 68, 0.1); 
-            color: var(--danger);
-            border: 1px solid rgba(239, 68, 68, 0.2);
-        }
-        .status-connecting { 
-            background: rgba(245, 158, 11, 0.1); 
-            color: var(--warning);
-            border: 1px solid rgba(245, 158, 11, 0.2);
-        }
-        .status-dot { 
-            width: 8px; 
-            height: 8px; 
-            border-radius: 50%; 
-        }
-        .status-connected .status-dot { background: var(--success); }
-        .status-disconnected .status-dot { background: var(--danger); }
-        .status-connecting .status-dot { 
-            background: var(--warning); 
-            animation: pulse 2s infinite; 
-        }
-        
-        /* Stats Grid */
-        .stats-grid { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); 
-            gap: 1.5rem; 
-            margin: 2rem 0; 
-        }
-        .stat-card { 
-            text-align: center; 
-            padding: 2rem; 
-            background: linear-gradient(135deg, var(--gray-50) 0%, white 100%);
-            border-radius: 1rem; 
-            border: 1px solid var(--gray-200);
-            transition: all 0.3s ease;
-        }
-        .stat-card:hover {
-            transform: translateY(-4px);
-            box-shadow: var(--shadow-lg);
-        }
-        .stat-number { 
-            font-size: 2.5rem; 
-            font-weight: 800; 
-            color: var(--accent); 
-            margin-bottom: 0.5rem; 
-        }
-        .stat-label { 
-            color: var(--gray-600); 
-            font-size: 0.9rem;
-            font-weight: 500;
-        }
-        
-        /* Instance Cards */
-        .instances-grid { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); 
-            gap: 1.5rem; 
-        }
-        .instance-card { 
-            border: 2px solid var(--gray-200); 
-            border-radius: 1rem; 
-            padding: 1.5rem; 
-            background: white; 
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            height: 100vh;
             overflow: hidden;
         }
-        .instance-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: var(--gray-200);
-            transition: all 0.3s ease;
-        }
-        .instance-card:hover { 
-            transform: translateY(-4px); 
-            box-shadow: var(--shadow-xl);
-            border-color: var(--accent);
-        }
-        .instance-card:hover::before {
-            background: var(--accent);
-        }
-        .instance-card.connected { 
-            border-color: var(--success); 
-            background: linear-gradient(135deg, rgba(34, 197, 94, 0.02) 0%, white 100%);
-        }
-        .instance-card.connected::before {
-            background: var(--success);
+        
+        .app-container {
+            display: flex;
+            height: 100vh;
+            background: var(--bg-secondary);
         }
         
-        /* Buttons */
-        .btn { 
-            padding: 0.75rem 1.5rem; 
-            border: none; 
-            border-radius: 0.75rem; 
-            cursor: pointer; 
-            font-weight: 600; 
-            font-size: 0.9rem;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
+        /* Sidebar */
+        .sidebar {
+            width: 320px;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
         }
-        .btn-primary { 
-            background: linear-gradient(135deg, var(--info) 0%, #2563eb 100%); 
+        
+        .sidebar-header {
+            padding: 20px;
+            background: var(--primary);
             color: white;
-            box-shadow: var(--shadow);
-        }
-        .btn-success { 
-            background: linear-gradient(135deg, var(--success) 0%, var(--accent-light) 100%); 
-            color: white;
-            box-shadow: var(--shadow);
-        }
-        .btn-danger { 
-            background: linear-gradient(135deg, var(--danger) 0%, #dc2626 100%); 
-            color: white;
-            box-shadow: var(--shadow);
-        }
-        .btn-secondary {
-            background: var(--gray-100);
-            color: var(--gray-700);
-            border: 1px solid var(--gray-300);
-        }
-        .btn:hover { 
-            transform: translateY(-2px); 
-            box-shadow: var(--shadow-lg);
-        }
-        .btn:disabled { 
-            opacity: 0.5; 
-            cursor: not-allowed; 
-            transform: none;
-        }
-        
-        /* Modal */
-        .modal { 
-            display: none; 
-            position: fixed; 
-            top: 0; 
-            left: 0; 
-            right: 0; 
-            bottom: 0; 
-            background: rgba(17, 24, 39, 0.75); 
-            backdrop-filter: blur(4px);
-            z-index: 1000; 
-            align-items: center; 
-            justify-content: center; 
-        }
-        .modal.show { display: flex; }
-        .modal-content { 
-            background: white; 
-            padding: 2rem; 
-            border-radius: 1.5rem; 
-            width: 90%; 
-            max-width: 500px; 
-            position: relative; 
-            z-index: 1002;
-            box-shadow: var(--shadow-xl);
-            border: 1px solid var(--gray-200);
-        }
-        .modal-content * { position: relative; z-index: 1003; }
-        .modal-content input, .modal-content button { pointer-events: all; }
-        .modal { pointer-events: all; }
-        .modal-content { pointer-events: all; }
-        
-        /* Forms */
-        .form-input { 
-            width: 100%; 
-            padding: 1rem; 
-            border: 2px solid var(--gray-300); 
-            border-radius: 0.75rem; 
-            font-size: 1rem;
-            transition: all 0.3s ease;
-        }
-        .form-input:focus { 
-            outline: none; 
-            border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
-        }
-        
-        /* Empty State */
-        .empty-state { 
-            text-align: center; 
-            padding: 4rem 2rem; 
-            color: var(--gray-600); 
-        }
-        .empty-icon { 
-            font-size: 4rem; 
-            margin-bottom: 1.5rem; 
-            opacity: 0.5; 
-        }
-        .empty-title { 
-            font-size: 1.5rem; 
-            font-weight: 600; 
-            color: var(--gray-800); 
-            margin-bottom: 0.5rem; 
-        }
-        
-        /* Section Management */
-        .section { display: none; }
-        .section.active { display: block; }
-        
-        /* Messages */
-        .success-message { 
-            background: rgba(34, 197, 94, 0.1); 
-            color: var(--accent-light); 
-            padding: 1rem; 
-            border-radius: 0.75rem; 
-            margin: 1.5rem 0; 
-            text-align: center; 
-            font-weight: 500;
-            border: 1px solid rgba(34, 197, 94, 0.2);
-        }
-        
-        /* QR Code Container */
-        .qr-container { 
-            text-align: center; 
-            margin: 2rem 0; 
-        }
-        .qr-code { 
-            background: white; 
-            padding: 2rem; 
-            border-radius: 1rem; 
-            box-shadow: var(--shadow-lg);
-            display: inline-block;
-            border: 1px solid var(--gray-200);
-        }
-        
-        /* Chat and Messages Styles */
-        .chat-item {
-            padding: 1rem;
-            border-bottom: 1px solid var(--gray-200);
-            cursor: pointer;
-            transition: all 0.3s ease;
             display: flex;
             align-items: center;
-            gap: 1rem;
-        }
-        .chat-item:hover {
-            background: var(--gray-50);
-            transform: translateX(4px);
-        }
-        .chat-item:last-child {
-            border-bottom: none;
+            justify-content: space-between;
         }
         
-        .contact-avatar {
-            width: 48px;
-            height: 48px;
+        .sidebar-title {
+            font-size: 19px;
+            font-weight: 600;
+        }
+        
+        .sidebar-nav {
+            display: flex;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .nav-item {
+            flex: 1;
+            padding: 12px;
+            text-align: center;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        
+        .nav-item.active {
+            color: var(--primary);
+            border-bottom: 2px solid var(--primary);
+        }
+        
+        .nav-item:hover {
+            background: var(--bg-primary);
+        }
+        
+        .device-selector {
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .device-select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg-primary);
+            font-size: 14px;
+        }
+        
+        .search-container {
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 10px 15px;
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            background: var(--bg-primary);
+            font-size: 14px;
+            outline: none;
+        }
+        
+        .search-input:focus {
+            border-color: var(--primary);
+        }
+        
+        .conversations-list {
+            flex: 1;
+            overflow-y: auto;
+        }
+        
+        .conversation-item {
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .conversation-item:hover {
+            background: var(--bg-primary);
+        }
+        
+        .conversation-item.active {
+            background: #e1f5fe;
+        }
+        
+        .avatar {
+            width: 50px;
+            height: 50px;
             border-radius: 50%;
-            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
+            background: var(--primary);
             color: white;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-weight: 700;
-            font-size: 1.1rem;
+            font-weight: 600;
+            font-size: 18px;
             flex-shrink: 0;
-            box-shadow: var(--shadow);
         }
-        .contact-avatar img {
+        
+        .avatar img {
             width: 100%;
             height: 100%;
             border-radius: 50%;
             object-fit: cover;
         }
         
-        .chat-info {
+        .conversation-info {
             flex: 1;
             min-width: 0;
         }
-        .chat-name {
-            font-weight: 600;
-            color: var(--gray-800);
-            margin-bottom: 0.25rem;
+        
+        .conversation-name {
+            font-weight: 500;
+            font-size: 16px;
+            margin-bottom: 3px;
+            color: var(--text-primary);
         }
-        .chat-message {
-            color: var(--gray-600);
-            font-size: 0.9rem;
+        
+        .last-message {
+            font-size: 14px;
+            color: var(--text-secondary);
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
         }
-        .chat-time {
-            color: var(--gray-500);
-            font-size: 0.8rem;
+        
+        .conversation-time {
+            font-size: 12px;
+            color: var(--text-secondary);
             flex-shrink: 0;
         }
         
-        /* Message Container */
-        .message-container {
-            max-height: 500px;
-            overflow-y: auto;
-            border: 1px solid var(--gray-200);
-            border-radius: 1rem;
-            background: var(--gray-50);
-        }
-        
-        .message-item {
-            padding: 1rem;
-            border-bottom: 1px solid var(--gray-200);
-            background: white;
-            margin: 0.5rem;
-            border-radius: 0.75rem;
-            box-shadow: var(--shadow-sm);
-        }
-        .message-item:last-child {
-            border-bottom: none;
-        }
-        
-        .message-header {
+        /* Main Chat Area */
+        .chat-area {
+            flex: 1;
             display: flex;
-            justify-content: between;
-            align-items: center;
-            margin-bottom: 0.5rem;
-        }
-        .message-sender {
-            font-weight: 600;
-            color: var(--gray-800);
-        }
-        .message-time {
-            color: var(--gray-500);
-            font-size: 0.8rem;
-        }
-        .message-text {
-            color: var(--gray-700);
-            line-height: 1.5;
+            flex-direction: column;
+            background: var(--bg-primary);
         }
         
-        /* Contact List */
-        .contact-list {
+        .empty-chat {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 40px;
+        }
+        
+        .empty-icon {
+            width: 120px;
+            height: 120px;
+            background: var(--bg-secondary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            color: var(--text-secondary);
+            margin-bottom: 30px;
+            box-shadow: var(--shadow);
+        }
+        
+        .empty-title {
+            font-size: 32px;
+            font-weight: 300;
+            color: var(--text-secondary);
+            margin-bottom: 15px;
+        }
+        
+        .empty-subtitle {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            max-width: 400px;
+        }
+        
+        /* Chat Header */
+        .chat-header {
+            display: none;
+            padding: 15px 20px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .chat-header.active {
+            display: flex;
+        }
+        
+        .back-button {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 18px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 5px;
+        }
+        
+        /* Messages Area */
+        .messages-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background-image: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAiIGhlaWdodD0iMzAiIHZpZXdCb3g9IjAgMCAzMCAzMCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE1IDFMMTcuMDkgNi41ODFMMTI0IDhMMTguNTEgMTJMMTcgMTcuNUwxMiAyMkw2LjQ5IDEyTDAgOEw1LjkxIDYuNThMMTUgMVoiIGZpbGw9IiNmOWY5ZjkiIGZpbGwtb3BhY2l0eT0iMC4xIi8+Cjwvc3ZnPgo=');
+        }
+        
+        .message {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: flex-end;
+            gap: 8px;
+        }
+        
+        .message.sent {
+            justify-content: flex-end;
+        }
+        
+        .message-bubble {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            font-size: 14px;
+            line-height: 1.4;
+            position: relative;
+        }
+        
+        .message.received .message-bubble {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border-bottom-left-radius: 4px;
+            box-shadow: var(--shadow);
+        }
+        
+        .message.sent .message-bubble {
+            background: #dcf8c6;
+            color: var(--text-primary);
+            border-bottom-right-radius: 4px;
+        }
+        
+        .message-time {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+        
+        /* Instance Management */
+        .instances-section {
+            padding: 30px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        
+        .section-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: var(--primary-dark);
+        }
+        
+        .btn-success {
+            background: var(--primary-light);
+            color: white;
+        }
+        
+        .btn-danger {
+            background: #dc2626;
+            color: white;
+        }
+        
+        .instances-grid {
             display: grid;
-            gap: 1rem;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
         }
-        .contact-item {
-            background: white;
-            border: 1px solid var(--gray-200);
-            border-radius: 1rem;
-            padding: 1.5rem;
-            transition: all 0.3s ease;
+        
+        .instance-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.2s;
         }
-        .contact-item:hover {
+        
+        .instance-card:hover {
             box-shadow: var(--shadow-lg);
             transform: translateY(-2px);
         }
         
-        /* Professional Badges */
-        .badge {
+        .instance-card.connected {
+            border-color: var(--primary-light);
+            background: #f0fff4;
+        }
+        
+        .status-badge {
             display: inline-flex;
             align-items: center;
-            gap: 0.5rem;
-            padding: 0.25rem 0.75rem;
-            border-radius: 1rem;
-            font-size: 0.8rem;
+            gap: 6px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
             font-weight: 500;
         }
-        .badge-success {
-            background: rgba(34, 197, 94, 0.1);
-            color: var(--success);
-            border: 1px solid rgba(34, 197, 94, 0.2);
-        }
-        .badge-warning {
-            background: rgba(245, 158, 11, 0.1);
-            color: var(--warning);
-            border: 1px solid rgba(245, 158, 11, 0.2);
-        }
-        .badge-info {
-            background: rgba(59, 130, 246, 0.1);
-            color: var(--info);
-            border: 1px solid rgba(59, 130, 246, 0.2);
+        
+        .status-connected {
+            background: #dcfce7;
+            color: #166534;
         }
         
-        /* Animations */
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .fade-in {
-            animation: fadeIn 0.5s ease-out;
+        .status-connecting {
+            background: #fef3c7;
+            color: #92400e;
         }
         
-        /* Responsive Design */
+        .status-disconnected {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+        
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal.show {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 30px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .modal h3 {
+            margin-bottom: 20px;
+            font-size: 20px;
+            font-weight: 600;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+        }
+        
+        .form-input:focus {
+            border-color: var(--primary);
+        }
+        
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+        
+        .btn-secondary {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+        
+        /* Responsive */
         @media (max-width: 768px) {
-            .container { padding: 1rem; }
-            .header h1 { font-size: 2rem; }
-            .nav { padding: 0.5rem; }
-            .stats-grid { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
-            .instances-grid { grid-template-columns: 1fr; }
-            .modal-content { margin: 1rem; width: calc(100% - 2rem); }
-        } 
-                  display: inline-block; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        .qr-instructions { background: #f8fafc; padding: 20px; border-radius: 8px; 
-                          margin-bottom: 20px; text-align: left; }
+            .sidebar {
+                position: absolute;
+                left: -100%;
+                top: 0;
+                height: 100%;
+                z-index: 100;
+                transition: left 0.3s;
+            }
+            
+            .sidebar.show {
+                left: 0;
+            }
+            
+            .back-button {
+                display: block;
+            }
+        }
         
-        .connected-user { background: #d1fae5; padding: 15px; border-radius: 8px; 
-                         margin: 15px 0; border: 2px solid #10b981; }
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            color: var(--text-secondary);
+        }
         
-        .loading { text-align: center; padding: 40px; color: #6b7280; }
-        .loading-spinner { font-size: 2rem; margin-bottom: 15px; animation: pulse 1s infinite; }
-        
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-        
-        @media (max-width: 768px) {
-            .container { padding: 15px; }
-            .header h1 { font-size: 2rem; }
-            .stats-grid, .instances-grid { grid-template-columns: 1fr; }
+        .hidden {
+            display: none !important;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>🤖 WhatsFlow Real</h1>
-            <p>Sistema de Automação WhatsApp - Conexão Verdadeira</p>
-            <div class="subtitle">✅ Baileys integrado • WhatsApp real • Mensagens reais</div>
-        </div>
-        
-        <nav class="nav">
-            <button class="nav-btn active" onclick="showSection('dashboard')">📊 Dashboard</button>
-            <button class="nav-btn" onclick="showSection('instances')">📱 Instâncias</button>
-            <button class="nav-btn" onclick="showSection('contacts')">👥 Contatos</button>
-            <button class="nav-btn" onclick="showSection('messages')">💬 Mensagens</button>
-            <button class="nav-btn" onclick="showSection('info')">ℹ️ Info</button>
-        </nav>
-        
-        <div id="dashboard" class="section active">
-            <div class="card">
-                <h2>🔗 Status da Conexão WhatsApp</h2>
-                <div id="connection-status" class="status-indicator status-disconnected">
-                    <div class="status-dot"></div>
-                    <span>Verificando conexão...</span>
-                </div>
-                <div class="real-connection-badge">
-                    🚀 Conexão REAL com WhatsApp via Baileys
-                </div>
-                <div id="connected-user-info" style="display: none;"></div>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-title">🚀 WhatsFlow</div>
             </div>
             
-            <div class="card">
-                <h2>📊 Estatísticas do Sistema</h2>
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-number" id="contacts-count">0</div>
-                        <div class="stat-label">Contatos</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number" id="conversations-count">0</div>
-                        <div class="stat-label">Conversas</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number" id="messages-count">0</div>
-                        <div class="stat-label">Mensagens</div>
-                    </div>
-                </div>
+            <div class="sidebar-nav">
+                <button class="nav-item active" onclick="showSection('conversations')">Conversas</button>
+                <button class="nav-item" onclick="showSection('instances')">Instâncias</button>
+            </div>
+            
+            <div class="device-selector">
+                <select class="device-select" id="instanceSelect" onchange="changeInstance()">
+                    <option value="">Selecione um dispositivo</option>
+                </select>
+            </div>
+            
+            <div class="search-container">
+                <input type="text" class="search-input" placeholder="Buscar conversa..." id="searchInput" oninput="filterConversations()">
+            </div>
+            
+            <div class="conversations-list" id="conversationsList">
+                <div class="loading">Carregando conversas...</div>
             </div>
         </div>
         
-        <div id="instances" class="section">
-            <div class="card">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <h2>📱 Instâncias WhatsApp</h2>
-                    <button class="btn btn-primary" onclick="showCreateModal()">➕ Nova Instância</button>
+        <!-- Chat Area -->
+        <div class="chat-area">
+            <div class="chat-header" id="chatHeader">
+                <button class="back-button" onclick="closeChatMobile()">←</button>
+                <div class="avatar" id="chatAvatar">?</div>
+                <div>
+                    <div class="conversation-name" id="chatName">Nome do Contato</div>
+                    <div class="last-message" id="chatStatus">Online</div>
                 </div>
-                <div id="instances-container" class="instances-grid">
-                    <div style="text-align: center; padding: 40px;">Carregando...</div>
+            </div>
+            
+            <div class="empty-chat" id="emptyChat">
+                <div class="empty-icon">💬</div>
+                <div class="empty-title">Nenhuma conversa encontrada</div>
+                <div class="empty-subtitle">
+                    Selecione uma conversa para começar ou conecte uma instância do WhatsApp para ver suas mensagens.
                 </div>
+            </div>
+            
+            <div class="messages-area hidden" id="messagesArea">
+                <!-- Messages will be loaded here -->
             </div>
         </div>
         
-        <!-- Contacts Section -->
-        <div id="contacts" class="section">
-            <div class="card">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <h2>👥 Central de Contatos</h2>
-                    <button class="btn btn-primary" onclick="loadContacts()">🔄 Atualizar</button>
-                </div>
-                <div id="contacts-container">
-                    <div class="loading">
-                        <div class="loading-spinner">🔄</div>
-                        <p>Carregando contatos...</p>
-                    </div>
-                </div>
+        <!-- Instances Section (hidden by default) -->
+        <div class="instances-section hidden" id="instancesSection">
+            <div class="section-header">
+                <h2 class="section-title">Gerenciar Instâncias</h2>
+                <button class="btn btn-primary" onclick="showCreateModal()">
+                    <span>+</span> Nova Instância
+                </button>
             </div>
-        </div>
-        
-        <!-- Messages Section -->
-        <div id="messages" class="section">
-            <div class="card">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <h2>💬 Central de Mensagens</h2>
-                    <button class="btn btn-primary" onclick="loadMessages()">🔄 Atualizar</button>
-                </div>
-                
-                <div style="display: grid; grid-template-columns: 300px 1fr; gap: 20px; height: 500px;">
-                    <!-- Chat List -->
-                    <div style="border-right: 1px solid #eee; padding-right: 15px;">
-                        <h3>Conversas Ativas</h3>
-                        <div id="chat-list" style="height: 450px; overflow-y: auto;">
-                            <div class="loading">
-                                <div class="loading-spinner">🔄</div>
-                                <p>Carregando conversas...</p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Chat Window -->
-                    <div id="chat-window" style="display: flex; flex-direction: column;">
-                        <div id="chat-header" style="padding: 10px; border-bottom: 1px solid #eee; display: none;">
-                            <h4 id="chat-contact-name">Selecione uma conversa</h4>
-                            <p id="chat-contact-phone" style="color: #666; margin: 0;"></p>
-                        </div>
-                        
-                        <div id="messages-container" style="flex: 1; padding: 15px; overflow-y: auto; background: #f9f9f9;">
-                            <div style="text-align: center; color: #666; margin-top: 100px;">
-                                <p>📱 Selecione uma conversa para ver as mensagens</p>
-                            </div>
-                        </div>
-                        
-                        <div id="message-input-area" style="padding: 15px; border-top: 1px solid #eee; display: none;">
-                            <div style="display: flex; gap: 10px;">
-                                <input type="text" id="message-input" placeholder="Digite sua mensagem..." 
-                                       style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 5px;"
-                                       onkeypress="if(event.key==='Enter') sendMessage()">
-                                <button class="btn btn-primary" onclick="sendMessage()">📤 Enviar</button>
-                                <button class="btn btn-secondary" onclick="sendWebhook()" title="Enviar Webhook">
-                                    🔗 Webhook
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <div id="info" class="section">
-            <div class="card">
-                <h2>ℹ️ WhatsFlow Real</h2>
-                <p><strong>🐍 Backend:</strong> Python puro (servidor HTTP)</p>
-                <p><strong>📱 WhatsApp:</strong> Baileys (Node.js) - conexão real</p>
-                <p><strong>🗄️ Banco:</strong> SQLite local</p>
-                <p><strong>🌐 Interface:</strong> HTML + CSS + JS</p>
-                <p><strong>🔧 Requisitos:</strong> Python 3 + Node.js</p>
-                
-                <h3 style="margin: 20px 0 10px 0;">🔗 Como funciona:</h3>
-                <p>1. <strong>Python</strong> roda a interface web e banco de dados</p>
-                <p>2. <strong>Node.js + Baileys</strong> conecta com WhatsApp real</p>
-                <p>3. <strong>Comunicação</strong> entre os dois via HTTP</p>
-                <p>4. <strong>QR Code real</strong> para conectar seu WhatsApp</p>
-                <p>5. <strong>Mensagens reais</strong> enviadas e recebidas</p>
+            
+            <div class="instances-grid" id="instancesGrid">
+                <div class="loading">Carregando instâncias...</div>
             </div>
         </div>
     </div>
     
-    <div id="createModal" class="modal">
+    <!-- Create Instance Modal -->
+    <div class="modal" id="createModal">
         <div class="modal-content">
-            <h3>➕ Nova Instância WhatsApp</h3>
+            <h3>Nova Instância WhatsApp</h3>
             <form onsubmit="createInstance(event)">
-                <div style="margin: 20px 0;">
-                    <input type="text" id="instanceName" class="form-input" 
-                           placeholder="Nome da instância" required>
+                <div class="form-group">
+                    <input type="text" class="form-input" id="instanceName" placeholder="Nome da instância" required>
                 </div>
-                <div style="display: flex; gap: 10px;">
-                    <button type="button" class="btn" onclick="hideCreateModal()">Cancelar</button>
-                    <button type="submit" class="btn btn-success" style="flex: 1;">Criar</button>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="hideCreateModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Criar Instância</button>
                 </div>
             </form>
         </div>
     </div>
     
-    <div id="qrModal" class="modal">
+    <!-- QR Code Modal -->
+    <div class="modal" id="qrModal">
         <div class="modal-content">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
-                <h3>📱 Conectar WhatsApp Real - <span id="qr-instance-name">Instância</span></h3>
-                <button onclick="closeQRModal()" style="background: none; border: none; font-size: 20px; cursor: pointer;">&times;</button>
+            <h3>Conectar WhatsApp</h3>
+            <div style="text-align: center; padding: 20px;">
+                <div id="qrCode">Gerando QR Code...</div>
+                <p style="margin-top: 15px; color: var(--text-secondary);">
+                    Escaneie o código QR com seu WhatsApp
+                </p>
             </div>
-            
-            <div id="connection-status" style="text-align: center; margin-bottom: 15px; font-weight: bold;">
-                ⏳ Preparando conexão...
-            </div>
-            
-            <div class="qr-instructions">
-                <h4>📲 Como conectar seu WhatsApp:</h4>
-                <ol>
-                    <li>Abra o <strong>WhatsApp</strong> no seu celular</li>
-                    <li>Toque em <strong>Configurações ⚙️</strong></li>
-                    <li>Toque em <strong>Aparelhos conectados</strong></li>
-                    <li>Toque em <strong>Conectar um aparelho</strong></li>
-                    <li><strong>Escaneie o QR Code</strong> abaixo</li>
-                </ol>
-            </div>
-            
-            <div id="qr-code-container" class="qr-container">
-                <div id="qr-loading" style="text-align: center; padding: 40px;">
-                    <div style="font-size: 2rem; margin-bottom: 15px;">⏳</div>
-                    <p>Gerando QR Code real...</p>
-                </div>
-            </div>
-            
-            <div style="text-align: center; margin-top: 20px;">
-                <button class="btn btn-danger" onclick="closeQRModal()">🚫 Fechar</button>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" onclick="hideQRModal()">Fechar</button>
             </div>
         </div>
     </div>
 
     <script>
+        let currentConversation = null;
         let instances = [];
-        let currentInstanceId = null;
-        let qrPollingInterval = null;
-        let statusPollingInterval = null;
+        let conversations = [];
+        let selectedInstance = null;
+        let qrInterval = null;
 
-        function showSection(name) {
-            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById(name).classList.add('active');
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            loadInstances();
+            loadConversations();
+            showSection('conversations');
+        });
+
+        // Section management
+        function showSection(section) {
+            // Update nav
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
             event.target.classList.add('active');
             
-            if (name === 'instances') loadInstances();
-            if (name === 'dashboard') loadStats();
-            if (name === 'contacts') loadContacts();
-            if (name === 'messages') loadMessages();
-        }
-
-        function showCreateModal() {
-            document.getElementById('createModal').classList.add('show');
-        }
-
-        function hideCreateModal() {
-            document.getElementById('createModal').classList.remove('show');
-            document.getElementById('instanceName').value = '';
-        }
-
-        let qrInterval = null;
-        let currentQRInstance = null;
-
-        async function showQRModal(instanceId) {
-            console.log('🔄 Showing QR modal for instance:', instanceId);
-            currentQRInstance = instanceId;
-            
-            // Check if elements exist before setting text
-            const instanceNameEl = document.getElementById('qr-instance-name');
-            if (instanceNameEl) {
-                instanceNameEl.textContent = instanceId;
-                console.log('✅ Instance name set');
-            } else {
-                console.error('❌ qr-instance-name element not found');
-            }
-            
-            const modalEl = document.getElementById('qrModal');
-            if (modalEl) {
-                modalEl.classList.add('show');
-                console.log('✅ Modal shown');
-            } else {
-                console.error('❌ qrModal element not found');
-            }
-            
-            // Start QR polling
-            loadQRCode();
-            qrInterval = setInterval(loadQRCode, 3000); // Check every 3 seconds
-        }
-
-        async function loadQRCode() {
-            if (!currentQRInstance) return;
-            
-            try {
-                const [statusResponse, qrResponse] = await Promise.all([
-                    fetch(`/api/whatsapp/status/${currentQRInstance}`),
-                    fetch(`/api/whatsapp/qr/${currentQRInstance}`)
-                ]);
-                
-                const status = await statusResponse.json();
-                const qrData = await qrResponse.json();
-                
-                const qrContainer = document.getElementById('qr-code-container');
-                const statusElement = document.getElementById('connection-status');
-                
-                if (status.connected && status.user) {
-                    // Connected - show success
-                    qrContainer.innerHTML = `
-                        <div style="text-align: center; padding: 40px;">
-                            <div style="font-size: 4em; margin-bottom: 20px;">✅</div>
-                            <h3 style="color: #28a745; margin-bottom: 10px;">WhatsApp Conectado!</h3>
-                            <p style="color: #666; margin-bottom: 10px;">Usuário: <strong>${status.user.name}</strong></p>
-                            <p style="color: #666; margin-bottom: 20px;">Telefone: <strong>${status.user.phone || status.user.id.split(':')[0]}</strong></p>
-                            <div style="margin-bottom: 20px;">
-                                <button class="btn btn-success" onclick="closeQRModal()">🎉 Continuar</button>
-                            </div>
-                            <p style="font-size: 0.9em; color: #999;">Suas conversas serão importadas automaticamente</p>
-                        </div>
-                    `;
-                    statusElement.textContent = '✅ Conectado e sincronizando conversas...';
-                    statusElement.style.color = '#28a745';
-                    
-                    // Stop polling and reload conversations after 5 seconds
-                    if (qrInterval) {
-                        clearInterval(qrInterval);
-                        qrInterval = null;
-                    }
-                    
-                    // Auto-close modal and refresh data after showing success
-                    setTimeout(() => {
-                        closeQRModal();
-                        // Refresh instance list and load conversations
-                        if (document.getElementById('instances').style.display !== 'none') {
-                            loadInstances();
-                        }
-                        // Load messages if on messages tab
-                        if (document.getElementById('messages').style.display !== 'none') {
-                            loadMessages();
-                        }
-                        // Load contacts if on contacts tab
-                        if (document.getElementById('contacts').style.display !== 'none') {
-                            loadContacts();
-                        }
-                    }, 3000);
-                    
-                } else if (status.connecting && qrData.qr) {
-                    // Show QR code with expiration timer
-                    const expiresIn = qrData.expiresIn || 60;
-                    qrContainer.innerHTML = `
-                        <div style="text-align: center;">
-                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(qrData.qr)}" 
-                                 alt="QR Code" style="max-width: 280px; max-height: 280px; border: 2px solid #28a745; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
-                            <p style="margin-top: 15px; color: #666; font-weight: bold;">Escaneie o QR Code com seu WhatsApp</p>
-                            <p style="font-size: 0.9em; color: #999; margin-bottom: 15px;">QR Code válido por ${expiresIn} segundos</p>
-                            <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin-top: 15px;">
-                                <p style="margin: 0; font-size: 0.9em; color: #666;">
-                                    💡 <strong>Dica:</strong> Abra WhatsApp → Configurações → Aparelhos conectados → Conectar aparelho
-                                </p>
-                            </div>
-                        </div>
-                    `;
-                    statusElement.textContent = '📱 Aguardando escaneamento do QR Code...';
-                    statusElement.style.color = '#007bff';
-                    
-                } else if (status.connecting) {
-                    // Connecting but no QR yet
-                    qrContainer.innerHTML = `
-                        <div style="text-align: center; padding: 40px;">
-                            <div class="loading-spinner" style="font-size: 3em; margin-bottom: 20px;">🔄</div>
-                            <p style="color: #666;">Preparando conexão WhatsApp...</p>
-                            <p style="font-size: 0.9em; color: #999;">QR Code será gerado em instantes</p>
-                        </div>
-                    `;
-                    statusElement.textContent = '⏳ Preparando conexão...';
-                    statusElement.style.color = '#ffc107';
-                    
-                } else {
-                    // Not connected, not connecting
-                    qrContainer.innerHTML = `
-                        <div style="text-align: center; padding: 40px;">
-                            <div style="font-size: 3em; margin-bottom: 20px;">📱</div>
-                            <p style="color: #666; margin-bottom: 20px;">Instância não conectada</p>
-                            <button class="btn btn-primary" onclick="connectInstance('${currentQRInstance}')">
-                                🔗 Iniciar Conexão
-                            </button>
-                            <p style="font-size: 0.9em; color: #999; margin-top: 15px;">Clique para gerar um novo QR Code</p>
-                        </div>
-                    `;
-                    statusElement.textContent = '❌ Desconectado';
-                    statusElement.style.color = '#dc3545';
-                }
-                
-            } catch (error) {
-                console.error('Erro ao carregar QR code:', error);
-                document.getElementById('qr-code-container').innerHTML = `
-                    <div style="text-align: center; padding: 40px; color: red;">
-                        <div style="font-size: 3em; margin-bottom: 20px;">❌</div>
-                        <p>Erro ao carregar status da conexão</p>
-                        <button class="btn btn-primary" onclick="loadQRCode()" style="margin-top: 15px;">🔄 Tentar Novamente</button>
-                    </div>
-                `;
-                document.getElementById('connection-status').textContent = '❌ Erro de comunicação';
-                document.getElementById('connection-status').style.color = '#dc3545';
-            }
-        }
-
-        function closeQRModal() {
-            document.getElementById('qrModal').classList.remove('show');
-            currentQRInstance = null;
-            
-            // Stop QR polling
-            if (qrInterval) {
-                clearInterval(qrInterval);
-                qrInterval = null;
-            }
-            
-            // Reload instances to update status
-            if (document.getElementById('instances').style.display !== 'none') {
+            // Show/hide sections
+            if (section === 'conversations') {
+                document.querySelector('.chat-area').style.display = 'flex';
+                document.getElementById('instancesSection').classList.add('hidden');
+            } else if (section === 'instances') {
+                document.querySelector('.chat-area').style.display = 'none';
+                document.getElementById('instancesSection').classList.remove('hidden');
                 loadInstances();
             }
         }
 
+        // Load instances
         async function loadInstances() {
             try {
                 const response = await fetch('/api/instances');
                 instances = await response.json();
-                renderInstances();
+                
+                renderInstancesSelect();
+                renderInstancesGrid();
             } catch (error) {
-                document.getElementById('instances-container').innerHTML = 
-                    '<div class="empty-state"><div class="empty-icon">❌</div><div class="empty-title">Erro ao carregar</div></div>';
+                console.error('Erro ao carregar instâncias:', error);
             }
         }
 
+        function renderInstancesSelect() {
+            const select = document.getElementById('instanceSelect');
+            select.innerHTML = '<option value="">Selecione um dispositivo</option>';
+            
+            instances.forEach(instance => {
+                const option = document.createElement('option');
+                option.value = instance.id;
+                option.textContent = `${instance.name} ${instance.connected ? '(Conectado)' : ''}`;
+                select.appendChild(option);
+            });
+        }
+
+        function renderInstancesGrid() {
+            const grid = document.getElementById('instancesGrid');
+            
+            if (instances.length === 0) {
+                grid.innerHTML = `
+                    <div style="grid-column: 1 / -1; text-align: center; padding: 60px; color: var(--text-secondary);">
+                        <div style="font-size: 48px; margin-bottom: 20px;">📱</div>
+                        <h3>Nenhuma instância criada</h3>
+                        <p>Crie sua primeira instância para começar</p>
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = instances.map(instance => `
+                <div class="instance-card ${instance.connected ? 'connected' : ''}">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3 style="font-size: 18px; font-weight: 600;">${instance.name}</h3>
+                        <span class="status-badge status-${instance.connected ? 'connected' : 'disconnected'}">
+                            <span class="status-dot"></span>
+                            ${instance.connected ? 'Conectado' : 'Desconectado'}
+                        </span>
+                    </div>
+                    
+                    ${instance.user_name ? `
+                        <div style="margin-bottom: 15px; padding: 10px; background: var(--bg-primary); border-radius: 8px;">
+                            <div style="font-weight: 500;">${instance.user_name}</div>
+                            <div style="font-size: 12px; color: var(--text-secondary);">${instance.user_id}</div>
+                        </div>
+                    ` : ''}
+                    
+                    <div style="display: flex; gap: 10px;">
+                        ${instance.connected ? `
+                            <button class="btn btn-danger" onclick="disconnectInstance('${instance.id}')">
+                                Desconectar
+                            </button>
+                        ` : `
+                            <button class="btn btn-success" onclick="connectInstance('${instance.id}')">
+                                Conectar
+                            </button>
+                        `}
+                        <button class="btn btn-secondary" onclick="deleteInstance('${instance.id}', '${instance.name}')">
+                            Excluir
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Instance management
         async function createInstance(event) {
             event.preventDefault();
             const name = document.getElementById('instanceName').value;
@@ -991,57 +753,25 @@ HTML_APP = '''<!DOCTYPE html>
                 if (response.ok) {
                     hideCreateModal();
                     loadInstances();
-                    // Show both alert and console log for debugging
-                    console.log(`✅ Instância "${name}" criada com sucesso!`);
                     alert(`✅ Instância "${name}" criada!`);
-                } else {
-                    console.error('❌ Response not OK:', response.status);
-                    alert('❌ Erro: Resposta inválida do servidor');
                 }
             } catch (error) {
-                console.error('❌ Erro ao criar instância:', error);
-                alert('❌ Erro ao criar instância: ' + error.message);
+                alert('❌ Erro ao criar instância');
             }
         }
 
         async function connectInstance(instanceId) {
-            console.log('🔄 Connecting instance:', instanceId);
             try {
                 const response = await fetch(`/api/instances/${instanceId}/connect`, {
                     method: 'POST'
                 });
                 
-                console.log('Response status:', response.status);
-                
                 if (response.ok) {
-                    console.log('✅ Connection started, opening QR modal');
                     showQRModal(instanceId);
-                } else {
-                    console.error('❌ Connection failed:', response.status);
-                    alert('❌ Erro ao iniciar conexão');
                 }
             } catch (error) {
-                console.error('❌ Connection error:', error);
-                alert('❌ Erro de conexão');
+                alert('❌ Erro ao conectar instância');
             }
-        }
-
-        async function deleteInstance(id, name) {
-            if (!confirm(`Excluir "${name}"?`)) return;
-            
-            try {
-                const response = await fetch(`/api/instances/${id}`, { method: 'DELETE' });
-                if (response.ok) {
-                    loadInstances();
-                    alert(`✅ "${name}" excluída!`);
-                }
-            } catch (error) {
-                alert('❌ Erro ao excluir');
-            }
-        }
-
-        async function showQRCode(instanceId) {
-            showQRModal(instanceId);
         }
 
         async function disconnectInstance(instanceId) {
@@ -1055,465 +785,224 @@ HTML_APP = '''<!DOCTYPE html>
                 if (response.ok) {
                     loadInstances();
                     alert('✅ Instância desconectada!');
-                } else {
-                    alert('❌ Erro ao desconectar');
                 }
             } catch (error) {
-                alert('❌ Erro de conexão');
+                alert('❌ Erro ao desconectar');
             }
         }
 
-        async function loadStats() {
+        async function deleteInstance(id, name) {
+            if (!confirm(`Excluir instância "${name}"?`)) return;
+            
             try {
-                const response = await fetch('/api/stats');
-                const stats = await response.json();
-                document.getElementById('contacts-count').textContent = stats.contacts_count || 0;
-                document.getElementById('conversations-count').textContent = stats.conversations_count || 0;
-                document.getElementById('messages-count').textContent = stats.messages_count || 0;
+                const response = await fetch(`/api/instances/${id}`, { 
+                    method: 'DELETE' 
+                });
+                
+                if (response.ok) {
+                    loadInstances();
+                    alert(`✅ Instância "${name}" excluída!`);
+                }
             } catch (error) {
-                console.error('Error loading stats');
+                alert('❌ Erro ao excluir instância');
             }
         }
 
-        async function loadMessages() {
+        // Load conversations
+        async function loadConversations() {
             try {
-                // Load chat list
-                const chatsResponse = await fetch('/api/chats');
-                const chats = await chatsResponse.json();
-                
-                const chatList = document.getElementById('chat-list');
-                if (chats.length === 0) {
-                    chatList.innerHTML = `
-                        <div class="empty-state">
-                            <div class="empty-icon">💬</div>
-                            <div class="empty-title">Nenhuma conversa</div>
-                            <p>As conversas aparecerão aqui quando receber mensagens</p>
-                        </div>
-                    `;
-                } else {
-                    chatList.innerHTML = chats.map(chat => `
-                        <div class="chat-item fade-in" onclick="openChat('${chat.contact_phone}', '${chat.contact_name}', '${chat.instance_id}')">
-                            <div class="contact-avatar">
-                                ${chat.avatar_url ? 
-                                    `<img src="${chat.avatar_url}" alt="${chat.contact_name}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                                     <div style="display: none; width: 100%; height: 100%; align-items: center; justify-content: center; font-weight: 700;">${chat.contact_name.charAt(0).toUpperCase()}</div>` :
-                                    `<span>${chat.contact_name.charAt(0).toUpperCase()}</span>`
-                                }
-                            </div>
-                            <div class="chat-info">
-                                <div class="chat-name">${chat.contact_name}</div>
-                                <div class="chat-message">${chat.last_message || 'Nova conversa'}</div>
-                            </div>
-                            <div class="chat-time">
-                                ${chat.last_message_time ? new Date(chat.last_message_time).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'}) : ''}
-                            </div>
-                        </div>
-                                ${chat.unread_count > 0 ? `<div class="unread-badge" style="background: #007bff; color: white; border-radius: 50%; padding: 2px 6px; font-size: 0.8em;">${chat.unread_count}</div>` : ''}
-                            </div>
-                        </div>
-                    `).join('');
-                }
-                
+                const response = await fetch('/api/chats');
+                conversations = await response.json();
+                renderConversations();
             } catch (error) {
-                console.error('Erro ao carregar mensagens:', error);
-                document.getElementById('chat-list').innerHTML = `
-                    <div class="error-state">
-                        <p>❌ Erro ao carregar conversas</p>
-                        <button class="btn btn-sm btn-primary" onclick="loadMessages()">Tentar novamente</button>
+                console.error('Erro ao carregar conversas:', error);
+                document.getElementById('conversationsList').innerHTML = `
+                    <div style="padding: 40px; text-align: center; color: var(--text-secondary);">
+                        Erro ao carregar conversas
                     </div>
                 `;
             }
         }
 
-        let currentChat = null;
+        function renderConversations() {
+            const list = document.getElementById('conversationsList');
+            
+            if (conversations.length === 0) {
+                list.innerHTML = `
+                    <div style="padding: 40px; text-align: center; color: var(--text-secondary);">
+                        <div style="font-size: 48px; margin-bottom: 15px;">💬</div>
+                        <div>Nenhuma conversa</div>
+                        <div style="font-size: 12px;">Conecte uma instância para ver conversas</div>
+                    </div>
+                `;
+                return;
+            }
 
-        async function openChat(phone, contactName, instanceId) {
-            currentChat = { phone, contactName, instanceId };
+            list.innerHTML = conversations.map(conv => `
+                <div class="conversation-item" onclick="openConversation('${conv.contact_phone}', '${conv.contact_name}', '${conv.instance_id}')">
+                    <div class="avatar">
+                        ${conv.avatar_url ? 
+                            `<img src="${conv.avatar_url}" alt="${conv.contact_name}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                             <div style="display: none;">${conv.contact_name.charAt(0).toUpperCase()}</div>` :
+                            conv.contact_name.charAt(0).toUpperCase()
+                        }
+                    </div>
+                    <div class="conversation-info">
+                        <div class="conversation-name">${conv.contact_name}</div>
+                        <div class="last-message">${conv.last_message || 'Nova conversa'}</div>
+                    </div>
+                    <div class="conversation-time">
+                        ${conv.last_message_time ? new Date(conv.last_message_time).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'}) : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function openConversation(phone, name, instanceId) {
+            currentConversation = { phone, name, instanceId };
             
-            // Update chat header
-            document.getElementById('chat-contact-name').textContent = contactName;
-            document.getElementById('chat-contact-phone').textContent = phone;
-            document.getElementById('chat-header').style.display = 'block';
-            document.getElementById('message-input-area').style.display = 'block';
+            // Update UI
+            document.getElementById('emptyChat').style.display = 'none';
+            document.getElementById('chatHeader').classList.add('active');
+            document.getElementById('messagesArea').classList.remove('hidden');
             
-            // Load messages for this chat
+            document.getElementById('chatName').textContent = name;
+            document.getElementById('chatAvatar').textContent = name.charAt(0).toUpperCase();
+            
+            // Load messages
+            await loadMessages(phone, instanceId);
+        }
+
+        async function loadMessages(phone, instanceId) {
             try {
                 const response = await fetch(`/api/messages?phone=${phone}&instance_id=${instanceId}`);
                 const messages = await response.json();
                 
-                const messagesContainer = document.getElementById('messages-container');
+                const messagesArea = document.getElementById('messagesArea');
+                
                 if (messages.length === 0) {
-                    messagesContainer.innerHTML = `
-                        <div style="text-align: center; color: #666; margin-top: 100px;">
-                            <p>💬 Nenhuma mensagem ainda</p>
-                            <p>Comece uma conversa!</p>
+                    messagesArea.innerHTML = `
+                        <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
+                            Nenhuma mensagem ainda
                         </div>
                     `;
-                } else {
-                    messagesContainer.innerHTML = messages.map(msg => `
-                        <div class="message ${msg.direction}" style="margin-bottom: 15px; display: flex; ${msg.direction === 'outgoing' ? 'justify-content: flex-end' : 'justify-content: flex-start'};">
-                            <div class="message-bubble" style="max-width: 70%; padding: 10px 15px; border-radius: 15px; ${msg.direction === 'outgoing' ? 'background: #007bff; color: white; border-bottom-right-radius: 5px;' : 'background: white; border: 1px solid #ddd; border-bottom-left-radius: 5px;'}">
-                                <div class="message-text">${msg.message}</div>
-                                <div class="message-time" style="font-size: 0.8em; margin-top: 5px; opacity: 0.7;">
-                                    ${new Date(msg.created_at).toLocaleTimeString()}
-                                </div>
+                    return;
+                }
+
+                messagesArea.innerHTML = messages.map(msg => `
+                    <div class="message ${msg.direction === 'outgoing' ? 'sent' : 'received'}">
+                        <div class="message-bubble">
+                            <div>${msg.message}</div>
+                            <div class="message-time">
+                                ${new Date(msg.created_at).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}
                             </div>
                         </div>
-                    `).join('');
-                    
-                    // Scroll to bottom
-                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
-                }
+                    </div>
+                `).join('');
+                
+                // Scroll to bottom
+                messagesArea.scrollTop = messagesArea.scrollHeight;
                 
             } catch (error) {
                 console.error('Erro ao carregar mensagens:', error);
-                document.getElementById('messages-container').innerHTML = `
-                    <div style="text-align: center; color: red; margin-top: 100px;">
-                        <p>❌ Erro ao carregar mensagens</p>
-                    </div>
-                `;
             }
         }
 
-        async function sendMessage() {
-            if (!currentChat) return;
+        // QR Code modal
+        function showQRModal(instanceId) {
+            document.getElementById('qrModal').classList.add('show');
+            startQRPolling(instanceId);
+        }
+
+        function hideQRModal() {
+            document.getElementById('qrModal').classList.remove('show');
+            if (qrInterval) {
+                clearInterval(qrInterval);
+                qrInterval = null;
+            }
+        }
+
+        async function startQRPolling(instanceId) {
+            const qrContainer = document.getElementById('qrCode');
             
-            const messageInput = document.getElementById('message-input');
-            const message = messageInput.value.trim();
-            
-            if (!message) return;
-            
-            try {
-                const response = await fetch(`/api/messages/send/${currentChat.instanceId}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        to: currentChat.phone,
-                        message: message
-                    })
-                });
-                
-                if (response.ok) {
-                    messageInput.value = '';
-                    
-                    // Add message to UI immediately
-                    const messagesContainer = document.getElementById('messages-container');
-                    const messageDiv = document.createElement('div');
-                    messageDiv.className = 'message outgoing';
-                    messageDiv.style.cssText = 'margin-bottom: 15px; display: flex; justify-content: flex-end;';
-                    messageDiv.innerHTML = `
-                        <div class="message-bubble" style="max-width: 70%; padding: 10px 15px; border-radius: 15px; background: #007bff; color: white; border-bottom-right-radius: 5px;">
-                            <div class="message-text">${message}</div>
-                            <div class="message-time" style="font-size: 0.8em; margin-top: 5px; opacity: 0.7;">
-                                ${new Date().toLocaleTimeString()}
-                            </div>
-                        </div>
-                    `;
-                    messagesContainer.appendChild(messageDiv);
-                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
-                    
-                } else {
-                    alert('❌ Erro ao enviar mensagem');
-                }
-                
-            } catch (error) {
-                console.error('Erro ao enviar mensagem:', error);
-                alert('❌ Erro de conexão');
-            }
-        }
-
-        async function sendWebhook() {
-            if (!currentChat) {
-                alert('❌ Selecione uma conversa primeiro');
-                return;
-            }
-            
-            const webhookUrl = prompt('URL do Webhook:', 'https://webhook.site/your-webhook-url');
-            if (!webhookUrl) return;
-            
-            try {
-                const chatData = {
-                    contact_name: currentChat.contactName,
-                    contact_phone: currentChat.phone,
-                    instance_id: currentChat.instanceId,
-                    timestamp: new Date().toISOString()
-                };
-                
-                const response = await fetch('/api/webhooks/send', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        url: webhookUrl,
-                        data: chatData
-                    })
-                });
-                
-                if (response.ok) {
-                    alert('✅ Webhook enviado com sucesso!');
-                } else {
-                    alert('❌ Erro ao enviar webhook');
-                }
-                
-            } catch (error) {
-                console.error('Erro ao enviar webhook:', error);
-                alert('❌ Erro de conexão');
-            }
-        }
-
-        async function loadContacts() {
-            try {
-                const response = await fetch('/api/contacts');
-                const contacts = await response.json();
-                renderContacts(contacts);
-            } catch (error) {
-                console.error('Error loading contacts');
-                document.getElementById('contacts-container').innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-icon">❌</div>
-                        <div class="empty-title">Erro ao carregar contatos</div>
-                        <p>Tente novamente em alguns instantes</p>
-                    </div>
-                `;
-            }
-        }
-
-        function renderMessages(messages) {
-            const container = document.getElementById('messages-container');
-            if (!messages || messages.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-icon">💬</div>
-                        <div class="empty-title">Nenhuma mensagem ainda</div>
-                        <p>As mensagens do WhatsApp aparecerão aqui quando começar a receber</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            container.innerHTML = messages.map(msg => `
-                <div style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 15px; margin: 10px 0;">
-                    <div style="font-weight: 600;">${msg.from}</div>
-                    <div style="color: #6b7280; font-size: 12px; margin: 5px 0;">${new Date(msg.timestamp).toLocaleString()}</div>
-                    <div>${msg.message}</div>
-                </div>
-            `).join('');
-        }
-
-        function renderContacts(contacts) {
-            const container = document.getElementById('contacts-container');
-            if (!contacts || contacts.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-icon">👥</div>
-                        <div class="empty-title">Nenhum contato ainda</div>
-                        <p>Os contatos aparecerão aqui quando começar a receber mensagens</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            container.innerHTML = contacts.map(contact => `
-                <div style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 15px; margin: 10px 0; display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                        <div style="font-weight: 600; color: #1f2937;">${contact.name}</div>
-                        <div style="color: #6b7280; font-size: 14px;">📱 ${contact.phone}</div>
-                        <div style="color: #9ca3af; font-size: 12px;">Adicionado: ${new Date(contact.created_at).toLocaleDateString()}</div>
-                    </div>
-                    <div style="display: flex; gap: 10px;">
-                        <button class="btn btn-primary" onclick="startChat('${contact.phone}', '${contact.name}')" style="padding: 8px 12px; font-size: 12px;">💬 Conversar</button>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function startChat(phone, name) {
-            const message = prompt(`💬 Enviar mensagem para ${name} (${phone}):`);
-            if (message && message.trim()) {
-                sendMessage(phone, message.trim());
-            }
-        }
-
-        async function sendMessage(phone, message) {
-            try {
-                const response = await fetch('http://localhost:3002/send', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ to: phone, message: message })
-                });
-                
-                if (response.ok) {
-                    alert('✅ Mensagem enviada com sucesso!');
-                } else {
-                    const error = await response.json();
-                    alert(`❌ Erro ao enviar: ${error.error || 'Erro desconhecido'}`);
-                }
-            } catch (error) {
-                alert('❌ Erro de conexão ao enviar mensagem');
-                console.error('Send error:', error);
-            }
-        }
-
-        async function checkConnectionStatus() {
-            try {
-                const response = await fetch('/api/whatsapp/status');
-                const status = await response.json();
-                
-                const statusEl = document.getElementById('connection-status');
-                const userInfoEl = document.getElementById('connected-user-info');
-                
-                if (status.connected) {
-                    statusEl.className = 'status-indicator status-connected';
-                    statusEl.innerHTML = '<div class="status-dot"></div><span>WhatsApp conectado</span>';
-                    
-                    if (status.user) {
-                        userInfoEl.style.display = 'block';
-                        userInfoEl.innerHTML = `
-                            <div class="connected-user">
-                                <strong>👤 Usuário conectado:</strong><br>
-                                📱 ${status.user.name || status.user.id}<br>
-                                📞 ${status.user.id}
-                            </div>
-                        `;
-                    }
-                } else if (status.connecting) {
-                    statusEl.className = 'status-indicator status-connecting';
-                    statusEl.innerHTML = '<div class="status-dot"></div><span>Conectando WhatsApp...</span>';
-                    userInfoEl.style.display = 'none';
-                } else {
-                    statusEl.className = 'status-indicator status-disconnected';
-                    statusEl.innerHTML = '<div class="status-dot"></div><span>WhatsApp desconectado</span>';
-                    userInfoEl.style.display = 'none';
-                }
-                
-                // Update instances with connection status
-                loadInstances();
-                
-            } catch (error) {
-                console.error('Error checking status:', error);
-            }
-        }
-
-        async function startQRPolling() {
-            const container = document.getElementById('qr-container');
-            
-            qrPollingInterval = setInterval(async () => {
+            const checkQR = async () => {
                 try {
-                    const response = await fetch('/api/whatsapp/qr');
+                    const response = await fetch(`http://localhost:3002/qr/${instanceId}`);
                     const data = await response.json();
                     
                     if (data.qr) {
-                        container.innerHTML = `
-                            <div class="qr-code">
-                                <img src="https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=${encodeURIComponent(data.qr)}" 
-                                     alt="QR Code WhatsApp" style="border-radius: 8px;">
-                            </div>
-                            <p style="margin-top: 15px; color: #10b981; font-weight: 500;">✅ QR Code real gerado! Escaneie com seu WhatsApp</p>
-                        `;
+                        qrContainer.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(data.qr)}" alt="QR Code">`;
                     } else if (data.connected) {
-                        hideQRModal();
-                        alert('🎉 WhatsApp conectado com sucesso!');
-                        checkConnectionStatus();
-                    } else {
-                        container.innerHTML = `
-                            <div style="text-align: center; padding: 40px;">
-                                <div style="font-size: 2rem; margin-bottom: 15px;">⏳</div>
-                                <p>Aguardando QR Code...</p>
-                            </div>
-                        `;
+                        qrContainer.innerHTML = '✅ Conectado com sucesso!';
+                        setTimeout(() => {
+                            hideQRModal();
+                            loadInstances();
+                            loadConversations();
+                        }, 2000);
+                        return;
                     }
                 } catch (error) {
-                    console.error('Error polling QR:', error);
+                    qrContainer.innerHTML = 'Erro ao gerar QR Code';
                 }
-            }, 2000);
+            };
+            
+            checkQR();
+            qrInterval = setInterval(checkQR, 3000);
         }
 
-        function renderInstances() {
-            const container = document.getElementById('instances-container');
+        // Modal functions
+        function showCreateModal() {
+            document.getElementById('createModal').classList.add('show');
+        }
+
+        function hideCreateModal() {
+            document.getElementById('createModal').classList.remove('show');
+            document.getElementById('instanceName').value = '';
+        }
+
+        // Search functionality
+        function filterConversations() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const items = document.querySelectorAll('.conversation-item');
             
-            if (!instances || instances.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state" style="grid-column: 1 / -1;">
-                        <div class="empty-icon">📱</div>
-                        <div class="empty-title">Nenhuma instância</div>
-                        <p>Crie sua primeira instância WhatsApp para começar</p>
-                        <br>
-                        <button class="btn btn-primary" onclick="showCreateModal()">🚀 Criar Primeira Instância</button>
-                    </div>
-                `;
-                return;
+            items.forEach(item => {
+                const name = item.querySelector('.conversation-name').textContent.toLowerCase();
+                const message = item.querySelector('.last-message').textContent.toLowerCase();
+                
+                if (name.includes(search) || message.includes(search)) {
+                    item.style.display = 'flex';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+
+        // Mobile functions
+        function closeChatMobile() {
+            document.getElementById('emptyChat').style.display = 'flex';
+            document.getElementById('chatHeader').classList.remove('active');
+            document.getElementById('messagesArea').classList.add('hidden');
+            currentConversation = null;
+        }
+
+        function changeInstance() {
+            selectedInstance = document.getElementById('instanceSelect').value;
+            if (selectedInstance) {
+                loadConversations();
             }
-
-            container.innerHTML = instances.map(instance => `
-                <div class="instance-card ${instance.connected ? 'connected' : ''}">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
-                        <div>
-                            <h3>${instance.name}</h3>
-                            <small>ID: ${instance.id.substring(0, 8)}...</small>
-                        </div>
-                        <div class="status-indicator ${instance.connected ? 'status-connected' : 'status-disconnected'}">
-                            <div class="status-dot"></div>
-                            <span>${instance.connected ? 'Conectado' : 'Desconectado'}</span>
-                        </div>
-                    </div>
-                    
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 15px 0;">
-                        <div style="text-align: center; padding: 15px; background: #f9fafb; border-radius: 8px;">
-                            <div style="font-size: 1.5rem; font-weight: bold; color: #4f46e5;">${instance.contacts_count || 0}</div>
-                            <div style="font-size: 12px; color: #6b7280;">Contatos</div>
-                        </div>
-                        <div style="text-align: center; padding: 15px; background: #f9fafb; border-radius: 8px;">
-                            <div style="font-size: 1.5rem; font-weight: bold; color: #4f46e5;">${instance.messages_today || 0}</div>
-                            <div style="font-size: 12px; color: #6b7280;">Mensagens</div>
-                        </div>
-                    </div>
-                    
-                    <div style="display: flex; gap: 10px;">
-                        ${!instance.connected ? 
-                            `<button class="btn btn-success" onclick="connectInstance('${instance.id}')" style="flex: 1;">🔗 Conectar Real</button>` :
-                            `<button class="btn btn-secondary" disabled style="flex: 1;">✅ Conectado</button>`
-                        }
-                        <button class="btn btn-primary" onclick="showQRCode('${instance.id}')">📋 Ver QR Code</button>
-                        <button class="btn btn-danger" onclick="disconnectInstance('${instance.id}')">❌ Desconectar</button>
-                        <button class="btn btn-danger" onclick="deleteInstance('${instance.id}', '${instance.name}')">🗑️ Excluir</button>
-                    </div>
-                </div>
-            `).join('');
         }
 
-        // Initialize
-        document.addEventListener('DOMContentLoaded', function() {
-            loadStats();
-            checkConnectionStatus();
-            
-            // Start status polling
-            statusPollingInterval = setInterval(checkConnectionStatus, 5000);
-            
-            // Update stats every 30 seconds
-            setInterval(loadStats, 30000);
-            
-            document.getElementById('createModal').addEventListener('click', function(e) {
-                if (e.target === this) this.classList.remove('show');
-            });
-            
-            document.getElementById('qrModal').addEventListener('click', function(e) {
-                if (e.target === this) closeQRModal();
-            });
-        });
-
-        // Cleanup on page unload
-        window.addEventListener('beforeunload', function() {
-            if (qrPollingInterval) clearInterval(qrPollingInterval);
-            if (statusPollingInterval) clearInterval(statusPollingInterval);
-        });
+        // Auto refresh
+        setInterval(() => {
+            if (document.querySelector('.nav-item.active').textContent === 'Conversas') {
+                loadConversations();
+            }
+        }, 30000); // Refresh every 30 seconds
     </script>
 </body>
 </html>'''
 
-# Database (same as Pure)
+# Database initialization
 def init_db():
     """Initialize SQLite database with WAL mode for better concurrency"""
     conn = sqlite3.connect(DB_FILE)
@@ -1538,7 +1027,7 @@ def init_db():
         )
     """)
     
-    # Contacts table (updated with instance_id)
+    # Contacts table
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS contacts (
             id TEXT PRIMARY KEY,
@@ -1550,7 +1039,7 @@ def init_db():
         )
     """)
     
-    # Messages table (updated with instance support)
+    # Messages table
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS messages (
             id TEXT PRIMARY KEY,
@@ -1565,18 +1054,7 @@ def init_db():
         )
     """)
     
-    # Webhooks table (new)
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS webhooks (
-            id TEXT PRIMARY KEY,
-            name TEXT NOT NULL,
-            url TEXT NOT NULL,
-            enabled INTEGER DEFAULT 1,
-            created_at TEXT
-        )
-    """)
-    
-    # Chats table (new for conversation management)
+    # Chats table for conversation management
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS chats (
             id TEXT PRIMARY KEY,
@@ -1586,79 +1064,58 @@ def init_db():
             last_message TEXT,
             last_message_time TEXT,
             unread_count INTEGER DEFAULT 0,
+            avatar_url TEXT,
             created_at TEXT
         )
     """)
     
     conn.commit()
     conn.close()
-    print("✅ Banco de dados inicializado")
 
-def add_sample_data():
-    conn = sqlite3.connect(DB_FILE)
-    cursor = conn.cursor()
-    
-    cursor.execute("SELECT COUNT(*) FROM instances")
-    if cursor.fetchone()[0] > 0:
-        conn.close()
-        return
-    
-    current_time = datetime.now(timezone.utc).isoformat()
-    
-    # Sample instance
-    instance_id = str(uuid.uuid4())
-    cursor.execute("INSERT INTO instances (id, name, contacts_count, messages_today, created_at) VALUES (?, ?, ?, ?, ?)",
-                  (instance_id, "WhatsApp Principal", 0, 0, current_time))
-    
-    conn.commit()
-    conn.close()
-
-# Baileys Service Manager
-class BaileysManager:
+class BaileysService:
     def __init__(self):
         self.process = None
         self.is_running = False
-        self.baileys_dir = "baileys_service"
         
-    def start_baileys(self):
-        """Start Baileys service"""
+    def start(self):
         if self.is_running:
             return True
             
         try:
-            print("📦 Configurando serviço Baileys...")
-            
-            # Create Baileys service directory
-            if not os.path.exists(self.baileys_dir):
-                os.makedirs(self.baileys_dir)
-                print(f"✅ Diretório {self.baileys_dir} criado")
-            
-            # Create package.json
-            package_json = {
-                "name": "whatsflow-baileys",
-                "version": "1.0.0",
-                "description": "WhatsApp Baileys Service for WhatsFlow",
-                "main": "server.js",
-                "dependencies": {
-                    "@whiskeysockets/baileys": "^6.7.0",
-                    "express": "^4.18.2",
-                    "cors": "^2.8.5",
-                    "qrcode-terminal": "^0.12.0"
-                },
-                "scripts": {
-                    "start": "node server.js"
-                }
+            # Check if Node.js is available
+            subprocess.run(['node', '--version'], capture_output=True, check=True)
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            print("⚠️ Node.js não encontrado - Baileys não será iniciado")
+            return False
+        
+        # Create baileys service directory
+        baileys_dir = "baileys_service"
+        if not os.path.exists(baileys_dir):
+            os.makedirs(baileys_dir)
+        
+        # Create package.json
+        package_json = {
+            "name": "whatsflow-baileys",
+            "version": "1.0.0",
+            "main": "server.js",
+            "dependencies": {
+                "@whiskeysockets/baileys": "^6.7.5",
+                "express": "^4.18.2",
+                "cors": "^2.8.5",
+                "qrcode-terminal": "^0.12.0",
+                "node-fetch": "^2.6.7"
             }
-            
-            package_path = f"{self.baileys_dir}/package.json"
-            with open(package_path, 'w') as f:
-                json.dump(package_json, f, indent=2)
-            print("✅ package.json criado")
-            
-            # Create Baileys server
-            baileys_server = '''const express = require('express');
+        }
+        
+        with open(f"{baileys_dir}/package.json", 'w') as f:
+            json.dump(package_json, f, indent=2)
+        
+        print("✅ package.json criado")
+        
+        # Create improved server.js with better name/photo extraction
+        server_js = '''const express = require('express');
 const cors = require('cors');
-const { DisconnectReason, useMultiFileAuthState, downloadMediaMessage } = require('@whiskeysockets/baileys');
+const { DisconnectReason, useMultiFileAuthState, downloadMediaMessage, getAggregateVotesInPollMessage } = require('@whiskeysockets/baileys');
 const makeWASocket = require('@whiskeysockets/baileys').default;
 const qrTerminal = require('qrcode-terminal');
 const fs = require('fs');
@@ -1668,36 +1125,14 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Global state management
-let instances = new Map(); // instanceId -> { sock, qr, connected, connecting, user }
+let instances = new Map();
 let currentQR = null;
 let qrUpdateInterval = null;
-
-// QR Code auto-refresh every 30 seconds (WhatsApp QR expires after 60s)
-const startQRRefresh = (instanceId) => {
-    if (qrUpdateInterval) clearInterval(qrUpdateInterval);
-    
-    qrUpdateInterval = setInterval(() => {
-        const instance = instances.get(instanceId);
-        if (instance && !instance.connected && instance.connecting) {
-            console.log('🔄 QR Code expirado, gerando novo...');
-            // Don't reconnect immediately, let WhatsApp generate new QR
-        }
-    }, 30000); // 30 seconds
-};
-
-const stopQRRefresh = () => {
-    if (qrUpdateInterval) {
-        clearInterval(qrUpdateInterval);
-        qrUpdateInterval = null;
-    }
-};
 
 async function connectInstance(instanceId) {
     try {
         console.log(`🔄 Iniciando conexão para instância: ${instanceId}`);
         
-        // Create instance directory
         const authDir = `./auth_${instanceId}`;
         if (!fs.existsSync(authDir)) {
             fs.mkdirSync(authDir, { recursive: true });
@@ -1707,18 +1142,15 @@ async function connectInstance(instanceId) {
         
         const sock = makeWASocket({
             auth: state,
-            browser: ['WhatsFlow', 'Desktop', '1.0.0'],
+            browser: ['WhatsFlow Professional', 'Desktop', '1.0.0'],
             connectTimeoutMs: 60000,
             defaultQueryTimeoutMs: 0,
             keepAliveIntervalMs: 30000,
             generateHighQualityLinkPreview: true,
             markOnlineOnConnect: true,
-            syncFullHistory: true,
-            retryRequestDelayMs: 5000,
-            maxRetries: 5
+            syncFullHistory: true
         });
 
-        // Initialize instance
         instances.set(instanceId, {
             sock: sock,
             qr: null,
@@ -1737,72 +1169,26 @@ async function connectInstance(instanceId) {
                 currentQR = qr;
                 instance.qr = qr;
                 
-                // Manual QR display in terminal (since printQRInTerminal is deprecated)
                 try {
                     qrTerminal.generate(qr, { small: true });
                 } catch (err) {
                     console.log('⚠️ QR Terminal não disponível:', err.message);
                 }
-                
-                startQRRefresh(instanceId);
             }
             
             if (connection === 'close') {
                 const shouldReconnect = (lastDisconnect?.error)?.output?.statusCode !== DisconnectReason.loggedOut;
                 const reason = lastDisconnect?.error?.output?.statusCode || 'unknown';
                 
-                console.log(`🔌 Instância ${instanceId} desconectada. Razão: ${reason}, Reconectar: ${shouldReconnect}`);
+                console.log(`🔌 Instância ${instanceId} desconectada. Razão: ${reason}`);
                 
                 instance.connected = false;
                 instance.connecting = false;
                 instance.user = null;
-                stopQRRefresh();
                 
-                // Implement robust reconnection logic
-                if (shouldReconnect) {
-                    if (reason === DisconnectReason.restartRequired) {
-                        console.log(`🔄 Restart requerido para ${instanceId}`);
-                        setTimeout(() => connectInstance(instanceId), 5000);
-                    } else if (reason === DisconnectReason.connectionClosed) {
-                        console.log(`🔄 Conexão fechada, reconectando ${instanceId}`);
-                        setTimeout(() => connectInstance(instanceId), 10000);
-                    } else if (reason === DisconnectReason.connectionLost) {
-                        console.log(`🔄 Conexão perdida, reconectando ${instanceId}`);
-                        setTimeout(() => connectInstance(instanceId), 15000);
-                    } else if (reason === DisconnectReason.timedOut) {
-                        console.log(`⏱️ Timeout, reconectando ${instanceId}`);
-                        setTimeout(() => connectInstance(instanceId), 20000);
-                    } else {
-                        console.log(`🔄 Reconectando ${instanceId} em 30 segundos`);
-                        setTimeout(() => connectInstance(instanceId), 30000);
-                    }
-                } else {
-                    console.log(`❌ Instância ${instanceId} deslogada permanentemente`);
-                    // Clean auth files if logged out
-                    try {
-                        const authPath = path.join('./auth_' + instanceId);
-                        if (fs.existsSync(authPath)) {
-                            fs.rmSync(authPath, { recursive: true, force: true });
-                            console.log(`🧹 Arquivos de auth removidos para ${instanceId}`);
-                        }
-                    } catch (err) {
-                        console.log('⚠️ Erro ao limpar arquivos de auth:', err.message);
-                    }
-                }
-                
-                // Notify backend about disconnection
-                try {
-                    const fetch = (await import('node-fetch')).default;
-                    await fetch('http://localhost:8889/api/whatsapp/disconnected', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            instanceId: instanceId,
-                            reason: reason
-                        })
-                    });
-                } catch (err) {
-                    console.log('⚠️ Não foi possível notificar desconexão:', err.message);
+                if (shouldReconnect && reason !== DisconnectReason.loggedOut) {
+                    console.log(`🔄 Reconectando ${instanceId} em 10 segundos`);
+                    setTimeout(() => connectInstance(instanceId), 10000);
                 }
                 
             } else if (connection === 'open') {
@@ -1812,42 +1198,88 @@ async function connectInstance(instanceId) {
                 instance.qr = null;
                 instance.lastSeen = new Date();
                 currentQR = null;
-                stopQRRefresh();
                 
                 // Get user info
                 instance.user = {
                     id: sock.user.id,
                     name: sock.user.name || sock.user.id.split(':')[0],
-                    profilePictureUrl: null,
                     phone: sock.user.id.split(':')[0]
                 };
                 
                 console.log(`👤 Usuário conectado: ${instance.user.name} (${instance.user.phone})`);
                 
-                // Try to get profile picture
-                try {
-                    const profilePic = await sock.profilePictureUrl(sock.user.id, 'image');
-                    instance.user.profilePictureUrl = profilePic;
-                    console.log('📸 Foto do perfil obtida');
-                } catch (err) {
-                    console.log('⚠️ Não foi possível obter foto do perfil');
-                }
-                
-                // Wait a bit before importing chats to ensure connection is stable
+                // Wait and import chats with enhanced name extraction
                 setTimeout(async () => {
                     try {
-                        console.log('📥 Importando conversas existentes...');
+                        console.log('📥 Importando conversas com nomes reais...');
                         
-                        // Get all chats
                         const chats = await sock.getChats();
                         console.log(`📊 ${chats.length} conversas encontradas`);
                         
-                        // Process chats in batches to avoid overwhelming the system
-                        const batchSize = 20;
-                        for (let i = 0; i < chats.length; i += batchSize) {
-                            const batch = chats.slice(i, i + batchSize);
+                        const enhancedChats = [];
+                        
+                        for (const chat of chats) {
+                            if (chat.id && !chat.id.endsWith('@g.us')) { // Skip groups
+                                let contactName = chat.name || chat.pushName || chat.notify;
+                                let profilePicUrl = null;
+                                
+                                try {
+                                    // Get contact from phone book
+                                    const contactInfo = await sock.getContact(chat.id);
+                                    if (contactInfo && contactInfo.name) {
+                                        contactName = contactInfo.name;
+                                    }
+                                    
+                                    // Try multiple methods to get the name
+                                    if (!contactName || contactName.includes('@')) {
+                                        // Try to get name from WhatsApp profile
+                                        try {
+                                            const profileInfo = await sock.getProfile(chat.id);
+                                            if (profileInfo && profileInfo.name) {
+                                                contactName = profileInfo.name;
+                                            }
+                                        } catch (e) {
+                                            // Profile not accessible
+                                        }
+                                        
+                                        // Try presence to get name
+                                        if (!contactName || contactName.includes('@')) {
+                                            const phone = chat.id.replace('@s.whatsapp.net', '').replace('@c.us', '');
+                                            contactName = `+${phone}`;
+                                        }
+                                    }
+                                    
+                                    // Get profile picture
+                                    try {
+                                        profilePicUrl = await sock.profilePictureUrl(chat.id, 'image');
+                                        console.log(`📸 Foto obtida para ${contactName}`);
+                                    } catch (ppErr) {
+                                        // No profile picture - that's ok
+                                    }
+                                    
+                                } catch (err) {
+                                    console.log(`⚠️ Erro ao processar contato ${chat.id}: ${err.message}`);
+                                    const phone = chat.id.replace('@s.whatsapp.net', '').replace('@c.us', '');
+                                    contactName = `+${phone}`;
+                                }
+                                
+                                enhancedChats.push({
+                                    ...chat,
+                                    enhancedName: contactName,
+                                    profilePicUrl: profilePicUrl
+                                });
+                                
+                                console.log(`👤 Processado: ${contactName} - Foto: ${profilePicUrl ? '✅' : '❌'}`);
+                            }
+                        }
+                        
+                        console.log(`📊 ${enhancedChats.length} conversas processadas com nomes aprimorados`);
+                        
+                        // Send to backend in batches
+                        const batchSize = 10;
+                        for (let i = 0; i < enhancedChats.length; i += batchSize) {
+                            const batch = enhancedChats.slice(i, i + batchSize);
                             
-                            // Send batch to Python backend
                             const fetch = (await import('node-fetch')).default;
                             await fetch('http://localhost:8889/api/chats/import', {
                                 method: 'POST',
@@ -1857,24 +1289,22 @@ async function connectInstance(instanceId) {
                                     chats: batch,
                                     user: instance.user,
                                     batchNumber: Math.floor(i / batchSize) + 1,
-                                    totalBatches: Math.ceil(chats.length / batchSize)
+                                    totalBatches: Math.ceil(enhancedChats.length / batchSize)
                                 })
                             });
                             
-                            console.log(`📦 Lote ${Math.floor(i / batchSize) + 1}/${Math.ceil(chats.length / batchSize)} enviado`);
-                            
-                            // Small delay between batches
-                            await new Promise(resolve => setTimeout(resolve, 1000));
+                            console.log(`📦 Lote ${Math.floor(i / batchSize) + 1}/${Math.ceil(enhancedChats.length / batchSize)} enviado`);
+                            await new Promise(resolve => setTimeout(resolve, 2000));
                         }
                         
-                        console.log('✅ Importação de conversas concluída');
+                        console.log('✅ Importação de conversas com nomes reais concluída');
                         
                     } catch (err) {
                         console.log('⚠️ Erro ao importar conversas:', err.message);
                     }
-                }, 5000); // Wait 5 seconds after connection
+                }, 3000);
                 
-                // Send connected notification to Python backend
+                // Notify backend about connection
                 setTimeout(async () => {
                     try {
                         const fetch = (await import('node-fetch')).default;
@@ -1891,18 +1321,13 @@ async function connectInstance(instanceId) {
                     } catch (err) {
                         console.log('⚠️ Erro ao notificar backend:', err.message);
                     }
-                }, 2000);
-                
-            } else if (connection === 'connecting') {
-                console.log(`🔄 Conectando instância ${instanceId}...`);
-                instance.connecting = true;
-                instance.lastSeen = new Date();
+                }, 1000);
             }
         });
 
         sock.ev.on('creds.update', saveCreds);
         
-        // Handle incoming messages with better error handling
+        // Handle incoming messages
         sock.ev.on('messages.upsert', async (m) => {
             const messages = m.messages;
             
@@ -1913,55 +1338,32 @@ async function connectInstance(instanceId) {
                                       message.message.extendedTextMessage?.text || 
                                       'Mídia recebida';
                     
-                    console.log(`📥 Nova mensagem na instância ${instanceId} de: ${from.split('@')[0]} - ${messageText.substring(0, 50)}...`);
+                    console.log(`📥 Nova mensagem de: ${from.split('@')[0]} - ${messageText.substring(0, 50)}...`);
                     
-                    // Send to Python backend with retry logic
-                    let retries = 3;
-                    while (retries > 0) {
-                        try {
-                            const fetch = (await import('node-fetch')).default;
-                            const response = await fetch('http://localhost:8889/api/messages/receive', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                    instanceId: instanceId,
-                                    from: from,
-                                    message: messageText,
-                                    timestamp: new Date().toISOString(),
-                                    messageId: message.key.id,
-                                    messageType: message.message.conversation ? 'text' : 'media'
-                                })
-                            });
-                            
-                            if (response.ok) {
-                                break; // Success, exit retry loop
-                            } else {
-                                throw new Error(`HTTP ${response.status}`);
-                            }
-                        } catch (err) {
-                            retries--;
-                            console.log(`❌ Erro ao enviar mensagem (tentativas restantes: ${retries}):`, err.message);
-                            if (retries > 0) {
-                                await new Promise(resolve => setTimeout(resolve, 2000));
-                            }
-                        }
+                    // Send to backend
+                    try {
+                        const fetch = (await import('node-fetch')).default;
+                        await fetch('http://localhost:8889/api/messages/receive', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                instanceId: instanceId,
+                                from: from,
+                                message: messageText,
+                                timestamp: new Date().toISOString(),
+                                messageId: message.key.id,
+                                messageType: message.message.conversation ? 'text' : 'media'
+                            })
+                        });
+                    } catch (err) {
+                        console.log(`❌ Erro ao enviar mensagem: ${err.message}`);
                     }
                 }
             }
         });
 
-        // Keep connection alive with heartbeat
-        setInterval(() => {
-            const instance = instances.get(instanceId);
-            if (instance && instance.connected && instance.sock) {
-                instance.lastSeen = new Date();
-                // Send heartbeat
-                instance.sock.sendPresenceUpdate('available').catch(() => {});
-            }
-        }, 60000); // Every minute
-
     } catch (error) {
-        console.error(`❌ Erro fatal ao conectar instância ${instanceId}:`, error);
+        console.error(`❌ Erro ao conectar instância ${instanceId}:`, error);
         const instance = instances.get(instanceId);
         if (instance) {
             instance.connecting = false;
@@ -1970,7 +1372,7 @@ async function connectInstance(instanceId) {
     }
 }
 
-// API Routes with better error handling
+// API Routes
 app.get('/status/:instanceId?', (req, res) => {
     const { instanceId } = req.params;
     
@@ -1994,7 +1396,6 @@ app.get('/status/:instanceId?', (req, res) => {
             });
         }
     } else {
-        // Return all instances
         const allInstances = {};
         for (const [id, instance] of instances) {
             allInstances[id] = {
@@ -2017,7 +1418,7 @@ app.get('/qr/:instanceId', (req, res) => {
             qr: instance.qr,
             connected: instance.connected,
             instanceId: instanceId,
-            expiresIn: 60 // QR expires in 60 seconds
+            expiresIn: 60
         });
     } else {
         res.json({
@@ -2034,7 +1435,7 @@ app.post('/connect/:instanceId', (req, res) => {
     
     const instance = instances.get(instanceId);
     if (!instance || (!instance.connected && !instance.connecting)) {
-        connectInstance(instanceId || 'default');
+        connectInstance(instanceId);
         res.json({ success: true, message: `Iniciando conexão para instância ${instanceId}...` });
     } else if (instance.connecting) {
         res.json({ success: true, message: `Instância ${instanceId} já está conectando...` });
@@ -2051,7 +1452,6 @@ app.post('/disconnect/:instanceId', (req, res) => {
         try {
             instance.sock.logout();
             instances.delete(instanceId);
-            stopQRRefresh();
             res.json({ success: true, message: `Instância ${instanceId} desconectada` });
         } catch (err) {
             res.json({ success: false, message: `Erro ao desconectar ${instanceId}: ${err.message}` });
@@ -2061,38 +1461,6 @@ app.post('/disconnect/:instanceId', (req, res) => {
     }
 });
 
-app.post('/send/:instanceId', async (req, res) => {
-    const { instanceId } = req.params;
-    const { to, message, type = 'text' } = req.body;
-    
-    const instance = instances.get(instanceId);
-    if (!instance || !instance.connected || !instance.sock) {
-        return res.status(400).json({ error: 'Instância não conectada', instanceId: instanceId });
-    }
-    
-    try {
-        const jid = to.includes('@') ? to : `${to}@s.whatsapp.net`;
-        
-        if (type === 'text') {
-            await instance.sock.sendMessage(jid, { text: message });
-        } else if (type === 'image' && req.body.imageData) {
-            // Handle image sending (base64)
-            const buffer = Buffer.from(req.body.imageData, 'base64');
-            await instance.sock.sendMessage(jid, { 
-                image: buffer,
-                caption: message || ''
-            });
-        }
-        
-        console.log(`📤 Mensagem enviada da instância ${instanceId} para ${to}`);
-        res.json({ success: true, instanceId: instanceId });
-    } catch (error) {
-        console.error(`❌ Erro ao enviar mensagem da instância ${instanceId}:`, error);
-        res.status(500).json({ error: error.message, instanceId: instanceId });
-    }
-});
-
-// Health check endpoint
 app.get('/health', (req, res) => {
     const connectedInstances = Array.from(instances.values()).filter(i => i.connected).length;
     const connectingInstances = Array.from(instances.values()).filter(i => i.connecting).length;
@@ -2111,129 +1479,75 @@ app.get('/health', (req, res) => {
 
 const PORT = process.env.PORT || 3002;
 app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 Baileys service rodando na porta ${PORT}`);
-    console.log(`📊 Health check: http://localhost:${PORT}/health`);
+    console.log(`🚀 Baileys Professional service rodando na porta ${PORT}`);
     console.log('⏳ Aguardando comandos para conectar instâncias...');
 });'''
-            
-            server_path = f"{self.baileys_dir}/server.js"
-            with open(server_path, 'w') as f:
-                f.write(baileys_server)
-            print("✅ server.js criado")
-            
-            # Install dependencies
-            print("📦 Iniciando instalação das dependências...")
-            print("   Isso pode levar alguns minutos na primeira vez...")
-            
-            try:
-                # Try npm first, then yarn
-                result = subprocess.run(['npm', 'install'], cwd=self.baileys_dir, 
-                                      capture_output=True, text=True, timeout=300)
-                if result.returncode != 0:
-                    print("⚠️ npm falhou, tentando yarn...")
-                    result = subprocess.run(['yarn', 'install'], cwd=self.baileys_dir, 
-                                          capture_output=True, text=True, timeout=300)
-                
-                if result.returncode == 0:
-                    print("✅ Dependências instaladas com sucesso!")
-                    # Install node-fetch specifically (required for backend communication)
-                    print("📦 Instalando node-fetch...")
-                    fetch_result = subprocess.run(['npm', 'install', 'node-fetch@2.6.7'], 
-                                                cwd=self.baileys_dir, capture_output=True, text=True)
-                    if fetch_result.returncode == 0:
-                        print("✅ node-fetch instalado com sucesso!")
-                    else:
-                        print("⚠️ Aviso: node-fetch pode não ter sido instalado corretamente")
-                else:
-                    print(f"❌ Erro na instalação: {result.stderr}")
-                    return False
-                    
-            except subprocess.TimeoutExpired:
-                print("⏰ Timeout na instalação - continuando mesmo assim...")
-            except FileNotFoundError:
-                print("❌ npm/yarn não encontrado. Por favor instale Node.js primeiro.")
-                return False
-            
-            # Start the service
-            print("🚀 Iniciando serviço Baileys...")
-            try:
-                self.process = subprocess.Popen(
-                    ['node', 'server.js'],
-                    cwd=self.baileys_dir,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    text=True
-                )
-                
-                self.is_running = True
-                
-                # Wait a bit and check if it's still running
-                time.sleep(3)
-                if self.process.poll() is None:
-                    print("✅ Baileys iniciado com sucesso!")
-                    return True
-                else:
-                    stdout, stderr = self.process.communicate()
-                    print(f"❌ Baileys falhou ao iniciar:")
-                    print(f"stdout: {stdout}")
-                    print(f"stderr: {stderr}")
-                    return False
-                    
-            except FileNotFoundError:
-                print("❌ Node.js não encontrado no sistema")
-                return False
-            
-        except Exception as e:
-            print(f"❌ Erro ao configurar Baileys: {e}")
+        
+        with open(f"{baileys_dir}/server.js", 'w') as f:
+            f.write(server_js)
+        
+        print("✅ server.js aprimorado criado")
+        
+        # Install dependencies
+        print("📦 Iniciando instalação das dependências...")
+        print("   Isso pode levar alguns minutos na primeira vez...")
+        
+        try:
+            subprocess.run(['npm', 'install'], cwd=baileys_dir, capture_output=True, check=True)
+            print("✅ Dependências instaladas com sucesso!")
+        except subprocess.CalledProcessError as e:
+            print(f"❌ Erro na instalação: {e}")
             return False
-    
-    def stop_baileys(self):
-        """Stop Baileys service"""
-        if self.process:
-            try:
-                self.process.terminate()
-                self.process.wait(timeout=10)
-                print("✅ Baileys parado com sucesso")
-            except subprocess.TimeoutExpired:
-                self.process.kill()
-                print("⚠️ Baileys forçadamente terminado")
+        
+        # Install node-fetch specifically
+        try:
+            subprocess.run(['npm', 'install', 'node-fetch@2.6.7'], cwd=baileys_dir, capture_output=True, check=True)
+            print("✅ node-fetch instalado com sucesso!")
+        except subprocess.CalledProcessError:
+            print("⚠️ Erro ao instalar node-fetch - continuando...")
+        
+        # Start Baileys service
+        print("🚀 Iniciando serviço Baileys...")
+        try:
+            self.process = subprocess.Popen(
+                ['node', 'server.js'],
+                cwd=baileys_dir,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE
+            )
             
-            self.is_running = False
-            self.process = None
+            # Check if started successfully
+            time.sleep(2)
+            if self.process.poll() is None:
+                self.is_running = True
+                print("✅ Baileys iniciado com sucesso!")
+                return True
+            else:
+                stdout, stderr = self.process.communicate()
+                print(f"❌ Baileys falhou ao iniciar:")
+                print(f"stdout: {stdout.decode()}")
+                print(f"stderr: {stderr.decode()}")
+                return False
+                
+        except Exception as e:
+            print(f"❌ Erro ao iniciar Baileys: {e}")
+            return False
 
-# HTTP Handler with Baileys integration
-class WhatsFlowRealHandler(BaseHTTPRequestHandler):
+# HTTP Handler
+class WhatsFlowHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path == '/':
             self.send_html_response(HTML_APP)
         elif self.path == '/api/instances':
             self.handle_get_instances()
-        elif self.path == '/api/stats':
-            self.handle_get_stats()
-        elif self.path == '/api/messages':
-            self.handle_get_messages()
-        elif self.path == '/api/whatsapp/status':
-            # Fallback for backward compatibility - use default instance
-            self.handle_whatsapp_status('default')
-        elif self.path == '/api/whatsapp/qr':
-            # Fallback for backward compatibility - use default instance
-            self.handle_whatsapp_qr('default')
         elif self.path == '/api/contacts':
             self.handle_get_contacts()
         elif self.path == '/api/chats':
             self.handle_get_chats()
-        elif self.path == '/api/webhooks/send':
-            self.handle_send_webhook()
-        elif self.path.startswith('/api/whatsapp/status/'):
-            instance_id = self.path.split('/')[-1]
-            self.handle_whatsapp_status(instance_id)
-        elif self.path.startswith('/api/whatsapp/qr/'):
-            instance_id = self.path.split('/')[-1]
-            self.handle_whatsapp_qr(instance_id)
+        elif self.path == '/api/messages':
+            self.handle_get_messages()
         elif self.path.startswith('/api/messages?'):
             self.handle_get_messages_filtered()
-        elif self.path == '/api/webhooks':
-            self.handle_get_webhooks()
         else:
             self.send_error(404, "Not Found")
     
@@ -2248,27 +1562,10 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             self.handle_disconnect_instance(instance_id)
         elif self.path == '/api/messages/receive':
             self.handle_receive_message()
-        elif self.path == '/api/whatsapp/connected':
-            self.handle_whatsapp_connected()
-        elif self.path == '/api/whatsapp/disconnected':
-            self.handle_whatsapp_disconnected()
         elif self.path == '/api/chats/import':
             self.handle_import_chats()
-        elif self.path.startswith('/api/whatsapp/connect/'):
-            instance_id = self.path.split('/')[-1]
-            self.handle_connect_instance(instance_id)
-        elif self.path.startswith('/api/whatsapp/disconnect/'):
-            instance_id = self.path.split('/')[-1]
-            self.handle_disconnect_instance(instance_id)
-        elif self.path.startswith('/api/whatsapp/status/'):
-            instance_id = self.path.split('/')[-1]
-            self.handle_whatsapp_status(instance_id)
-        elif self.path.startswith('/api/whatsapp/qr/'):
-            instance_id = self.path.split('/')[-1]
-            self.handle_whatsapp_qr(instance_id)
-        elif self.path.startswith('/api/messages/send/'):
-            instance_id = self.path.split('/')[-1]
-            self.handle_send_message(instance_id)
+        elif self.path == '/api/whatsapp/connected':
+            self.handle_whatsapp_connected()
         else:
             self.send_error(404, "Not Found")
     
@@ -2288,13 +1585,10 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
     
     def send_json_response(self, data, status_code=200):
         self.send_response(status_code)
-        self.send_header('Content-type', 'application/json; charset=utf-8')
-        self.send_header('Access-Control-Allow-Origin', '*')
-        self.send_header('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS')
-        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+        self.send_header('Content-type', 'application/json')
+        self.send_header('Cache-Control', 'no-cache')
         self.end_headers()
-        json_data = json.dumps(data, ensure_ascii=False, indent=2)
-        self.wfile.write(json_data.encode('utf-8'))
+        self.wfile.write(json.dumps(data).encode('utf-8'))
     
     def handle_get_instances(self):
         try:
@@ -2308,578 +1602,73 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
         except Exception as e:
             self.send_json_response({"error": str(e)}, 500)
     
-    def handle_get_stats(self):
-        try:
-            conn = sqlite3.connect(DB_FILE)
-            cursor = conn.cursor()
-            
-            cursor.execute("SELECT COUNT(*) FROM contacts")
-            contacts_count = cursor.fetchone()[0]
-            
-            cursor.execute("SELECT COUNT(*) FROM messages")
-            messages_count = cursor.fetchone()[0]
-            
-            conn.close()
-            
-            stats = {
-                "contacts_count": contacts_count,
-                "conversations_count": contacts_count,
-                "messages_count": messages_count
-            }
-            
-            self.send_json_response(stats)
-        except Exception as e:
-            self.send_json_response({"error": str(e)}, 500)
-    
-    def handle_get_messages(self):
-        try:
-            conn = sqlite3.connect(DB_FILE)
-            conn.row_factory = sqlite3.Row
-            cursor = conn.cursor()
-            cursor.execute("SELECT * FROM messages ORDER BY created_at DESC LIMIT 50")
-            messages = [dict(row) for row in cursor.fetchall()]
-            conn.close()
-            self.send_json_response(messages)
-        except Exception as e:
-            self.send_json_response({"error": str(e)}, 500)
-    
     def handle_create_instance(self):
         try:
             content_length = int(self.headers.get('Content-Length', 0))
-            if content_length == 0:
-                self.send_json_response({"error": "No data provided"}, 400)
-                return
-                
             post_data = self.rfile.read(content_length)
             data = json.loads(post_data.decode('utf-8'))
-            
-            if 'name' not in data or not data['name'].strip():
-                self.send_json_response({"error": "Name is required"}, 400)
-                return
             
             instance_id = str(uuid.uuid4())
-            created_at = datetime.now(timezone.utc).isoformat()
+            name = data.get('name', f'Instance {instance_id[:8]}')
             
             conn = sqlite3.connect(DB_FILE)
             cursor = conn.cursor()
             cursor.execute("""
-                INSERT INTO instances (id, name, created_at)
-                VALUES (?, ?, ?)
-            """, (instance_id, data['name'].strip(), created_at))
+                INSERT INTO instances (id, name, connected, created_at)
+                VALUES (?, ?, 0, ?)
+            """, (instance_id, name, datetime.now(timezone.utc).isoformat()))
             conn.commit()
             conn.close()
-            
-            result = {
-                "id": instance_id,
-                "name": data['name'].strip(),
-                "connected": 0,
-                "contacts_count": 0,
-                "messages_today": 0,
-                "created_at": created_at
-            }
-            
-            self.send_json_response(result, 201)
-        except json.JSONDecodeError:
-            self.send_json_response({"error": "Invalid JSON"}, 400)
-        except Exception as e:
-            self.send_json_response({"error": str(e)}, 500)
-    
-    def handle_connect_instance(self, instance_id):
-        try:
-            # Start Baileys connection
-            try:
-                import requests
-                response = requests.post('http://localhost:3002/connect', timeout=5)
-                
-                if response.status_code == 200:
-                    self.send_json_response({"success": True, "message": "Conexão iniciada"})
-                else:
-                    self.send_json_response({"error": "Erro ao iniciar conexão"}, 500)
-            except ImportError:
-                # Fallback usando urllib se requests não estiver disponível
-                import urllib.request
-                import urllib.error
-                
-                try:
-                    data = json.dumps({}).encode('utf-8')
-                    req = urllib.request.Request('http://localhost:3002/connect', data=data, 
-                                               headers={'Content-Type': 'application/json'})
-                    req.get_method = lambda: 'POST'
-                    
-                    with urllib.request.urlopen(req, timeout=5) as response:
-                        if response.status == 200:
-                            self.send_json_response({"success": True, "message": "Conexão iniciada"})
-                        else:
-                            self.send_json_response({"error": "Erro ao iniciar conexão"}, 500)
-                except urllib.error.URLError as e:
-                    self.send_json_response({"error": f"Serviço WhatsApp indisponível: {str(e)}"}, 500)
-                
-        except Exception as e:
-            self.send_json_response({"error": str(e)}, 500)
-    
-    def handle_whatsapp_status(self):
-        try:
-            try:
-                import requests
-                response = requests.get('http://localhost:3002/status', timeout=5)
-                
-                if response.status_code == 200:
-                    data = response.json()
-                    self.send_json_response(data)
-                else:
-                    self.send_json_response({"connected": False, "connecting": False})
-            except ImportError:
-                # Fallback usando urllib
-                try:
-                    with urllib.request.urlopen('http://localhost:3002/status', timeout=5) as response:
-                        if response.status == 200:
-                            data = json.loads(response.read().decode('utf-8'))
-                            self.send_json_response(data)
-                        else:
-                            self.send_json_response({"connected": False, "connecting": False})
-                except:
-                    self.send_json_response({"connected": False, "connecting": False})
-                
-        except Exception as e:
-            self.send_json_response({"connected": False, "connecting": False, "error": str(e)})
-    
-    def handle_whatsapp_qr(self):
-        try:
-            try:
-                import requests
-                response = requests.get('http://localhost:3002/qr', timeout=5)
-                
-                if response.status_code == 200:
-                    data = response.json()
-                    self.send_json_response(data)
-                else:
-                    self.send_json_response({"qr": None, "connected": False})
-            except ImportError:
-                # Fallback usando urllib
-                try:
-                    with urllib.request.urlopen('http://localhost:3002/qr', timeout=5) as response:
-                        if response.status == 200:
-                            data = json.loads(response.read().decode('utf-8'))
-                            self.send_json_response(data)
-                        else:
-                            self.send_json_response({"qr": None, "connected": False})
-                except:
-                    self.send_json_response({"qr": None, "connected": False})
-                
-        except Exception as e:
-            self.send_json_response({"qr": None, "connected": False, "error": str(e)})
-    
-    def handle_whatsapp_disconnected(self):
-        try:
-            content_length = int(self.headers.get('Content-Length', 0))
-            post_data = self.rfile.read(content_length)
-            data = json.loads(post_data.decode('utf-8'))
-            
-            instance_id = data.get('instanceId', 'default')
-            reason = data.get('reason', 'unknown')
-            
-            # Update instance connection status
-            conn = sqlite3.connect(DB_FILE)
-            cursor = conn.cursor()
-            
-            cursor.execute("""
-                UPDATE instances SET connected = 0, user_name = NULL, user_id = NULL
-                WHERE id = ?
-            """, (instance_id,))
-            
-            conn.commit()
-            conn.close()
-            
-            print(f"❌ WhatsApp desconectado na instância {instance_id} - Razão: {reason}")
-            self.send_json_response({"success": True, "instanceId": instance_id})
-            
-        except Exception as e:
-            print(f"❌ Erro ao processar desconexão: {e}")
-            self.send_json_response({"error": str(e)}, 500)
-
-    def handle_import_chats(self):
-        try:
-            content_length = int(self.headers.get('Content-Length', 0))
-            post_data = self.rfile.read(content_length)
-            data = json.loads(post_data.decode('utf-8'))
-            
-            instance_id = data.get('instanceId', 'default')
-            chats = data.get('chats', [])
-            user = data.get('user', {})
-            batch_number = data.get('batchNumber', 1)
-            total_batches = data.get('totalBatches', 1)
-            
-            conn = sqlite3.connect(DB_FILE)
-            cursor = conn.cursor()
-            
-            # Update instance with user info on first batch
-            if batch_number == 1:
-                cursor.execute("""
-                    UPDATE instances SET connected = 1, user_name = ?, user_id = ? 
-                    WHERE id = ?
-                """, (user.get('name', ''), user.get('id', ''), instance_id))
-                print(f"👤 Usuário atualizado: {user.get('name', '')} ({user.get('phone', '')})")
-            
-            # Import contacts and chats from this batch
-            imported_contacts = 0
-            imported_chats = 0
-            
-            for chat in chats:
-                if chat.get('id') and not chat['id'].endswith('@g.us'):  # Skip groups for now
-                    phone = chat['id'].replace('@s.whatsapp.net', '').replace('@c.us', '')
-                    
-                    # Use enhanced name if available, otherwise fallback to basic name
-                    contact_name = (chat.get('enhancedName') or 
-                                   chat.get('name') or 
-                                   chat.get('pushName') or 
-                                   chat.get('notify') or 
-                                   f"Contato {phone[-4:]}")
-                    
-                    # Get profile picture URL if available
-                    profile_pic_url = chat.get('profilePicUrl')
-                    
-                    # Check if contact exists
-                    cursor.execute("SELECT id FROM contacts WHERE phone = ? AND instance_id = ?", (phone, instance_id))
-                    existing_contact = cursor.fetchone()
-                    
-                    if not existing_contact:
-                        contact_id = str(uuid.uuid4())
-                        cursor.execute("""
-                            INSERT INTO contacts (id, name, phone, instance_id, avatar_url, created_at)
-                            VALUES (?, ?, ?, ?, ?, ?)
-                        """, (contact_id, contact_name, phone, instance_id, profile_pic_url, datetime.now(timezone.utc).isoformat()))
-                        imported_contacts += 1
-                        print(f"📞 Novo contato: {contact_name} ({phone}) - Foto: {'✅' if profile_pic_url else '❌'}")
-                    else:
-                        # Update existing contact with better name and profile picture
-                        cursor.execute("""
-                            UPDATE contacts SET name = ?, avatar_url = ? 
-                            WHERE phone = ? AND instance_id = ?
-                        """, (contact_name, profile_pic_url, phone, instance_id))
-                        print(f"🔄 Contato atualizado: {contact_name} ({phone}) - Foto: {'✅' if profile_pic_url else '❌'}")
-                    
-                    # Create/update chat entry
-                    last_message = None
-                    last_message_time = None
-                    unread_count = chat.get('unreadCount', 0)
-                    
-                    # Try to get last message from chat
-                    if chat.get('messages') and len(chat['messages']) > 0:
-                        last_msg = chat['messages'][-1]
-                        if last_msg.get('message'):
-                            last_message = last_msg['message'].get('conversation') or 'Mídia'
-                            last_message_time = datetime.now(timezone.utc).isoformat()
-                    
-                    # Insert or update chat
-                    cursor.execute("SELECT id FROM chats WHERE contact_phone = ? AND instance_id = ?", (phone, instance_id))
-                    if cursor.fetchone():
-                        cursor.execute("""
-                            UPDATE chats SET contact_name = ?, last_message = ?, last_message_time = ?, unread_count = ?
-                            WHERE contact_phone = ? AND instance_id = ?
-                        """, (contact_name, last_message, last_message_time, unread_count, phone, instance_id))
-                    else:
-                        chat_id = str(uuid.uuid4())
-                        cursor.execute("""
-                            INSERT INTO chats (id, contact_phone, contact_name, instance_id, last_message, last_message_time, unread_count, created_at)
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                        """, (chat_id, phone, contact_name, instance_id, last_message, last_message_time, unread_count, datetime.now(timezone.utc).isoformat()))
-                        imported_chats += 1
-            
-            conn.commit()
-            conn.close()
-            
-            print(f"📦 Lote {batch_number}/{total_batches} processado: {imported_contacts} contatos, {imported_chats} chats - Instância: {instance_id}")
-            
-            # If this is the last batch, log completion
-            if batch_number == total_batches:
-                print(f"✅ Importação completa para instância {instance_id}!")
             
             self.send_json_response({
-                "success": True, 
-                "imported_contacts": imported_contacts,
-                "imported_chats": imported_chats,
-                "batch": batch_number,
-                "total_batches": total_batches
+                "id": instance_id,
+                "name": name,
+                "connected": 0,
+                "created_at": datetime.now(timezone.utc).isoformat()
             })
-            
         except Exception as e:
-            print(f"❌ Erro ao importar chats: {e}")
             self.send_json_response({"error": str(e)}, 500)
-
+    
     def handle_connect_instance(self, instance_id):
         try:
-            # Start Baileys connection for specific instance
-            try:
-                import requests
-                response = requests.post(f'http://localhost:3002/connect/{instance_id}', timeout=5)
-                
-                if response.status_code == 200:
-                    self.send_json_response({"success": True, "message": f"Conexão da instância {instance_id} iniciada"})
-                else:
-                    self.send_json_response({"error": "Erro ao iniciar conexão"}, 500)
-            except ImportError:
-                # Fallback usando urllib se requests não estiver disponível
-                import urllib.request
-                import urllib.error
-                
-                try:
-                    data = json.dumps({}).encode('utf-8')
-                    req = urllib.request.Request(f'http://localhost:3002/connect/{instance_id}', data=data, 
-                                               headers={'Content-Type': 'application/json'})
-                    req.get_method = lambda: 'POST'
-                    
-                    with urllib.request.urlopen(req, timeout=5) as response:
-                        if response.status == 200:
-                            self.send_json_response({"success": True, "message": f"Conexão da instância {instance_id} iniciada"})
-                        else:
-                            self.send_json_response({"error": "Erro ao iniciar conexão"}, 500)
-                except urllib.error.URLError as e:
-                    self.send_json_response({"error": f"Serviço WhatsApp indisponível: {str(e)}"}, 500)
-                
+            # Make request to Baileys service
+            import urllib.request
+            req = urllib.request.Request(f'http://localhost:{BAILEYS_PORT}/connect/{instance_id}', method='POST')
+            with urllib.request.urlopen(req) as response:
+                result = json.loads(response.read().decode())
+            
+            self.send_json_response({"success": True, "message": f"Conexão da instância {instance_id} iniciada"})
         except Exception as e:
             self.send_json_response({"error": str(e)}, 500)
-
+    
     def handle_disconnect_instance(self, instance_id):
         try:
-            try:
-                import requests
-                response = requests.post(f'http://localhost:3002/disconnect/{instance_id}', timeout=5)
-                
-                if response.status_code == 200:
-                    # Update database
-                    conn = sqlite3.connect(DB_FILE)
-                    cursor = conn.cursor()
-                    cursor.execute("UPDATE instances SET connected = 0 WHERE id = ?", (instance_id,))
-                    conn.commit()
-                    conn.close()
-                    
-                    self.send_json_response({"success": True, "message": f"Instância {instance_id} desconectada"})
-                else:
-                    self.send_json_response({"error": "Erro ao desconectar"}, 500)
-            except ImportError:
-                # Fallback usando urllib
-                import urllib.request
-                data = json.dumps({}).encode('utf-8')
-                req = urllib.request.Request(f'http://localhost:3002/disconnect/{instance_id}', data=data,
-                                           headers={'Content-Type': 'application/json'})
-                req.get_method = lambda: 'POST'
-                
-                with urllib.request.urlopen(req, timeout=5) as response:
-                    if response.status == 200:
-                        conn = sqlite3.connect(DB_FILE)
-                        cursor = conn.cursor()
-                        cursor.execute("UPDATE instances SET connected = 0 WHERE id = ?", (instance_id,))
-                        conn.commit()
-                        conn.close()
-                        self.send_json_response({"success": True, "message": f"Instância {instance_id} desconectada"})
-                    else:
-                        self.send_json_response({"error": "Erro ao desconectar"}, 500)
-                        
-        except Exception as e:
-            self.send_json_response({"error": str(e)}, 500)
-
-    def handle_whatsapp_status(self, instance_id):
-        try:
-            try:
-                import requests
-                response = requests.get(f'http://localhost:3002/status/{instance_id}', timeout=5)
-                
-                if response.status_code == 200:
-                    data = response.json()
-                    self.send_json_response(data)
-                else:
-                    self.send_json_response({"connected": False, "connecting": False, "instanceId": instance_id})
-            except ImportError:
-                # Fallback usando urllib
-                try:
-                    with urllib.request.urlopen(f'http://localhost:3002/status/{instance_id}', timeout=5) as response:
-                        if response.status == 200:
-                            data = json.loads(response.read().decode('utf-8'))
-                            self.send_json_response(data)
-                        else:
-                            self.send_json_response({"connected": False, "connecting": False, "instanceId": instance_id})
-                except:
-                    self.send_json_response({"connected": False, "connecting": False, "instanceId": instance_id})
-                
-        except Exception as e:
-            self.send_json_response({"connected": False, "connecting": False, "error": str(e), "instanceId": instance_id})
-
-    def handle_whatsapp_qr(self, instance_id):
-        try:
-            try:
-                import requests
-                response = requests.get(f'http://localhost:3002/qr/{instance_id}', timeout=5)
-                
-                if response.status_code == 200:
-                    data = response.json()
-                    self.send_json_response(data)
-                else:
-                    self.send_json_response({"qr": None, "connected": False, "instanceId": instance_id})
-            except ImportError:
-                # Fallback usando urllib
-                try:
-                    with urllib.request.urlopen(f'http://localhost:3002/qr/{instance_id}', timeout=5) as response:
-                        if response.status == 200:
-                            data = json.loads(response.read().decode('utf-8'))
-                            self.send_json_response(data)
-                        else:
-                            self.send_json_response({"qr": None, "connected": False, "instanceId": instance_id})
-                except:
-                    self.send_json_response({"qr": None, "connected": False, "instanceId": instance_id})
-                
-        except Exception as e:
-            self.send_json_response({"qr": None, "connected": False, "error": str(e), "instanceId": instance_id})
-
-    def handle_send_message(self, instance_id):
-        try:
-            content_length = int(self.headers.get('Content-Length', 0))
-            post_data = self.rfile.read(content_length)
-            data = json.loads(post_data.decode('utf-8'))
+            import urllib.request
+            req = urllib.request.Request(f'http://localhost:{BAILEYS_PORT}/disconnect/{instance_id}', method='POST')
+            with urllib.request.urlopen(req) as response:
+                result = json.loads(response.read().decode())
             
-            to = data.get('to', '')
-            message = data.get('message', '')
-            message_type = data.get('type', 'text')
-            
-            try:
-                import requests
-                response = requests.post(f'http://localhost:3002/send/{instance_id}', 
-                                       json=data, timeout=10)
-                
-                if response.status_code == 200:
-                    # Save message to database
-                    conn = sqlite3.connect(DB_FILE)
-                    cursor = conn.cursor()
-                    
-                    message_id = str(uuid.uuid4())
-                    phone = to.replace('@s.whatsapp.net', '').replace('@c.us', '')
-                    
-                    cursor.execute("""
-                        INSERT INTO messages (id, contact_name, phone, message, direction, instance_id, created_at)
-                        VALUES (?, ?, ?, ?, ?, ?, ?)
-                    """, (message_id, f"Para {phone[-4:]}", phone, message, 'outgoing', instance_id, 
-                          datetime.now(timezone.utc).isoformat()))
-                    
-                    conn.commit()
-                    conn.close()
-                    
-                    self.send_json_response({"success": True, "instanceId": instance_id})
-                else:
-                    self.send_json_response({"error": "Erro ao enviar mensagem"}, 500)
-            except ImportError:
-                # Fallback usando urllib
-                import urllib.request
-                req_data = json.dumps(data).encode('utf-8')
-                req = urllib.request.Request(f'http://localhost:3002/send/{instance_id}', 
-                                           data=req_data, 
-                                           headers={'Content-Type': 'application/json'})
-                req.get_method = lambda: 'POST'
-                
-                with urllib.request.urlopen(req, timeout=10) as response:
-                    if response.status == 200:
-                        conn = sqlite3.connect(DB_FILE)
-                        cursor = conn.cursor()
-                        
-                        message_id = str(uuid.uuid4())
-                        phone = to.replace('@s.whatsapp.net', '').replace('@c.us', '')
-                        
-                        cursor.execute("""
-                            INSERT INTO messages (id, contact_name, phone, message, direction, instance_id, created_at)
-                            VALUES (?, ?, ?, ?, ?, ?, ?)
-                        """, (message_id, f"Para {phone[-4:]}", phone, message, 'outgoing', instance_id,
-                              datetime.now(timezone.utc).isoformat()))
-                        
-                        conn.commit()
-                        conn.close()
-                        
-                        self.send_json_response({"success": True, "instanceId": instance_id})
-                    else:
-                        self.send_json_response({"error": "Erro ao enviar mensagem"}, 500)
-                
-        except Exception as e:
-            self.send_json_response({"error": str(e)}, 500)
-    
-    def handle_whatsapp_connected(self):
-        try:
-            content_length = int(self.headers.get('Content-Length', 0))
-            post_data = self.rfile.read(content_length)
-            data = json.loads(post_data.decode('utf-8'))
-            
-            instance_id = data.get('instanceId', 'default')
-            user = data.get('user', {})
-            
-            # Update instance connection status
+            # Update database
             conn = sqlite3.connect(DB_FILE)
             cursor = conn.cursor()
-            
-            cursor.execute("""
-                UPDATE instances SET connected = 1, user_name = ?, user_id = ?
-                WHERE id = ?
-            """, (user.get('name', ''), user.get('id', ''), instance_id))
-            
+            cursor.execute("UPDATE instances SET connected = 0, user_name = NULL, user_id = NULL WHERE id = ?", (instance_id,))
             conn.commit()
             conn.close()
             
-            print(f"✅ WhatsApp conectado na instância {instance_id}: {user.get('name', user.get('id', 'Unknown'))}")
-            self.send_json_response({"success": True, "instanceId": instance_id})
-            
+            self.send_json_response({"success": True, "message": f"Instância {instance_id} desconectada"})
         except Exception as e:
-            print(f"❌ Erro ao processar conexão: {e}")
             self.send_json_response({"error": str(e)}, 500)
     
-    def handle_receive_message(self):
+    def handle_delete_instance(self, instance_id):
         try:
-            content_length = int(self.headers.get('Content-Length', 0))
-            post_data = self.rfile.read(content_length)
-            data = json.loads(post_data.decode('utf-8'))
-            
-            # Extract message info
-            instance_id = data.get('instanceId', 'default')
-            from_jid = data.get('from', '')
-            message = data.get('message', '')
-            timestamp = data.get('timestamp', datetime.now(timezone.utc).isoformat())
-            message_id = data.get('messageId', str(uuid.uuid4()))
-            message_type = data.get('messageType', 'text')
-            
-            # Clean phone number
-            phone = from_jid.replace('@s.whatsapp.net', '').replace('@c.us', '')
-            
-            # Save message and create contact if needed
             conn = sqlite3.connect(DB_FILE)
             cursor = conn.cursor()
-            
-            # Check if contact exists
-            cursor.execute("SELECT id, name FROM contacts WHERE phone = ?", (phone,))
-            contact = cursor.fetchone()
-            
-            if not contact:
-                # Create new contact
-                contact_id = str(uuid.uuid4())
-                contact_name = f"Contato {phone[-4:]}"  # Use last 4 digits as name
-                
-                cursor.execute("""
-                    INSERT INTO contacts (id, name, phone, instance_id, created_at)
-                    VALUES (?, ?, ?, ?, ?)
-                """, (contact_id, contact_name, phone, instance_id, timestamp))
-                
-                print(f"📞 Novo contato criado: {contact_name} ({phone}) - Instância: {instance_id}")
-            else:
-                contact_id, contact_name = contact
-            
-            # Save message
-            msg_id = str(uuid.uuid4())
-            cursor.execute("""
-                INSERT INTO messages (id, contact_name, phone, message, direction, instance_id, message_type, whatsapp_id, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (msg_id, contact_name, phone, message, 'incoming', instance_id, message_type, message_id, timestamp))
-            
+            cursor.execute("DELETE FROM instances WHERE id = ?", (instance_id,))
             conn.commit()
             conn.close()
             
-            print(f"📥 Mensagem recebida na instância {instance_id} de {contact_name}: {message[:50]}...")
-            self.send_json_response({"success": True, "instanceId": instance_id})
-            
+            self.send_json_response({"success": True, "message": f"Instância {instance_id} excluída"})
         except Exception as e:
-            print(f"❌ Erro ao processar mensagem: {e}")
             self.send_json_response({"error": str(e)}, 500)
     
     def handle_get_contacts(self):
@@ -2899,210 +1688,282 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             conn = sqlite3.connect(DB_FILE)
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
-            
-            # Get chats with latest message info
-            cursor.execute("""
-                SELECT DISTINCT
-                    c.phone as contact_phone,
-                    c.name as contact_name, 
-                    c.instance_id,
-                    (SELECT message FROM messages m WHERE m.phone = c.phone ORDER BY m.created_at DESC LIMIT 1) as last_message,
-                    (SELECT created_at FROM messages m WHERE m.phone = c.phone ORDER BY m.created_at DESC LIMIT 1) as last_message_time,
-                    (SELECT COUNT(*) FROM messages m WHERE m.phone = c.phone AND m.direction = 'incoming') as unread_count
-                FROM contacts c
-                WHERE EXISTS (SELECT 1 FROM messages m WHERE m.phone = c.phone)
-                ORDER BY last_message_time DESC
-            """)
-            
+            cursor.execute("SELECT * FROM chats ORDER BY last_message_time DESC")
             chats = [dict(row) for row in cursor.fetchall()]
             conn.close()
             self.send_json_response(chats)
-            
         except Exception as e:
-            print(f"❌ Erro ao buscar chats: {e}")
             self.send_json_response({"error": str(e)}, 500)
-
+    
+    def handle_get_messages(self):
+        try:
+            conn = sqlite3.connect(DB_FILE)
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM messages ORDER BY created_at DESC LIMIT 50")
+            messages = [dict(row) for row in cursor.fetchall()]
+            conn.close()
+            self.send_json_response(messages)
+        except Exception as e:
+            self.send_json_response({"error": str(e)}, 500)
+    
     def handle_get_messages_filtered(self):
         try:
-            # Parse query parameters
-            query_components = urllib.parse.urlparse(self.path)
-            query_params = urllib.parse.parse_qs(query_components.query)
-            
+            query_params = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
             phone = query_params.get('phone', [None])[0]
             instance_id = query_params.get('instance_id', [None])[0]
-            
-            if not phone:
-                self.send_json_response({"error": "Phone parameter required"}, 400)
-                return
             
             conn = sqlite3.connect(DB_FILE)
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
             
-            if instance_id:
+            if phone and instance_id:
                 cursor.execute("""
                     SELECT * FROM messages 
                     WHERE phone = ? AND instance_id = ? 
                     ORDER BY created_at ASC
                 """, (phone, instance_id))
-            else:
+            elif phone:
                 cursor.execute("""
                     SELECT * FROM messages 
                     WHERE phone = ? 
                     ORDER BY created_at ASC
                 """, (phone,))
+            else:
+                cursor.execute("SELECT * FROM messages ORDER BY created_at DESC LIMIT 50")
             
             messages = [dict(row) for row in cursor.fetchall()]
             conn.close()
-            
             self.send_json_response(messages)
-            
         except Exception as e:
-            print(f"❌ Erro ao buscar mensagens filtradas: {e}")
             self.send_json_response({"error": str(e)}, 500)
-
-    def handle_send_webhook(self):
+    
+    def handle_receive_message(self):
         try:
             content_length = int(self.headers.get('Content-Length', 0))
             post_data = self.rfile.read(content_length)
             data = json.loads(post_data.decode('utf-8'))
             
-            webhook_url = data.get('url', '')
-            webhook_data = data.get('data', {})
+            instance_id = data.get('instanceId', 'default')
+            from_jid = data.get('from', '')
+            message = data.get('message', '')
+            timestamp = data.get('timestamp', datetime.now(timezone.utc).isoformat())
+            message_id = data.get('messageId', str(uuid.uuid4()))
+            message_type = data.get('messageType', 'text')
             
-            if not webhook_url:
-                self.send_json_response({"error": "URL do webhook é obrigatória"}, 400)
-                return
+            phone = from_jid.replace('@s.whatsapp.net', '').replace('@c.us', '')
             
-            # Send webhook using urllib (no external dependencies)
-            import urllib.request
-            import urllib.error
-            
-            try:
-                payload = json.dumps(webhook_data).encode('utf-8')
-                req = urllib.request.Request(
-                    webhook_url, 
-                    data=payload,
-                    headers={
-                        'Content-Type': 'application/json',
-                        'User-Agent': 'WhatsFlow-Real/1.0'
-                    }
-                )
-                
-                with urllib.request.urlopen(req, timeout=10) as response:
-                    if response.status == 200:
-                        print(f"✅ Webhook enviado para: {webhook_url}")
-                        self.send_json_response({"success": True, "message": "Webhook enviado com sucesso"})
-                    else:
-                        print(f"⚠️ Webhook retornou status: {response.status}")
-                        self.send_json_response({"success": True, "message": f"Webhook enviado (status: {response.status})"})
-                        
-            except urllib.error.URLError as e:
-                print(f"❌ Erro ao enviar webhook: {e}")
-                self.send_json_response({"error": f"Erro ao enviar webhook: {str(e)}"}, 500)
-                
-        except Exception as e:
-            print(f"❌ Erro no processamento do webhook: {e}")
-            self.send_json_response({"error": str(e)}, 500)
-
-    def handle_get_webhooks(self):
-        try:
-            # Return a list of configured webhooks
-            # For now, return an empty list as this is a placeholder implementation
-            webhooks = []
-            self.send_json_response(webhooks)
-        except Exception as e:
-            self.send_json_response({"error": str(e)}, 500)
-    
-    def handle_delete_instance(self, instance_id):
-        try:
             conn = sqlite3.connect(DB_FILE)
             cursor = conn.cursor()
-            cursor.execute("DELETE FROM instances WHERE id = ?", (instance_id,))
             
-            if cursor.rowcount == 0:
-                conn.close()
-                self.send_json_response({"error": "Instance not found"}, 404)
-                return
+            # Check if contact exists
+            cursor.execute("SELECT id, name FROM contacts WHERE phone = ? AND instance_id = ?", (phone, instance_id))
+            contact = cursor.fetchone()
+            
+            if not contact:
+                # Create new contact with phone as name initially
+                contact_id = str(uuid.uuid4())
+                contact_name = f"+{phone}"
+                
+                cursor.execute("""
+                    INSERT INTO contacts (id, name, phone, instance_id, created_at)
+                    VALUES (?, ?, ?, ?, ?)
+                """, (contact_id, contact_name, phone, instance_id, timestamp))
+                
+                print(f"📞 Novo contato criado: {contact_name} ({phone}) - Instância: {instance_id}")
+            else:
+                contact_id, contact_name = contact
+            
+            # Save message
+            msg_id = str(uuid.uuid4())
+            cursor.execute("""
+                INSERT INTO messages (id, contact_name, phone, message, direction, instance_id, message_type, whatsapp_id, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (msg_id, contact_name, phone, message, 'incoming', instance_id, message_type, message_id, timestamp))
+            
+            # Update or create chat
+            cursor.execute("SELECT id FROM chats WHERE contact_phone = ? AND instance_id = ?", (phone, instance_id))
+            if cursor.fetchone():
+                cursor.execute("""
+                    UPDATE chats SET last_message = ?, last_message_time = ?
+                    WHERE contact_phone = ? AND instance_id = ?
+                """, (message, timestamp, phone, instance_id))
+            else:
+                chat_id = str(uuid.uuid4())
+                cursor.execute("""
+                    INSERT INTO chats (id, contact_phone, contact_name, instance_id, last_message, last_message_time, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                """, (chat_id, phone, contact_name, instance_id, message, timestamp, timestamp))
             
             conn.commit()
             conn.close()
             
-            self.send_json_response({"message": "Instance deleted successfully"})
+            print(f"📥 Mensagem recebida de {contact_name}: {message[:50]}...")
+            self.send_json_response({"success": True, "instanceId": instance_id})
+            
         except Exception as e:
+            print(f"❌ Erro ao processar mensagem: {e}")
             self.send_json_response({"error": str(e)}, 500)
     
-    def log_message(self, format, *args):
-        # Suppress default logging
-        pass
-
-def check_node_installed():
-    """Check if Node.js is installed"""
-    try:
-        result = subprocess.run(['node', '--version'], capture_output=True, text=True)
-        return result.returncode == 0
-    except FileNotFoundError:
-        return False
+    def handle_import_chats(self):
+        try:
+            content_length = int(self.headers.get('Content-Length', 0))
+            post_data = self.rfile.read(content_length)
+            data = json.loads(post_data.decode('utf-8'))
+            
+            instance_id = data.get('instanceId', 'default')
+            chats = data.get('chats', [])
+            user = data.get('user', {})
+            batch_number = data.get('batchNumber', 1)
+            total_batches = data.get('totalBatches', 1)
+            
+            conn = sqlite3.connect(DB_FILE)
+            cursor = conn.cursor()
+            
+            # Update instance with user info
+            if batch_number == 1:
+                cursor.execute("""
+                    UPDATE instances SET connected = 1, user_name = ?, user_id = ? 
+                    WHERE id = ?
+                """, (user.get('name', ''), user.get('id', ''), instance_id))
+                print(f"👤 Usuário atualizado: {user.get('name', '')} ({user.get('phone', '')})")
+            
+            imported_contacts = 0
+            imported_chats = 0
+            
+            for chat in chats:
+                if chat.get('id') and not chat['id'].endswith('@g.us'):  # Skip groups
+                    phone = chat['id'].replace('@s.whatsapp.net', '').replace('@c.us', '')
+                    
+                    # Use enhanced name from Baileys
+                    contact_name = (chat.get('enhancedName') or 
+                                   chat.get('name') or 
+                                   chat.get('pushName') or 
+                                   chat.get('notify') or 
+                                   f"+{phone}")
+                    
+                    profile_pic_url = chat.get('profilePicUrl')
+                    
+                    # Insert or update contact
+                    cursor.execute("SELECT id FROM contacts WHERE phone = ? AND instance_id = ?", (phone, instance_id))
+                    if not cursor.fetchone():
+                        contact_id = str(uuid.uuid4())
+                        cursor.execute("""
+                            INSERT INTO contacts (id, name, phone, instance_id, avatar_url, created_at)
+                            VALUES (?, ?, ?, ?, ?, ?)
+                        """, (contact_id, contact_name, phone, instance_id, profile_pic_url, datetime.now(timezone.utc).isoformat()))
+                        imported_contacts += 1
+                        print(f"📞 Contato importado: {contact_name} - Foto: {'✅' if profile_pic_url else '❌'}")
+                    else:
+                        # Update with better name and photo
+                        cursor.execute("""
+                            UPDATE contacts SET name = ?, avatar_url = ? 
+                            WHERE phone = ? AND instance_id = ?
+                        """, (contact_name, profile_pic_url, phone, instance_id))
+                        print(f"🔄 Contato atualizado: {contact_name} - Foto: {'✅' if profile_pic_url else '❌'}")
+                    
+                    # Create/update chat
+                    last_message = chat.get('lastMessage', {}).get('message', {}).get('conversation', 'Nova conversa')
+                    last_message_time = datetime.now(timezone.utc).isoformat()
+                    
+                    cursor.execute("SELECT id FROM chats WHERE contact_phone = ? AND instance_id = ?", (phone, instance_id))
+                    if cursor.fetchone():
+                        cursor.execute("""
+                            UPDATE chats SET contact_name = ?, last_message = ?, last_message_time = ?, avatar_url = ?
+                            WHERE contact_phone = ? AND instance_id = ?
+                        """, (contact_name, last_message, last_message_time, profile_pic_url, phone, instance_id))
+                    else:
+                        chat_id = str(uuid.uuid4())
+                        cursor.execute("""
+                            INSERT INTO chats (id, contact_phone, contact_name, instance_id, last_message, last_message_time, avatar_url, created_at)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                        """, (chat_id, phone, contact_name, instance_id, last_message, last_message_time, profile_pic_url, datetime.now(timezone.utc).isoformat()))
+                        imported_chats += 1
+            
+            conn.commit()
+            conn.close()
+            
+            print(f"📦 Lote {batch_number}/{total_batches}: {imported_contacts} contatos, {imported_chats} chats importados")
+            
+            if batch_number == total_batches:
+                print(f"✅ Importação completa para instância {instance_id}!")
+            
+            self.send_json_response({
+                "success": True,
+                "imported_contacts": imported_contacts,
+                "imported_chats": imported_chats,
+                "batch": batch_number,
+                "total_batches": total_batches
+            })
+            
+        except Exception as e:
+            print(f"❌ Erro ao importar chats: {e}")
+            self.send_json_response({"error": str(e)}, 500)
+    
+    def handle_whatsapp_connected(self):
+        try:
+            content_length = int(self.headers.get('Content-Length', 0))
+            post_data = self.rfile.read(content_length)
+            data = json.loads(post_data.decode('utf-8'))
+            
+            instance_id = data.get('instanceId', '')
+            user = data.get('user', {})
+            
+            # Update instance in database
+            conn = sqlite3.connect(DB_FILE)
+            cursor = conn.cursor()
+            cursor.execute("""
+                UPDATE instances SET connected = 1, user_name = ?, user_id = ?
+                WHERE id = ?
+            """, (user.get('name', ''), user.get('id', ''), instance_id))
+            conn.commit()
+            conn.close()
+            
+            print(f"✅ WhatsApp conectado na instância {instance_id}: {user.get('id', '')}")
+            self.send_json_response({"success": True, "instanceId": instance_id})
+            
+        except Exception as e:
+            print(f"❌ Erro ao processar conexão: {e}")
+            self.send_json_response({"error": str(e)}, 500)
 
 def main():
-    print("🤖 WhatsFlow Real - Conexão WhatsApp Verdadeira")
+    print("🚀 WhatsFlow Professional - Iniciando...")
     print("=" * 50)
-    print("✅ Python backend para interface")
-    print("✅ Node.js + Baileys para WhatsApp real")
-    print("✅ QR Code real para conexão")
-    print("✅ Mensagens reais enviadas/recebidas")
-    print()
-    
-    # Check Node.js
-    if not check_node_installed():
-        print("❌ Node.js não encontrado!")
-        print("📦 Para instalar Node.js:")
-        print("   Ubuntu: sudo apt install nodejs npm")
-        print("   macOS:  brew install node")
-        print()
-        print("🔧 Continuar mesmo assim? (s/n)")
-        if input().lower() != 's':
-            return
-    else:
-        print("✅ Node.js encontrado")
     
     # Initialize database
     print("📁 Inicializando banco de dados...")
     init_db()
-    add_sample_data()
+    print("✅ Banco de dados inicializado")
     
     # Start Baileys service
     print("📱 Iniciando serviço WhatsApp (Baileys)...")
-    baileys_manager = BaileysManager()
+    baileys = BaileysService()
+    baileys_started = baileys.start()
     
-    def signal_handler(sig, frame):
-        print("\n🛑 Parando serviços...")
-        baileys_manager.stop_baileys()
-        sys.exit(0)
+    if not baileys_started:
+        print("⚠️ Continuando sem Baileys - funcionalidade limitada")
     
-    signal.signal(signal.SIGINT, signal_handler)
-    
-    # Start Baileys in background
-    baileys_thread = threading.Thread(target=baileys_manager.start_baileys)
-    baileys_thread.daemon = True
-    baileys_thread.start()
-    
-    print("✅ WhatsFlow Real configurado!")
-    print(f"🌐 Interface: http://localhost:{PORT}")
-    print(f"📱 WhatsApp Service: http://localhost:{BAILEYS_PORT}")
-    print("🚀 Servidor iniciando...")
-    print("   Para parar: Ctrl+C")
-    print()
-    
+    # Start HTTP server
+    print(f"🌐 Iniciando servidor HTTP na porta {PORT}...")
     try:
-        server = HTTPServer(('0.0.0.0', PORT), WhatsFlowRealHandler)
-        print(f"✅ Servidor rodando na porta {PORT}")
-        print("🔗 Pronto para conectar WhatsApp REAL!")
+        server = HTTPServer(('0.0.0.0', PORT), WhatsFlowHandler)
+        print(f"✅ WhatsFlow Professional iniciado!")
         print(f"🌐 Acesse: http://localhost:{PORT}")
+        print("🚀 Sistema profissional pronto para uso!")
+        
+        def signal_handler(sig, frame):
+            print("\\n🛑 Parando WhatsFlow Professional...")
+            if baileys.is_running:
+                baileys.process.terminate()
+            server.shutdown()
+            sys.exit(0)
+        
+        signal.signal(signal.SIGINT, signal_handler)
         server.serve_forever()
-    except KeyboardInterrupt:
-        print("\n👋 WhatsFlow Real finalizado!")
-        baileys_manager.stop_baileys()
+        
+    except Exception as e:
+        print(f"❌ Erro ao iniciar servidor: {e}")
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()
