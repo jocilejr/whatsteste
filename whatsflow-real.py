@@ -22,10 +22,10 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 import urllib.parse
 import logging
 from typing import Set, Dict, Any
+import asyncio
 
 # Try to import websockets, fallback gracefully if not available
 try:
-    import asyncio
     import websockets
     WEBSOCKETS_AVAILABLE = True
 except ImportError:
@@ -3832,75 +3832,50 @@ def send_via_baileys(phone: str, message: str, instance_id: str = "default") -> 
     return success
 
 
-class CampaignScheduler:
-    """Background scheduler for sending campaign messages."""
+ codex/add-background-task-for-campaign-messages
+async def campaign_scheduler():
+    """Periodically check and send scheduled campaign messages."""
+    while True:
+        try:
+            now = datetime.now()
+            current_time = now.strftime("%H:%M")
+            weekday = now.weekday()  # Monday = 0
 
-    def __init__(self, interval: int = 60):
-        self.interval = interval
-
-    def run(self):
-        while True:
-            try:
-                self.check_campaigns()
-            except Exception as e:
-                logger.error(f"Erro no agendador: {e}")
-            time.sleep(self.interval)
-
-    def check_campaigns(self):
-        now = datetime.now()
-        current_time = now.strftime("%H:%M")
-
-        conn = sqlite3.connect(DB_FILE)
-        cursor = conn.cursor()
-        cursor.execute(
-            """
-            SELECT id, instance_id, recurrence_type, last_sent_at
-            FROM campaigns
-            WHERE send_time = ?
-            """,
-            (current_time,),
-        )
-        rows = cursor.fetchall()
-        for campaign_id, instance_id, recurrence_type, last_sent_at in rows:
-            should_send = False
-            if not last_sent_at:
-                should_send = True
-            else:
-                try:
-                    last = datetime.fromisoformat(last_sent_at)
-                    if recurrence_type == 'daily' and last.date() < now.date():
-                        should_send = True
-                    elif recurrence_type == 'weekly' and now - last >= timedelta(days=7):
-                        should_send = True
-                except Exception:
-                    should_send = True
-
-            if not should_send:
-                continue
-
+            conn = sqlite3.connect(DB_FILE)
+            cursor = conn.cursor()
             cursor.execute(
-                "SELECT group_id FROM campaign_groups WHERE campaign_id = ?",
-                (campaign_id,),
+                """
+                SELECT id, phone, message, instance_id, weekdays, last_sent_at
+                FROM campaign_messages
+                WHERE send_time = ?
+                """,
+                (current_time,),
             )
-            groups = [g[0] for g in cursor.fetchall()]
+            rows = cursor.fetchall()
+            for msg_id, phone, message, instance_id, weekdays, last_sent_at in rows:
+                if weekdays:
+                    days = [int(d) for d in weekdays.split(',') if d.strip()]
+                    if weekday not in days:
+                        continue
+                if last_sent_at:
+                    try:
+                        last = datetime.fromisoformat(last_sent_at)
+                        if last.date() == now.date():
+                            continue
+                    except Exception:
+                        pass
+                if send_via_baileys(phone, message, instance_id or 'default'):
+                    cursor.execute(
+                        "UPDATE campaign_messages SET last_sent_at = ? WHERE id = ?",
+                        (now.isoformat(), msg_id),
+                    )
+            conn.commit()
+            conn.close()
+        except Exception as e:
+            logger.error(f"Erro no agendador: {e}")
 
-            cursor.execute(
-                "SELECT message_text FROM campaign_messages WHERE campaign_id = ?",
-                (campaign_id,),
-            )
-            messages = [m[0] for m in cursor.fetchall()]
+        await asyncio.sleep(60)
 
-            for group_id in groups:
-                for message in messages:
-                    send_via_baileys(group_id, message, instance_id or 'default')
-
-            cursor.execute(
-                "UPDATE campaigns SET last_sent_at = ? WHERE id = ?",
-                (now.isoformat(), campaign_id),
-            )
-
-        conn.commit()
-        conn.close()
 
 # WebSocket Server Functions
 if WEBSOCKETS_AVAILABLE:
@@ -6100,13 +6075,22 @@ def main():
     baileys_thread = threading.Thread(target=baileys_manager.start_baileys)
     baileys_thread.daemon = True
     baileys_thread.start()
-
-    # Start campaign scheduler
-    scheduler = CampaignScheduler()
-    scheduler_thread = threading.Thread(target=scheduler.run)
-    scheduler_thread.daemon = True
-    scheduler_thread.start()
     
+    # Start HTTP server in background thread
+    server = HTTPServer(('0.0.0.0', PORT), WhatsFlowRealHandler)
+    print(f"✅ Servidor rodando na porta {PORT}")
+    print("🔗 Pronto para conectar WhatsApp REAL!")
+    print(f"🌐 Acesse: http://localhost:{PORT}")
+    print("🎉 Sistema profissional pronto para uso!")
+    server_thread = threading.Thread(target=server.serve_forever)
+    server_thread.daemon = True
+    server_thread.start()
+
+    # Launch campaign scheduler task after server starts
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.create_task(campaign_scheduler())
+
     print("✅ WhatsFlow Professional configurado!")
     print(f"🌐 Interface: http://localhost:{PORT}")
     print(f"🔌 WebSocket: ws://localhost:{WEBSOCKET_PORT}")
@@ -6114,17 +6098,13 @@ def main():
     print("🚀 Servidor iniciando...")
     print("   Para parar: Ctrl+C")
     print()
-    
+
     try:
-        server = HTTPServer(('0.0.0.0', PORT), WhatsFlowRealHandler)
-        print(f"✅ Servidor rodando na porta {PORT}")
-        print("🔗 Pronto para conectar WhatsApp REAL!")
-        print(f"🌐 Acesse: http://localhost:{PORT}")
-        print("🎉 Sistema profissional pronto para uso!")
-        server.serve_forever()
+        loop.run_forever()
     except KeyboardInterrupt:
         print("\n👋 WhatsFlow Professional finalizado!")
         baileys_manager.stop_baileys()
+        server.shutdown()
 
 if __name__ == "__main__":
     main()
