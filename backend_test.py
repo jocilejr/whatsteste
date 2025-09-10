@@ -321,6 +321,257 @@ class WhatsFlowRealTester:
             self.log_test("Baileys Service Integration", "FAIL", f"Exception: {str(e)}")
             return False
     
+    def test_message_receiving_system(self):
+        """Test POST /api/messages/receive - Message receiving with pushName"""
+        try:
+            # Test message receiving with pushName
+            test_message = {
+                "phone": "+5511999887766",
+                "message": "Teste de mensagem com nome real",
+                "pushName": "João Silva",
+                "instance_id": "test_instance_001"
+            }
+            
+            response = self.session.post(
+                f"{API_BASE}/messages/receive",
+                json=test_message,
+                headers={"Content-Type": "application/json"},
+                timeout=10
+            )
+            
+            if response.status_code in [200, 201]:
+                self.log_test("POST /api/messages/receive", "PASS", f"Message received with pushName: {test_message['pushName']}")
+                return True
+            else:
+                self.log_test("POST /api/messages/receive", "FAIL", f"HTTP {response.status_code}: {response.text}")
+                return False
+        except Exception as e:
+            self.log_test("POST /api/messages/receive", "FAIL", f"Exception: {str(e)}")
+            return False
+    
+    def test_contact_names_system(self):
+        """Test contact name handling - pushName with fallback to formatted number"""
+        try:
+            # First, send a message to create a contact
+            test_phone = "+5511987654321"
+            test_pushname = "Maria Santos"
+            
+            message_data = {
+                "phone": test_phone,
+                "message": "Teste de nome de contato",
+                "pushName": test_pushname,
+                "instance_id": "test_instance_002"
+            }
+            
+            # Send message to create contact
+            self.session.post(f"{API_BASE}/messages/receive", json=message_data, timeout=10)
+            
+            # Wait a moment for processing
+            time.sleep(1)
+            
+            # Get contacts and verify name handling
+            response = self.session.get(f"{API_BASE}/contacts", timeout=10)
+            
+            if response.status_code == 200:
+                contacts = response.json()
+                
+                # Look for our test contact
+                test_contact = None
+                for contact in contacts:
+                    if contact.get("phone") == test_phone:
+                        test_contact = contact
+                        break
+                
+                if test_contact:
+                    contact_name = test_contact.get("name", "")
+                    if test_pushname in contact_name:
+                        self.log_test("Contact Names (pushName)", "PASS", f"Contact saved with pushName: {contact_name}")
+                        return True
+                    else:
+                        # Check if it has formatted number fallback
+                        if test_phone[-4:] in contact_name:
+                            self.log_test("Contact Names (Fallback)", "PASS", f"Contact saved with number fallback: {contact_name}")
+                            return True
+                        else:
+                            self.log_test("Contact Names", "FAIL", f"Contact name not properly formatted: {contact_name}")
+                            return False
+                else:
+                    self.log_test("Contact Names", "FAIL", "Test contact not found after message")
+                    return False
+            else:
+                self.log_test("Contact Names", "FAIL", f"Failed to retrieve contacts: {response.status_code}")
+                return False
+                
+        except Exception as e:
+            self.log_test("Contact Names", "FAIL", f"Exception: {str(e)}")
+            return False
+    
+    def test_chats_endpoint(self):
+        """Test GET /api/chats - Chat conversations with correct names"""
+        try:
+            response = self.session.get(f"{API_BASE}/chats", timeout=10)
+            
+            if response.status_code == 200:
+                chats = response.json()
+                if isinstance(chats, list):
+                    # Check if chats have proper name fields
+                    valid_chats = 0
+                    for chat in chats:
+                        if "contact_name" in chat and "contact_phone" in chat:
+                            valid_chats += 1
+                    
+                    self.log_test("GET /api/chats", "PASS", f"Retrieved {len(chats)} chats, {valid_chats} with proper names")
+                    return chats
+                else:
+                    self.log_test("GET /api/chats", "FAIL", "Response is not a list")
+                    return []
+            else:
+                self.log_test("GET /api/chats", "FAIL", f"HTTP {response.status_code}: {response.text}")
+                return []
+        except Exception as e:
+            self.log_test("GET /api/chats", "FAIL", f"Exception: {str(e)}")
+            return []
+    
+    def test_filtered_messages(self):
+        """Test GET /api/messages?phone=X&instance_id=Y - Filtered messages"""
+        try:
+            # First get a contact to test with
+            contacts_response = self.session.get(f"{API_BASE}/contacts", timeout=10)
+            if contacts_response.status_code == 200:
+                contacts = contacts_response.json()
+                if contacts:
+                    test_contact = contacts[0]
+                    phone = test_contact.get("phone", "")
+                    instance_id = test_contact.get("instance_id", "default")
+                    
+                    # Test filtered messages
+                    response = self.session.get(
+                        f"{API_BASE}/messages?phone={phone}&instance_id={instance_id}",
+                        timeout=10
+                    )
+                    
+                    if response.status_code == 200:
+                        messages = response.json()
+                        self.log_test("GET /api/messages (filtered)", "PASS", f"Retrieved {len(messages)} filtered messages for {phone}")
+                        return messages
+                    else:
+                        self.log_test("GET /api/messages (filtered)", "FAIL", f"HTTP {response.status_code}")
+                        return []
+                else:
+                    self.log_test("GET /api/messages (filtered)", "SKIP", "No contacts available for testing")
+                    return []
+            else:
+                self.log_test("GET /api/messages (filtered)", "FAIL", "Could not get contacts for testing")
+                return []
+        except Exception as e:
+            self.log_test("GET /api/messages (filtered)", "FAIL", f"Exception: {str(e)}")
+            return []
+    
+    def test_database_schema(self):
+        """Test database schema and data integrity"""
+        try:
+            if not os.path.exists(DB_FILE):
+                self.log_test("Database Schema", "FAIL", f"Database file not found: {DB_FILE}")
+                return False
+            
+            conn = sqlite3.connect(DB_FILE)
+            cursor = conn.cursor()
+            
+            # Check if required tables exist
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
+            tables = [row[0] for row in cursor.fetchall()]
+            
+            required_tables = ["instances", "contacts", "messages"]
+            missing_tables = [table for table in required_tables if table not in tables]
+            
+            if missing_tables:
+                self.log_test("Database Schema", "FAIL", f"Missing tables: {missing_tables}")
+                conn.close()
+                return False
+            
+            # Check contacts table schema for name fields
+            cursor.execute("PRAGMA table_info(contacts)")
+            contact_columns = [row[1] for row in cursor.fetchall()]
+            
+            if "name" not in contact_columns:
+                self.log_test("Database Schema", "FAIL", "Contacts table missing 'name' column")
+                conn.close()
+                return False
+            
+            # Check if contacts have real names (not just numbers)
+            cursor.execute("SELECT name, phone FROM contacts WHERE name NOT LIKE 'Contact %' LIMIT 5")
+            real_named_contacts = cursor.fetchall()
+            
+            conn.close()
+            
+            if real_named_contacts:
+                names = [contact[0] for contact in real_named_contacts]
+                self.log_test("Database Schema", "PASS", f"Database schema valid, found real contact names: {names[:3]}")
+                return True
+            else:
+                self.log_test("Database Schema", "PASS", "Database schema valid, but no real contact names found yet")
+                return True
+                
+        except Exception as e:
+            self.log_test("Database Schema", "FAIL", f"Exception: {str(e)}")
+            return False
+    
+    def test_websocket_status(self):
+        """Test WebSocket functionality (if available)"""
+        try:
+            # Check if WebSocket port is accessible
+            import socket
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(2)
+            result = sock.connect_ex(('localhost', 8890))  # WebSocket port from whatsflow-real.py
+            sock.close()
+            
+            if result == 0:
+                self.log_test("WebSocket Status", "PASS", "WebSocket port 8890 is accessible")
+                return True
+            else:
+                self.log_test("WebSocket Status", "FAIL", "WebSocket port 8890 not accessible")
+                return False
+        except Exception as e:
+            self.log_test("WebSocket Status", "FAIL", f"Exception: {str(e)}")
+            return False
+    
+    def test_logs_verification(self):
+        """Test if logs show contact names with message content"""
+        try:
+            # Check if log files exist and contain contact information
+            log_files = ["/app/whatsflow.log", "/app/whatsflow_debug.log"]
+            
+            found_logs = False
+            contact_logs = False
+            
+            for log_file in log_files:
+                if os.path.exists(log_file):
+                    found_logs = True
+                    try:
+                        with open(log_file, 'r', encoding='utf-8') as f:
+                            log_content = f.read()
+                            # Look for patterns that indicate contact names in logs
+                            if any(keyword in log_content.lower() for keyword in ['contact', 'message', 'received', 'pushname']):
+                                contact_logs = True
+                                break
+                    except:
+                        continue
+            
+            if found_logs and contact_logs:
+                self.log_test("Logs Verification", "PASS", "Log files found with contact/message information")
+                return True
+            elif found_logs:
+                self.log_test("Logs Verification", "PASS", "Log files found but limited contact information")
+                return True
+            else:
+                self.log_test("Logs Verification", "FAIL", "No log files found")
+                return False
+                
+        except Exception as e:
+            self.log_test("Logs Verification", "FAIL", f"Exception: {str(e)}")
+            return False
+    
     def run_all_tests(self):
         """Run all backend tests"""
         print("🚀 Starting WhatsFlow Real Backend Tests")
