@@ -537,40 +537,57 @@ HTML_APP = '''<!DOCTYPE html>
             flex-direction: column;
         }
         
+        /* Chat panel improvements */
         .chat-header {
+            display: none;
             padding: 1rem 1.5rem;
             border-bottom: 1px solid var(--border);
-            background: var(--bg-primary);
-            display: none;
+            background: var(--bg-secondary);
         }
         
         .chat-header.active {
             display: flex;
             align-items: center;
-            gap: 0.75rem;
+            gap: 1rem;
         }
         
         .chat-contact-avatar {
-            width: 40px;
-            height: 40px;
+            width: 45px;
+            height: 45px;
             border-radius: 50%;
-            background: var(--gradient-primary);
+            background: var(--primary);
             color: white;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-weight: 700;
+            font-weight: bold;
+            font-size: 1.1rem;
         }
         
         .chat-contact-info h4 {
+            margin: 0;
+            font-size: 1.1rem;
             font-weight: 600;
-            margin-bottom: 0.15rem;
         }
         
         .chat-contact-info p {
-            font-size: 0.8rem;
-            color: var(--text-secondary);
             margin: 0;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+        
+        /* Conversation avatars */
+        .conversation-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.1rem;
+            flex-shrink: 0;
         }
         
         .messages-container {
