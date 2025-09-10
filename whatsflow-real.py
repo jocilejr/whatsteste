@@ -1255,19 +1255,16 @@ HTML_APP = '''<!DOCTYPE html>
         
         <div id="dashboard" class="section active">
             <div class="card">
-                <h2>🔗 Status da Conexão WhatsApp</h2>
+                <h2>Status da Conexão</h2>
                 <div id="connection-status" class="status-indicator status-disconnected">
                     <div class="status-dot"></div>
                     <span>Verificando conexão...</span>
-                </div>
-                <div class="subtitle" style="margin-top: 1rem;">
-                    🚀 Conexão REAL com WhatsApp via Baileys + WebSocket em tempo real
                 </div>
                 <div id="connected-user-info" style="display: none;"></div>
             </div>
             
             <div class="card">
-                <h2>📊 Estatísticas do Sistema</h2>
+                <h2>Estatísticas</h2>
                 <div class="stats-grid">
                     <div class="stat-card">
                         <div class="stat-number" id="contacts-count">0</div>
