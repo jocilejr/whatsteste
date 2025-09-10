@@ -252,14 +252,18 @@ HTML_APP = '''<!DOCTYPE html>
         .conversation-item {
             display: flex;
             align-items: center;
-            padding: 12px 16px;
+            padding: 16px 20px;
             cursor: pointer;
             border-bottom: 1px solid #f0f2f5;
-            transition: background-color 0.15s ease;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            background: #ffffff;
         }
         
         .conversation-item:hover {
-            background: #f5f6f6;
+            background: linear-gradient(135deg, #f8fffe 0%, #f0f9f7 100%);
+            transform: translateX(2px);
+            box-shadow: 0 2px 12px rgba(18, 140, 126, 0.08);
         }
         
         .conversation-item.active {
