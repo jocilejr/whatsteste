@@ -280,10 +280,23 @@ HTML_APP = '''<!DOCTYPE html>
         }
         
         .instance-actions {
-            display: grid;
-            grid-template-columns: 1fr auto auto;
+            display: flex;
             gap: 0.5rem;
             align-items: center;
+            justify-content: flex-start;
+            flex-wrap: wrap;
+        }
+        
+        .instance-actions .btn {
+            flex: 0 0 auto;
+            min-width: auto;
+            padding: 0.5rem 0.75rem;
+            font-size: 0.8rem;
+        }
+        
+        .instance-actions .btn-sm {
+            padding: 0.4rem 0.6rem;
+            font-size: 0.75rem;
         }
         
         /* ===================== MENSAGENS - DESIGN WHATSAPP WEB ===================== */
