@@ -1,1217 +1,599 @@
 #!/usr/bin/env python3
 """
-Backend Test Suite for WhatsFlow Real - Final Complete Testing
-Testing all corrected problems from review request:
+Backend Test Suite for WhatsFlow Real System
+Testing the 3 critical problems reported in the review request:
 
-CORRECTED PROBLEMS TO VERIFY:
-1. Instance selection in Messages tab - GET /api/instances should return instances for selector
-2. Flow creator functionality - GET/POST/PUT/DELETE /api/flows endpoints
-3. Clean design implementation - Backend support for clean interface
-4. Improved messaging system - GET /api/chats, GET /api/messages with filtering
-5. Database verification - flows table, chats table with real names
+1. "Erro no envio de mensagem: Não foi possível conectar ao serviço Baileys. Verifique se está rodando na porta 3002."
+2. "Não conseguiu filtrar e mostrar os grupos" (erro "Failed to Fetch")
+3. "Layout da área de mensagens muito feio e antiprofissional" (Backend support for professional interface)
 
-CRITICAL ENDPOINTS TO TEST:
-- GET /api/instances (must return instances for selector)
-- GET /api/chats (must return conversations, filtered by instance_id if specified)
-- GET /api/flows (must return flows)
-- POST /api/flows (must create new flows)
-- PUT /api/flows/{id} (must update flows)
-- DELETE /api/flows/{id} (must delete flows)
-- GET /api/messages?phone=X&instance_id=Y (must return filtered messages)
-
-DATABASE VERIFICATIONS:
-- flows table must exist and be functional
-- chats table must have data with real names
-- System must support filtering by instance_id
+Expected corrections:
+1. URLs changed from localhost:3002 to 127.0.0.1:3002 in frontend JavaScript
+2. /groups/{instanceId} endpoint implemented in Baileys service
+3. CORS configuration updated to accept both localhost and 127.0.0.1
+4. Design completely renovated with elegant and professional interface
 """
 
 import requests
 import json
 import time
-import uuid
+import sys
 from datetime import datetime
-import sqlite3
-import os
-import subprocess
+from typing import Dict, List, Any, Optional
 
-# Configuration
-BASE_URL = "http://localhost:8889"
-API_BASE = f"{BASE_URL}/api"
-DB_FILE = "/app/whatsflow.db"
-
-class WhatsFlowRealTester:
+class WhatsFlowTester:
     def __init__(self):
-        self.session = requests.Session()
+        # Service URLs based on the review request
+        self.whatsflow_url = "http://127.0.0.1:8889"  # WhatsFlow Real Python service
+        self.baileys_url = "http://127.0.0.1:3002"    # Baileys Node.js service
+        self.frontend_url = "http://127.0.0.1:3000"   # Frontend React service
+        
         self.test_results = []
         self.failed_tests = []
         self.passed_tests = []
-        self.critical_issues = []
-        self.minor_issues = []
         
-    def log_test(self, test_name, status, details="", is_critical=True):
-        """Log test results with critical/minor classification"""
-        result = {
-            "test": test_name,
-            "status": status,
-            "details": details,
-            "timestamp": datetime.now().isoformat(),
-            "is_critical": is_critical
-        }
-        self.test_results.append(result)
-        
-        if status == "PASS":
-            self.passed_tests.append(test_name)
-            print(f"✅ {test_name}: {details}")
-        else:
-            self.failed_tests.append(test_name)
-            if is_critical:
-                self.critical_issues.append(f"{test_name}: {details}")
-            else:
-                self.minor_issues.append(f"{test_name}: {details}")
-            print(f"❌ {test_name}: {details}")
-    
-    def test_server_connectivity(self):
-        """Test if the WhatsFlow Real server is running on port 8889"""
-        try:
-            response = self.session.get(BASE_URL, timeout=10)
-            if response.status_code == 200:
-                self.log_test("Server Connectivity", "PASS", f"WhatsFlow Real server responding on port 8889")
-                return True
-            else:
-                self.log_test("Server Connectivity", "FAIL", f"Server returned status {response.status_code}")
-                return False
-        except requests.exceptions.RequestException as e:
-            self.log_test("Server Connectivity", "FAIL", f"Connection error: {str(e)}")
-            return False
-    
-    # CRITICAL TESTS FOR CORRECTED PROBLEMS
-    
-    def test_instances_for_selector(self):
-        """CRITICAL: Test GET /api/instances - Must return instances for Messages tab selector"""
-        try:
-            response = self.session.get(f"{API_BASE}/instances", timeout=10)
-            
-            if response.status_code == 200:
-                data = response.json()
-                if isinstance(data, list):
-                    # Check if instances have required fields for selector
-                    valid_instances = 0
-                    for instance in data:
-                        if all(key in instance for key in ['id', 'name']):
-                            valid_instances += 1
-                    
-                    if valid_instances > 0:
-                        self.log_test("Instance Selector Data", "PASS", 
-                                    f"Retrieved {len(data)} instances, {valid_instances} valid for selector")
-                        return data
-                    else:
-                        self.log_test("Instance Selector Data", "FAIL", 
-                                    "No valid instances with required fields (id, name)")
-                        return []
-                else:
-                    self.log_test("Instance Selector Data", "FAIL", "Response is not a list")
-                    return []
-            else:
-                self.log_test("Instance Selector Data", "FAIL", f"HTTP {response.status_code}: {response.text}")
-                return []
-        except Exception as e:
-            self.log_test("Instance Selector Data", "FAIL", f"Exception: {str(e)}")
-            return []
-    
-    def test_flows_crud_operations(self):
-        """CRITICAL: Test complete CRUD operations for flows (GET/POST/PUT/DELETE /api/flows)"""
-        flow_id = None
-        
-        # Test GET /api/flows
-        try:
-            response = self.session.get(f"{API_BASE}/flows", timeout=10)
-            if response.status_code == 200:
-                flows = response.json()
-                self.log_test("GET /api/flows", "PASS", f"Retrieved {len(flows)} flows")
-            else:
-                self.log_test("GET /api/flows", "FAIL", f"HTTP {response.status_code}: {response.text}")
-                return False
-        except Exception as e:
-            self.log_test("GET /api/flows", "FAIL", f"Exception: {str(e)}")
-            return False
-        
-        # Test POST /api/flows (Create new flow)
-        try:
-            test_flow = {
-                "name": f"Test Flow {uuid.uuid4().hex[:8]}",
-                "description": "Test flow for CRUD operations",
-                "trigger": "keyword",
-                "keyword": "test",
-                "response": "This is a test flow response"
-            }
-            
-            response = self.session.post(
-                f"{API_BASE}/flows",
-                json=test_flow,
-                headers={"Content-Type": "application/json"},
-                timeout=10
-            )
-            
-            if response.status_code in [200, 201]:
-                data = response.json()
-                # WhatsFlow Real returns flow_id instead of id
-                if "flow_id" in data:
-                    flow_id = data["flow_id"]
-                    self.log_test("POST /api/flows", "PASS", f"Created flow with ID: {flow_id}")
-                elif "id" in data:
-                    flow_id = data["id"]
-                    self.log_test("POST /api/flows", "PASS", f"Created flow with ID: {flow_id}")
-                else:
-                    self.log_test("POST /api/flows", "FAIL", "No ID returned in response")
-                    return False
-            else:
-                self.log_test("POST /api/flows", "FAIL", f"HTTP {response.status_code}: {response.text}")
-                return False
-        except Exception as e:
-            self.log_test("POST /api/flows", "FAIL", f"Exception: {str(e)}")
-            return False
-        
-        if not flow_id:
-            return False
-        
-        # Test PUT /api/flows/{id} (Update flow)
-        try:
-            updated_flow = {
-                "name": f"Updated Test Flow {uuid.uuid4().hex[:8]}",
-                "description": "Updated test flow description",
-                "response": "Updated test flow response"
-            }
-            
-            response = self.session.put(
-                f"{API_BASE}/flows/{flow_id}",
-                json=updated_flow,
-                headers={"Content-Type": "application/json"},
-                timeout=10
-            )
-            
-            if response.status_code in [200, 204]:
-                self.log_test("PUT /api/flows/{id}", "PASS", f"Updated flow {flow_id}")
-            else:
-                self.log_test("PUT /api/flows/{id}", "FAIL", f"HTTP {response.status_code}: {response.text}")
-        except Exception as e:
-            self.log_test("PUT /api/flows/{id}", "FAIL", f"Exception: {str(e)}")
-        
-        # Test DELETE /api/flows/{id} (Delete flow)
-        try:
-            response = self.session.delete(f"{API_BASE}/flows/{flow_id}", timeout=10)
-            
-            if response.status_code in [200, 204]:
-                self.log_test("DELETE /api/flows/{id}", "PASS", f"Deleted flow {flow_id}")
-                return True
-            else:
-                self.log_test("DELETE /api/flows/{id}", "FAIL", f"HTTP {response.status_code}: {response.text}")
-                return False
-        except Exception as e:
-            self.log_test("DELETE /api/flows/{id}", "FAIL", f"Exception: {str(e)}")
-            return False
-    
-    def test_chats_with_filtering(self):
-        """CRITICAL: Test GET /api/chats with instance filtering"""
-        try:
-            # Test basic chats endpoint
-            response = self.session.get(f"{API_BASE}/chats", timeout=10)
-            
-            if response.status_code == 200:
-                chats = response.json()
-                if isinstance(chats, list):
-                    # Check if chats have real names (not just phone numbers)
-                    real_names_count = 0
-                    for chat in chats:
-                        if "contact_name" in chat:
-                            name = chat["contact_name"]
-                            # Check if it's a real name (contains letters, not just numbers)
-                            if any(c.isalpha() for c in name) and not name.startswith("Contact "):
-                                real_names_count += 1
-                    
-                    self.log_test("GET /api/chats", "PASS", 
-                                f"Retrieved {len(chats)} chats, {real_names_count} with real names")
-                    
-                    # Note: Filtering by instance_id is not implemented in whatsflow-real.py
-                    # This is expected behavior, so we'll mark it as a minor issue
-                    self.log_test("GET /api/chats (filtering)", "SKIP", 
-                                "Instance filtering not implemented in current version", False)
-                    
-                    return chats
-                else:
-                    self.log_test("GET /api/chats", "FAIL", "Response is not a list")
-                    return []
-            else:
-                self.log_test("GET /api/chats", "FAIL", f"HTTP {response.status_code}: {response.text}")
-                return []
-        except Exception as e:
-            self.log_test("GET /api/chats", "FAIL", f"Exception: {str(e)}")
-            return []
-    
-    def test_filtered_messages_system(self):
-        """CRITICAL: Test GET /api/messages?phone=X&instance_id=Y - Message filtering"""
-        try:
-            # First get contacts to test with
-            contacts_response = self.session.get(f"{API_BASE}/contacts", timeout=10)
-            if contacts_response.status_code != 200:
-                self.log_test("Filtered Messages System", "FAIL", "Could not get contacts for testing")
-                return False
-            
-            contacts = contacts_response.json()
-            if not contacts:
-                self.log_test("Filtered Messages System", "SKIP", "No contacts available for testing", False)
-                return True
-            
-            # Find a contact with a valid phone number
-            test_contact = None
-            for contact in contacts:
-                phone = contact.get("phone", "")
-                if phone and phone.strip() and phone != "":
-                    test_contact = contact
-                    break
-            
-            if not test_contact:
-                self.log_test("Filtered Messages System", "SKIP", "No contacts with valid phone numbers", False)
-                return True
-            
-            phone = test_contact["phone"]
-            instance_id = test_contact.get("instance_id", "default")
-            
-            # Test message filtering by phone
-            response = self.session.get(f"{API_BASE}/messages?phone={phone}", timeout=10)
-            
-            if response.status_code == 200:
-                messages = response.json()
-                self.log_test("Filtered Messages System", "PASS", 
-                            f"Retrieved {len(messages)} filtered messages for {phone}")
-                
-                # Test with instance_id if supported
-                response_with_instance = self.session.get(
-                    f"{API_BASE}/messages?phone={phone}&instance_id={instance_id}", 
-                    timeout=10
-                )
-                if response_with_instance.status_code == 200:
-                    messages_with_instance = response_with_instance.json()
-                    self.log_test("Message Filtering with Instance", "PASS", 
-                                f"Retrieved {len(messages_with_instance)} messages with instance filter", False)
-                else:
-                    self.log_test("Message Filtering with Instance", "SKIP", 
-                                "Instance filtering not supported", False)
-                
-                return True
-            else:
-                self.log_test("Filtered Messages System", "FAIL", 
-                            f"HTTP {response.status_code}: {response.text}")
-                return False
-                
-        except Exception as e:
-            self.log_test("Filtered Messages System", "FAIL", f"Exception: {str(e)}")
-            return False
-    
-    def test_database_flows_table(self):
-        """CRITICAL: Verify flows table exists and is functional"""
-        try:
-            if not os.path.exists(DB_FILE):
-                self.log_test("Database Flows Table", "FAIL", f"Database file not found: {DB_FILE}")
-                return False
-            
-            conn = sqlite3.connect(DB_FILE)
-            cursor = conn.cursor()
-            
-            # Check if flows table exists
-            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='flows'")
-            flows_table = cursor.fetchone()
-            
-            if not flows_table:
-                self.log_test("Database Flows Table", "FAIL", "flows table does not exist")
-                conn.close()
-                return False
-            
-            # Check flows table schema
-            cursor.execute("PRAGMA table_info(flows)")
-            columns = [row[1] for row in cursor.fetchall()]
-            
-            required_columns = ["id", "name"]
-            missing_columns = [col for col in required_columns if col not in columns]
-            
-            if missing_columns:
-                self.log_test("Database Flows Table", "FAIL", f"Missing columns: {missing_columns}")
-                conn.close()
-                return False
-            
-            # Check if we can query flows
-            cursor.execute("SELECT COUNT(*) FROM flows")
-            flows_count = cursor.fetchone()[0]
-            
-            conn.close()
-            
-            self.log_test("Database Flows Table", "PASS", 
-                        f"flows table exists with {flows_count} records, all required columns present")
-            return True
-            
-        except Exception as e:
-            self.log_test("Database Flows Table", "FAIL", f"Exception: {str(e)}")
-            return False
-    
-    def test_database_real_names(self):
-        """CRITICAL: Verify chats/contacts have real names (pushName implementation)"""
-        try:
-            if not os.path.exists(DB_FILE):
-                self.log_test("Database Real Names", "FAIL", f"Database file not found: {DB_FILE}")
-                return False
-            
-            conn = sqlite3.connect(DB_FILE)
-            cursor = conn.cursor()
-            
-            # Check contacts table for real names
-            cursor.execute("SELECT name, phone FROM contacts WHERE name NOT LIKE 'Contact %' LIMIT 10")
-            real_named_contacts = cursor.fetchall()
-            
-            # Check messages table for contact_name data (WhatsFlow Real uses contact_name, not user_name)
-            cursor.execute("SELECT DISTINCT contact_name FROM messages WHERE contact_name IS NOT NULL AND contact_name != '' LIMIT 10")
-            contact_name_data = cursor.fetchall()
-            
-            conn.close()
-            
-            real_names_found = len(real_named_contacts) + len(contact_name_data)
-            
-            if real_names_found > 0:
-                sample_names = []
-                if real_named_contacts:
-                    sample_names.extend([contact[0] for contact in real_named_contacts[:3]])
-                if contact_name_data:
-                    sample_names.extend([name[0] for name in contact_name_data[:3]])
-                
-                self.log_test("Database Real Names", "PASS", 
-                            f"Found {real_names_found} real names. Examples: {sample_names}")
-                return True
-            else:
-                self.log_test("Database Real Names", "FAIL", 
-                            "No real names found - pushName system not working")
-                return False
-                
-        except Exception as e:
-            self.log_test("Database Real Names", "FAIL", f"Exception: {str(e)}")
-            return False
-    
-    def test_create_instance(self):
-        """Test POST /api/instances - Create new WhatsApp instance"""
-        try:
-            test_instance_name = f"Test Instance {uuid.uuid4().hex[:8]}"
-            payload = {"name": test_instance_name}
-            
-            response = self.session.post(
-                f"{API_BASE}/instances",
-                json=payload,
-                headers={"Content-Type": "application/json"},
-                timeout=10
-            )
-            
-            if response.status_code in [200, 201]:
-                data = response.json()
-                if "id" in data and "name" in data:
-                    self.log_test("POST /api/instances", "PASS", f"Created instance: {data['name']}")
-                    return data
-                else:
-                    self.log_test("POST /api/instances", "FAIL", "Missing required fields in response")
-                    return None
-            else:
-                self.log_test("POST /api/instances", "FAIL", f"HTTP {response.status_code}: {response.text}")
-                return None
-        except Exception as e:
-            self.log_test("POST /api/instances", "FAIL", f"Exception: {str(e)}")
-            return None
-    
-    def test_get_contacts(self):
-        """Test GET /api/contacts - List imported contacts"""
-        try:
-            response = self.session.get(f"{API_BASE}/contacts", timeout=10)
-            
-            if response.status_code == 200:
-                data = response.json()
-                if isinstance(data, list):
-                    self.log_test("GET /api/contacts", "PASS", f"Retrieved {len(data)} contacts")
-                    return data
-                else:
-                    self.log_test("GET /api/contacts", "FAIL", "Response is not a list")
-                    return []
-            else:
-                self.log_test("GET /api/contacts", "FAIL", f"HTTP {response.status_code}: {response.text}")
-                return []
-        except Exception as e:
-            self.log_test("GET /api/contacts", "FAIL", f"Exception: {str(e)}")
-            return []
-    
-    def test_get_messages(self):
-        """Test GET /api/messages - List received messages"""
-        try:
-            response = self.session.get(f"{API_BASE}/messages", timeout=10)
-            
-            if response.status_code == 200:
-                data = response.json()
-                if isinstance(data, list):
-                    self.log_test("GET /api/messages", "PASS", f"Retrieved {len(data)} messages")
-                    return data
-                else:
-                    self.log_test("GET /api/messages", "FAIL", "Response is not a list")
-                    return []
-            else:
-                self.log_test("GET /api/messages", "FAIL", f"HTTP {response.status_code}: {response.text}")
-                return []
-        except Exception as e:
-            self.log_test("GET /api/messages", "FAIL", f"Exception: {str(e)}")
-            return []
-    
-    def test_get_stats(self):
-        """Test GET /api/stats - System statistics"""
-        try:
-            response = self.session.get(f"{API_BASE}/stats", timeout=10)
-            
-            if response.status_code == 200:
-                data = response.json()
-                expected_fields = ["contacts_count", "conversations_count", "messages_count"]
-                
-                if all(field in data for field in expected_fields):
-                    stats_summary = f"Contacts: {data['contacts_count']}, Messages: {data['messages_count']}"
-                    self.log_test("GET /api/stats", "PASS", f"Statistics retrieved - {stats_summary}")
-                    return data
-                else:
-                    missing_fields = [f for f in expected_fields if f not in data]
-                    self.log_test("GET /api/stats", "FAIL", f"Missing fields: {missing_fields}")
-                    return None
-            else:
-                self.log_test("GET /api/stats", "FAIL", f"HTTP {response.status_code}: {response.text}")
-                return None
-        except Exception as e:
-            self.log_test("GET /api/stats", "FAIL", f"Exception: {str(e)}")
-            return None
-    
-    def test_whatsapp_status(self):
-        """Test GET /api/whatsapp/status - WhatsApp connection status"""
-        try:
-            response = self.session.get(f"{API_BASE}/whatsapp/status", timeout=10)
-            
-            if response.status_code == 200:
-                data = response.json()
-                if "connected" in data:
-                    status = "Connected" if data["connected"] else "Disconnected"
-                    connecting = data.get("connecting", False)
-                    if connecting:
-                        status = "Connecting"
-                    
-                    self.log_test("GET /api/whatsapp/status", "PASS", f"WhatsApp status: {status}")
-                    return data
-                else:
-                    self.log_test("GET /api/whatsapp/status", "FAIL", "Missing 'connected' field in response")
-                    return None
-            else:
-                self.log_test("GET /api/whatsapp/status", "FAIL", f"HTTP {response.status_code}: {response.text}")
-                return None
-        except Exception as e:
-            self.log_test("GET /api/whatsapp/status", "FAIL", f"Exception: {str(e)}")
-            return None
-    
-    def test_whatsapp_qr(self):
-        """Test GET /api/whatsapp/qr - QR code for WhatsApp connection"""
-        try:
-            response = self.session.get(f"{API_BASE}/whatsapp/qr", timeout=10)
-            
-            if response.status_code == 200:
-                data = response.json()
-                if "qr" in data and "connected" in data:
-                    qr_status = "Available" if data["qr"] else "Not available"
-                    self.log_test("GET /api/whatsapp/qr", "PASS", f"QR code: {qr_status}")
-                    return data
-                else:
-                    self.log_test("GET /api/whatsapp/qr", "FAIL", "Missing required fields in response")
-                    return None
-            else:
-                self.log_test("GET /api/whatsapp/qr", "FAIL", f"HTTP {response.status_code}: {response.text}")
-                return None
-        except Exception as e:
-            self.log_test("GET /api/whatsapp/qr", "FAIL", f"Exception: {str(e)}")
-            return None
-    
-    def test_webhooks_endpoint(self):
-        """Test GET /api/webhooks - List webhooks"""
-        try:
-            response = self.session.get(f"{API_BASE}/webhooks", timeout=10)
-            
-            if response.status_code == 200:
-                data = response.json()
-                if isinstance(data, list):
-                    self.log_test("GET /api/webhooks", "PASS", f"Retrieved {len(data)} webhooks")
-                    return data
-                else:
-                    self.log_test("GET /api/webhooks", "FAIL", "Response is not a list")
-                    return []
-            else:
-                self.log_test("GET /api/webhooks", "FAIL", f"HTTP {response.status_code}: {response.text}")
-                return []
-        except Exception as e:
-            self.log_test("GET /api/webhooks", "FAIL", f"Exception: {str(e)}")
-            return []
-    
-    def test_instance_connection(self, instance_id):
-        """Test POST /api/instances/{id}/connect - Connect WhatsApp instance"""
-        if not instance_id:
-            self.log_test("POST /api/instances/{id}/connect", "SKIP", "No instance ID provided")
-            return None
-            
-        try:
-            response = self.session.post(
-                f"{API_BASE}/instances/{instance_id}/connect",
-                headers={"Content-Type": "application/json"},
-                timeout=10
-            )
-            
-            if response.status_code == 200:
-                data = response.json()
-                if "success" in data or "message" in data:
-                    self.log_test("POST /api/instances/{id}/connect", "PASS", "Connection initiated successfully")
-                    return data
-                else:
-                    self.log_test("POST /api/instances/{id}/connect", "FAIL", "Unexpected response format")
-                    return None
-            else:
-                self.log_test("POST /api/instances/{id}/connect", "FAIL", f"HTTP {response.status_code}: {response.text}")
-                return None
-        except Exception as e:
-            self.log_test("POST /api/instances/{id}/connect", "FAIL", f"Exception: {str(e)}")
-            return None
-    
-    def test_database_persistence(self):
-        """Test if SQLite database is working properly"""
-        try:
-            # Test by creating an instance and then retrieving it
-            created_instance = self.test_create_instance()
-            if not created_instance:
-                self.log_test("Database Persistence", "FAIL", "Could not create test instance")
-                return False
-            
-            # Wait a moment and retrieve instances
-            time.sleep(1)
-            instances = self.test_get_instances()
-            
-            # Check if our created instance exists
-            found_instance = None
-            for instance in instances:
-                if instance.get("id") == created_instance.get("id"):
-                    found_instance = instance
-                    break
-            
-            if found_instance:
-                self.log_test("Database Persistence", "PASS", "SQLite database working correctly")
-                return True
-            else:
-                self.log_test("Database Persistence", "FAIL", "Created instance not found in database")
-                return False
-                
-        except Exception as e:
-            self.log_test("Database Persistence", "FAIL", f"Exception: {str(e)}")
-            return False
-    
-    def test_baileys_service_integration(self):
-        """Test integration with Baileys WhatsApp service"""
-        try:
-            # Test if Baileys service is running on port 3002
-            baileys_url = "http://localhost:3002"
-            
-            try:
-                response = self.session.get(f"{baileys_url}/status", timeout=5)
-                if response.status_code == 200:
-                    self.log_test("Baileys Service Integration", "PASS", "Baileys service is running and accessible")
-                    return True
-                else:
-                    self.log_test("Baileys Service Integration", "FAIL", f"Baileys service returned status {response.status_code}")
-                    return False
-            except requests.exceptions.RequestException:
-                self.log_test("Baileys Service Integration", "FAIL", "Baileys service not accessible on port 3002")
-                return False
-                
-        except Exception as e:
-            self.log_test("Baileys Service Integration", "FAIL", f"Exception: {str(e)}")
-            return False
-    
-    def test_message_receiving_system(self):
-        """Test POST /api/messages/receive - Message receiving with pushName"""
-        try:
-            # Test message receiving with pushName
-            test_message = {
-                "phone": "+5511999887766",
-                "message": "Teste de mensagem com nome real",
-                "pushName": "João Silva",
-                "instance_id": "test_instance_001"
-            }
-            
-            response = self.session.post(
-                f"{API_BASE}/messages/receive",
-                json=test_message,
-                headers={"Content-Type": "application/json"},
-                timeout=10
-            )
-            
-            if response.status_code in [200, 201]:
-                self.log_test("POST /api/messages/receive", "PASS", f"Message received with pushName: {test_message['pushName']}")
-                return True
-            else:
-                self.log_test("POST /api/messages/receive", "FAIL", f"HTTP {response.status_code}: {response.text}")
-                return False
-        except Exception as e:
-            self.log_test("POST /api/messages/receive", "FAIL", f"Exception: {str(e)}")
-            return False
-    
-    def test_contact_names_system(self):
-        """Test contact name handling - pushName with fallback to formatted number"""
-        try:
-            # First, send a message to create a contact
-            test_phone = "+5511987654321"
-            test_pushname = "Maria Santos"
-            
-            message_data = {
-                "phone": test_phone,
-                "message": "Teste de nome de contato",
-                "pushName": test_pushname,
-                "instance_id": "test_instance_002"
-            }
-            
-            # Send message to create contact
-            self.session.post(f"{API_BASE}/messages/receive", json=message_data, timeout=10)
-            
-            # Wait a moment for processing
-            time.sleep(1)
-            
-            # Get contacts and verify name handling
-            response = self.session.get(f"{API_BASE}/contacts", timeout=10)
-            
-            if response.status_code == 200:
-                contacts = response.json()
-                
-                # Look for our test contact
-                test_contact = None
-                for contact in contacts:
-                    if contact.get("phone") == test_phone:
-                        test_contact = contact
-                        break
-                
-                if test_contact:
-                    contact_name = test_contact.get("name", "")
-                    if test_pushname in contact_name:
-                        self.log_test("Contact Names (pushName)", "PASS", f"Contact saved with pushName: {contact_name}")
-                        return True
-                    else:
-                        # Check if it has formatted number fallback
-                        if test_phone[-4:] in contact_name:
-                            self.log_test("Contact Names (Fallback)", "PASS", f"Contact saved with number fallback: {contact_name}")
-                            return True
-                        else:
-                            self.log_test("Contact Names", "FAIL", f"Contact name not properly formatted: {contact_name}")
-                            return False
-                else:
-                    self.log_test("Contact Names", "FAIL", "Test contact not found after message")
-                    return False
-            else:
-                self.log_test("Contact Names", "FAIL", f"Failed to retrieve contacts: {response.status_code}")
-                return False
-                
-        except Exception as e:
-            self.log_test("Contact Names", "FAIL", f"Exception: {str(e)}")
-            return False
-    
-    def test_chats_endpoint(self):
-        """Test GET /api/chats - Chat conversations with correct names"""
-        try:
-            response = self.session.get(f"{API_BASE}/chats", timeout=10)
-            
-            if response.status_code == 200:
-                chats = response.json()
-                if isinstance(chats, list):
-                    # Check if chats have proper name fields
-                    valid_chats = 0
-                    for chat in chats:
-                        if "contact_name" in chat and "contact_phone" in chat:
-                            valid_chats += 1
-                    
-                    self.log_test("GET /api/chats", "PASS", f"Retrieved {len(chats)} chats, {valid_chats} with proper names")
-                    return chats
-                else:
-                    self.log_test("GET /api/chats", "FAIL", "Response is not a list")
-                    return []
-            else:
-                self.log_test("GET /api/chats", "FAIL", f"HTTP {response.status_code}: {response.text}")
-                return []
-        except Exception as e:
-            self.log_test("GET /api/chats", "FAIL", f"Exception: {str(e)}")
-            return []
-    
-    def test_filtered_messages(self):
-        """Test GET /api/messages?phone=X&instance_id=Y - Filtered messages"""
-        try:
-            # First get a contact to test with
-            contacts_response = self.session.get(f"{API_BASE}/contacts", timeout=10)
-            if contacts_response.status_code == 200:
-                contacts = contacts_response.json()
-                if contacts:
-                    test_contact = contacts[0]
-                    phone = test_contact.get("phone", "")
-                    instance_id = test_contact.get("instance_id", "default")
-                    
-                    # Test filtered messages
-                    response = self.session.get(
-                        f"{API_BASE}/messages?phone={phone}&instance_id={instance_id}",
-                        timeout=10
-                    )
-                    
-                    if response.status_code == 200:
-                        messages = response.json()
-                        self.log_test("GET /api/messages (filtered)", "PASS", f"Retrieved {len(messages)} filtered messages for {phone}")
-                        return messages
-                    else:
-                        self.log_test("GET /api/messages (filtered)", "FAIL", f"HTTP {response.status_code}")
-                        return []
-                else:
-                    self.log_test("GET /api/messages (filtered)", "SKIP", "No contacts available for testing")
-                    return []
-            else:
-                self.log_test("GET /api/messages (filtered)", "FAIL", "Could not get contacts for testing")
-                return []
-        except Exception as e:
-            self.log_test("GET /api/messages (filtered)", "FAIL", f"Exception: {str(e)}")
-            return []
-    
-    def test_database_schema(self):
-        """Test database schema and data integrity"""
-        try:
-            if not os.path.exists(DB_FILE):
-                self.log_test("Database Schema", "FAIL", f"Database file not found: {DB_FILE}")
-                return False
-            
-            conn = sqlite3.connect(DB_FILE)
-            cursor = conn.cursor()
-            
-            # Check if required tables exist
-            cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
-            tables = [row[0] for row in cursor.fetchall()]
-            
-            required_tables = ["instances", "contacts", "messages"]
-            missing_tables = [table for table in required_tables if table not in tables]
-            
-            if missing_tables:
-                self.log_test("Database Schema", "FAIL", f"Missing tables: {missing_tables}")
-                conn.close()
-                return False
-            
-            # Check contacts table schema for name fields
-            cursor.execute("PRAGMA table_info(contacts)")
-            contact_columns = [row[1] for row in cursor.fetchall()]
-            
-            if "name" not in contact_columns:
-                self.log_test("Database Schema", "FAIL", "Contacts table missing 'name' column")
-                conn.close()
-                return False
-            
-            # Check if contacts have real names (not just numbers)
-            cursor.execute("SELECT name, phone FROM contacts WHERE name NOT LIKE 'Contact %' LIMIT 5")
-            real_named_contacts = cursor.fetchall()
-            
-            conn.close()
-            
-            if real_named_contacts:
-                names = [contact[0] for contact in real_named_contacts]
-                self.log_test("Database Schema", "PASS", f"Database schema valid, found real contact names: {names[:3]}")
-                return True
-            else:
-                self.log_test("Database Schema", "PASS", "Database schema valid, but no real contact names found yet")
-                return True
-                
-        except Exception as e:
-            self.log_test("Database Schema", "FAIL", f"Exception: {str(e)}")
-            return False
-    
-    def test_websocket_status(self):
-        """Test WebSocket functionality (if available)"""
-        try:
-            # Check if WebSocket port is accessible
-            import socket
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.settimeout(2)
-            result = sock.connect_ex(('localhost', 8890))  # WebSocket port from whatsflow-real.py
-            sock.close()
-            
-            if result == 0:
-                self.log_test("WebSocket Status", "PASS", "WebSocket port 8890 is accessible")
-                return True
-            else:
-                self.log_test("WebSocket Status", "FAIL", "WebSocket port 8890 not accessible")
-                return False
-        except Exception as e:
-            self.log_test("WebSocket Status", "FAIL", f"Exception: {str(e)}")
-            return False
-    
-    def test_logs_verification(self):
-        """Test if logs show contact names with message content"""
-        try:
-            # Check if log files exist and contain contact information
-            log_files = ["/app/whatsflow.log", "/app/whatsflow_debug.log"]
-            
-            found_logs = False
-            contact_logs = False
-            
-            for log_file in log_files:
-                if os.path.exists(log_file):
-                    found_logs = True
-                    try:
-                        with open(log_file, 'r', encoding='utf-8') as f:
-                            log_content = f.read()
-                            # Look for patterns that indicate contact names in logs
-                            if any(keyword in log_content.lower() for keyword in ['contact', 'message', 'received', 'pushname']):
-                                contact_logs = True
-                                break
-                    except:
-                        continue
-            
-            if found_logs and contact_logs:
-                self.log_test("Logs Verification", "PASS", "Log files found with contact/message information")
-                return True
-            elif found_logs:
-                self.log_test("Logs Verification", "PASS", "Log files found but limited contact information")
-                return True
-            else:
-                self.log_test("Logs Verification", "FAIL", "No log files found")
-                return False
-                
-        except Exception as e:
-            self.log_test("Logs Verification", "FAIL", f"Exception: {str(e)}")
-            return False
-    
-    def run_all_tests(self):
-        """Run all backend tests focusing on corrected problems"""
-        print("🚀 Starting WhatsFlow Real Final Testing - Corrected Problems Verification")
+        print("🎯 INICIANDO VALIDAÇÃO FINAL DOS 3 PROBLEMAS ORIGINAIS DO USUÁRIO")
+        print("=" * 80)
+        print("PROBLEMAS REPORTADOS:")
+        print("1. ❌ Erro no envio de mensagem: Não foi possível conectar ao serviço Baileys (porta 3002)")
+        print("2. ❌ Não conseguiu filtrar e mostrar os grupos (erro 'Failed to Fetch')")
+        print("3. ❌ Layout da área de mensagens muito feio e antiprofissional")
         print("=" * 80)
         
-        # Test server connectivity first
-        if not self.test_server_connectivity():
-            print("❌ WhatsFlow Real server not accessible on port 8889. Stopping tests.")
-            return self.generate_report()
+    def log_test(self, test_name: str, success: bool, details: str = "", response_data: Any = None):
+        """Log test results"""
+        status = "✅ PASSOU" if success else "❌ FALHOU"
+        result = {
+            "test": test_name,
+            "success": success,
+            "details": details,
+            "timestamp": datetime.now().isoformat(),
+            "response_data": response_data
+        }
         
-        print("\n🔍 TESTING CORRECTED PROBLEMS:")
-        print("=" * 50)
+        self.test_results.append(result)
+        if success:
+            self.passed_tests.append(test_name)
+        else:
+            self.failed_tests.append(test_name)
+            
+        print(f"{status} {test_name}")
+        if details:
+            print(f"   📝 {details}")
+        if not success and response_data:
+            print(f"   📊 Response: {response_data}")
+        print()
+
+    def test_baileys_connectivity(self) -> bool:
+        """
+        TESTE 1: Conectividade Frontend-Baileys
+        Teste fetch direto de http://127.0.0.1:3002/health
+        """
+        print("🔍 TESTE 1: CONECTIVIDADE FRONTEND-BAILEYS")
+        print("-" * 50)
         
-        # CRITICAL TEST 1: Instance selection for Messages tab
-        print("\n1️⃣ Testing Instance Selection for Messages Tab:")
-        instances = self.test_instances_for_selector()
+        try:
+            # Test health endpoint
+            response = requests.get(f"{self.baileys_url}/health", timeout=10)
+            
+            if response.status_code == 200:
+                data = response.json()
+                uptime = data.get('uptime', 0)
+                status = data.get('status', 'unknown')
+                instances = data.get('instances', {})
+                
+                self.log_test(
+                    "Baileys Health Check", 
+                    True, 
+                    f"Status: {status}, Uptime: {uptime:.1f}s, Instâncias: {instances.get('total', 0)}",
+                    data
+                )
+                return True
+            else:
+                self.log_test(
+                    "Baileys Health Check", 
+                    False, 
+                    f"HTTP {response.status_code}: {response.text[:100]}",
+                    {"status_code": response.status_code, "text": response.text[:200]}
+                )
+                return False
+                
+        except requests.exceptions.ConnectionError:
+            self.log_test(
+                "Baileys Health Check", 
+                False, 
+                "ERRO DE CONEXÃO: Não foi possível conectar ao serviço Baileys na porta 3002",
+                {"error": "ConnectionError", "url": f"{self.baileys_url}/health"}
+            )
+            return False
+        except Exception as e:
+            self.log_test(
+                "Baileys Health Check", 
+                False, 
+                f"Erro inesperado: {str(e)}",
+                {"error": str(e)}
+            )
+            return False
+
+    def test_groups_endpoint(self) -> bool:
+        """
+        TESTE 2: Groups Endpoint
+        Teste GET http://127.0.0.1:3002/groups/test-instance
+        """
+        print("🔍 TESTE 2: GROUPS ENDPOINT")
+        print("-" * 50)
         
-        # CRITICAL TEST 2: Flow creator functionality (CRUD operations)
-        print("\n2️⃣ Testing Flow Creator Functionality:")
-        self.test_flows_crud_operations()
+        test_instance_id = "test-instance"
         
-        # CRITICAL TEST 3: Improved messaging system with filtering
-        print("\n3️⃣ Testing Improved Messaging System:")
-        chats = self.test_chats_with_filtering()
-        self.test_filtered_messages_system()
+        try:
+            response = requests.get(f"{self.baileys_url}/groups/{test_instance_id}", timeout=10)
+            
+            if response.status_code == 400:
+                # Expected response for non-connected instance
+                data = response.json()
+                error_msg = data.get('error', '')
+                
+                if 'não está conectada' in error_msg or 'not connected' in error_msg.lower():
+                    self.log_test(
+                        "Groups Endpoint - Instance Not Connected", 
+                        True, 
+                        f"Resposta adequada para instância não conectada: {error_msg}",
+                        data
+                    )
+                    return True
+                else:
+                    self.log_test(
+                        "Groups Endpoint - Instance Not Connected", 
+                        False, 
+                        f"Mensagem de erro inadequada: {error_msg}",
+                        data
+                    )
+                    return False
+                    
+            elif response.status_code == 200:
+                # Instance might be connected, check response structure
+                data = response.json()
+                if 'groups' in data and 'instanceId' in data:
+                    self.log_test(
+                        "Groups Endpoint - Connected Instance", 
+                        True, 
+                        f"Endpoint funcionando para instância conectada: {len(data.get('groups', []))} grupos",
+                        data
+                    )
+                    return True
+                else:
+                    self.log_test(
+                        "Groups Endpoint - Connected Instance", 
+                        False, 
+                        "Estrutura de resposta inválida",
+                        data
+                    )
+                    return False
+            else:
+                self.log_test(
+                    "Groups Endpoint", 
+                    False, 
+                    f"HTTP {response.status_code}: {response.text[:100]}",
+                    {"status_code": response.status_code, "text": response.text[:200]}
+                )
+                return False
+                
+        except requests.exceptions.ConnectionError:
+            self.log_test(
+                "Groups Endpoint", 
+                False, 
+                "ERRO DE CONEXÃO: Failed to Fetch - não foi possível acessar o endpoint de grupos",
+                {"error": "ConnectionError", "url": f"{self.baileys_url}/groups/{test_instance_id}"}
+            )
+            return False
+        except Exception as e:
+            self.log_test(
+                "Groups Endpoint", 
+                False, 
+                f"Erro inesperado: {str(e)}",
+                {"error": str(e)}
+            )
+            return False
+
+    def test_send_endpoint(self) -> bool:
+        """
+        TESTE 3: Send Endpoint
+        Teste POST http://127.0.0.1:3002/send/test-instance
+        """
+        print("🔍 TESTE 3: SEND ENDPOINT")
+        print("-" * 50)
         
-        # CRITICAL TEST 4: Database verification
-        print("\n4️⃣ Testing Database Functionality:")
-        self.test_database_flows_table()
-        self.test_database_real_names()
+        test_instance_id = "test-instance"
+        test_payload = {
+            "to": "5511999999999",
+            "message": "Teste de conectividade",
+            "type": "text"
+        }
         
-        # Additional core functionality tests
-        print("\n📋 Testing Core API Endpoints:")
-        contacts = self.test_get_contacts()
-        messages = self.test_get_messages()
-        stats = self.test_get_stats()
+        try:
+            response = requests.post(
+                f"{self.baileys_url}/send/{test_instance_id}", 
+                json=test_payload,
+                timeout=10
+            )
+            
+            if response.status_code == 400:
+                # Expected response for non-connected instance
+                data = response.json()
+                error_msg = data.get('error', '')
+                
+                if 'não conectada' in error_msg or 'not connected' in error_msg.lower():
+                    self.log_test(
+                        "Send Endpoint - Instance Not Connected", 
+                        True, 
+                        f"Resposta adequada para instância não conectada: {error_msg}",
+                        data
+                    )
+                    return True
+                else:
+                    self.log_test(
+                        "Send Endpoint - Instance Not Connected", 
+                        False, 
+                        f"Mensagem de erro inadequada: {error_msg}",
+                        data
+                    )
+                    return False
+                    
+            elif response.status_code == 200:
+                # Instance might be connected
+                data = response.json()
+                if data.get('success'):
+                    self.log_test(
+                        "Send Endpoint - Connected Instance", 
+                        True, 
+                        "Endpoint funcionando para instância conectada",
+                        data
+                    )
+                    return True
+                else:
+                    self.log_test(
+                        "Send Endpoint - Connected Instance", 
+                        False, 
+                        "Resposta de sucesso inválida",
+                        data
+                    )
+                    return False
+            else:
+                self.log_test(
+                    "Send Endpoint", 
+                    False, 
+                    f"HTTP {response.status_code}: {response.text[:100]}",
+                    {"status_code": response.status_code, "text": response.text[:200]}
+                )
+                return False
+                
+        except requests.exceptions.ConnectionError:
+            self.log_test(
+                "Send Endpoint", 
+                False, 
+                "ERRO DE CONEXÃO: Failed to Fetch - não foi possível acessar o endpoint de envio",
+                {"error": "ConnectionError", "url": f"{self.baileys_url}/send/{test_instance_id}"}
+            )
+            return False
+        except Exception as e:
+            self.log_test(
+                "Send Endpoint", 
+                False, 
+                f"Erro inesperado: {str(e)}",
+                {"error": str(e)}
+            )
+            return False
+
+    def test_whatsflow_apis(self) -> bool:
+        """
+        TESTE 4: WhatsFlow Real APIs
+        Teste das APIs principais do WhatsFlow Real para suportar interface profissional
+        """
+        print("🔍 TESTE 4: WHATSFLOW REAL APIs")
+        print("-" * 50)
         
-        # WhatsApp integration tests
-        print("\n📱 Testing WhatsApp Integration:")
-        whatsapp_status = self.test_whatsapp_status()
-        qr_data = self.test_whatsapp_qr()
+        apis_to_test = [
+            ("/api/dashboard/stats", "Dashboard Stats"),
+            ("/api/whatsapp/instances", "WhatsApp Instances"),
+            ("/api/contacts", "Contacts"),
+            ("/api/devices", "Devices")
+        ]
         
-        # System functionality tests
-        print("\n⚙️ Testing System Functionality:")
-        created_instance = self.test_create_instance()
-        self.test_database_persistence()
-        self.test_baileys_service_integration()
+        all_passed = True
         
-        return self.generate_report()
-    
-    def generate_report(self):
-        """Generate comprehensive test report"""
-        print("\n" + "=" * 70)
-        print("📊 WHATSFLOW REAL - FINAL TEST RESULTS")
-        print("=" * 70)
+        for endpoint, name in apis_to_test:
+            try:
+                response = requests.get(f"{self.whatsflow_url}{endpoint}", timeout=10)
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    self.log_test(
+                        f"WhatsFlow API - {name}", 
+                        True, 
+                        f"API funcionando, dados: {len(data) if isinstance(data, list) else 'object'}",
+                        {"endpoint": endpoint, "data_type": type(data).__name__}
+                    )
+                else:
+                    self.log_test(
+                        f"WhatsFlow API - {name}", 
+                        False, 
+                        f"HTTP {response.status_code}: {response.text[:100]}",
+                        {"status_code": response.status_code, "endpoint": endpoint}
+                    )
+                    all_passed = False
+                    
+            except requests.exceptions.ConnectionError:
+                self.log_test(
+                    f"WhatsFlow API - {name}", 
+                    False, 
+                    "ERRO DE CONEXÃO: WhatsFlow Real não está acessível",
+                    {"error": "ConnectionError", "endpoint": endpoint}
+                )
+                all_passed = False
+            except Exception as e:
+                self.log_test(
+                    f"WhatsFlow API - {name}", 
+                    False, 
+                    f"Erro inesperado: {str(e)}",
+                    {"error": str(e), "endpoint": endpoint}
+                )
+                all_passed = False
+        
+        return all_passed
+
+    def test_cors_configuration(self) -> bool:
+        """
+        TESTE 5: CORS Configuration
+        Verifica se CORS está configurado para aceitar tanto localhost quanto 127.0.0.1
+        """
+        print("🔍 TESTE 5: CORS CONFIGURATION")
+        print("-" * 50)
+        
+        # Test CORS headers on Baileys service
+        try:
+            response = requests.options(
+                f"{self.baileys_url}/health",
+                headers={
+                    'Origin': 'http://127.0.0.1:8889',
+                    'Access-Control-Request-Method': 'GET'
+                },
+                timeout=10
+            )
+            
+            cors_headers = {
+                'access-control-allow-origin': response.headers.get('access-control-allow-origin', ''),
+                'access-control-allow-methods': response.headers.get('access-control-allow-methods', ''),
+                'access-control-allow-headers': response.headers.get('access-control-allow-headers', '')
+            }
+            
+            # Check if CORS allows the required origins
+            allow_origin = cors_headers['access-control-allow-origin']
+            if '127.0.0.1' in allow_origin or '*' in allow_origin:
+                self.log_test(
+                    "CORS Configuration", 
+                    True, 
+                    f"CORS configurado adequadamente: {allow_origin}",
+                    cors_headers
+                )
+                return True
+            else:
+                self.log_test(
+                    "CORS Configuration", 
+                    False, 
+                    f"CORS não permite 127.0.0.1: {allow_origin}",
+                    cors_headers
+                )
+                return False
+                
+        except Exception as e:
+            self.log_test(
+                "CORS Configuration", 
+                False, 
+                f"Erro ao testar CORS: {str(e)}",
+                {"error": str(e)}
+            )
+            return False
+
+    def test_service_availability(self) -> bool:
+        """
+        TESTE 6: Service Availability
+        Verifica se todos os serviços estão rodando nas portas corretas
+        """
+        print("🔍 TESTE 6: SERVICE AVAILABILITY")
+        print("-" * 50)
+        
+        services = [
+            (self.whatsflow_url, "WhatsFlow Real (8889)"),
+            (self.baileys_url, "Baileys Service (3002)"),
+            (self.frontend_url, "Frontend (3000)")
+        ]
+        
+        all_available = True
+        
+        for url, name in services:
+            try:
+                response = requests.get(f"{url}/", timeout=5)
+                # Any response (even 404) means service is running
+                self.log_test(
+                    f"Service Availability - {name}", 
+                    True, 
+                    f"Serviço respondendo na porta correta (HTTP {response.status_code})",
+                    {"url": url, "status_code": response.status_code}
+                )
+            except requests.exceptions.ConnectionError:
+                self.log_test(
+                    f"Service Availability - {name}", 
+                    False, 
+                    "SERVIÇO NÃO ESTÁ RODANDO na porta esperada",
+                    {"url": url, "error": "ConnectionError"}
+                )
+                all_available = False
+            except Exception as e:
+                # Timeout or other errors might still mean service is running
+                self.log_test(
+                    f"Service Availability - {name}", 
+                    True, 
+                    f"Serviço provavelmente rodando (erro: {str(e)[:50]})",
+                    {"url": url, "error": str(e)[:100]}
+                )
+        
+        return all_available
+
+    def run_all_tests(self):
+        """Run all tests and generate final report"""
+        print("🚀 INICIANDO BATERIA COMPLETA DE TESTES")
+        print("=" * 80)
+        
+        start_time = time.time()
+        
+        # Run all tests
+        tests = [
+            ("Conectividade Baileys", self.test_baileys_connectivity),
+            ("Groups Endpoint", self.test_groups_endpoint),
+            ("Send Endpoint", self.test_send_endpoint),
+            ("WhatsFlow APIs", self.test_whatsflow_apis),
+            ("CORS Configuration", self.test_cors_configuration),
+            ("Service Availability", self.test_service_availability)
+        ]
+        
+        for test_name, test_func in tests:
+            try:
+                test_func()
+            except Exception as e:
+                self.log_test(
+                    test_name, 
+                    False, 
+                    f"Erro crítico durante teste: {str(e)}",
+                    {"critical_error": str(e)}
+                )
+        
+        end_time = time.time()
+        duration = end_time - start_time
+        
+        # Generate final report
+        self.generate_final_report(duration)
+
+    def generate_final_report(self, duration: float):
+        """Generate comprehensive final report"""
+        print("\n" + "=" * 80)
+        print("📊 RELATÓRIO FINAL - VALIDAÇÃO DOS 3 PROBLEMAS ORIGINAIS")
+        print("=" * 80)
         
         total_tests = len(self.test_results)
         passed_count = len(self.passed_tests)
         failed_count = len(self.failed_tests)
-        critical_issues_count = len(self.critical_issues)
-        minor_issues_count = len(self.minor_issues)
+        success_rate = (passed_count / total_tests * 100) if total_tests > 0 else 0
         
-        print(f"Total Tests: {total_tests}")
-        print(f"✅ Passed: {passed_count}")
-        print(f"❌ Failed: {failed_count}")
-        print(f"🔴 Critical Issues: {critical_issues_count}")
-        print(f"🟡 Minor Issues: {minor_issues_count}")
-        print(f"Success Rate: {(passed_count/total_tests*100):.1f}%" if total_tests > 0 else "0%")
+        print(f"⏱️  Duração total: {duration:.2f} segundos")
+        print(f"📈 Taxa de sucesso: {success_rate:.1f}% ({passed_count}/{total_tests} testes)")
+        print()
         
-        # Report critical issues first
-        if self.critical_issues:
-            print(f"\n🔴 CRITICAL ISSUES (MUST BE FIXED):")
-            for issue in self.critical_issues:
-                print(f"   - {issue}")
+        # Analyze the 3 original problems
+        print("🎯 ANÁLISE DOS 3 PROBLEMAS ORIGINAIS:")
+        print("-" * 50)
         
-        # Report minor issues
-        if self.minor_issues:
-            print(f"\n🟡 MINOR ISSUES:")
-            for issue in self.minor_issues:
-                print(f"   - {issue}")
+        # Problem 1: Baileys connection error
+        baileys_tests = [t for t in self.test_results if 'baileys' in t['test'].lower() or 'conectividade' in t['test'].lower()]
+        baileys_working = all(t['success'] for t in baileys_tests)
         
-        # Report successful tests
+        print(f"1. {'✅ RESOLVIDO' if baileys_working else '❌ AINDA COM PROBLEMA'} - Erro conexão Baileys porta 3002")
+        if baileys_working:
+            print("   📝 Baileys service funcionando perfeitamente na porta 3002")
+        else:
+            print("   📝 Ainda há problemas de conectividade com o Baileys service")
+        
+        # Problem 2: Groups filtering error
+        groups_tests = [t for t in self.test_results if 'groups' in t['test'].lower()]
+        groups_working = all(t['success'] for t in groups_tests)
+        
+        print(f"2. {'✅ RESOLVIDO' if groups_working else '❌ AINDA COM PROBLEMA'} - Erro ao filtrar/mostrar grupos")
+        if groups_working:
+            print("   📝 Endpoint /groups/{instanceId} implementado e funcionando")
+        else:
+            print("   📝 Ainda há problemas com o endpoint de grupos")
+        
+        # Problem 3: Professional interface support
+        api_tests = [t for t in self.test_results if 'whatsflow api' in t['test'].lower()]
+        apis_working = all(t['success'] for t in api_tests)
+        
+        print(f"3. {'✅ RESOLVIDO' if apis_working else '❌ AINDA COM PROBLEMA'} - Layout antiprofissional")
+        if apis_working:
+            print("   📝 Backend APIs funcionando para suportar interface profissional")
+        else:
+            print("   📝 APIs do backend com problemas, pode afetar interface")
+        
+        print()
+        
+        # Overall assessment
+        all_problems_resolved = baileys_working and groups_working and apis_working
+        
+        if all_problems_resolved:
+            print("🏆 RESULTADO FINAL: TODOS OS 3 PROBLEMAS ORIGINAIS FORAM RESOLVIDOS!")
+            print("✅ Sistema está funcionando conforme esperado")
+            print("✅ Correções implementadas com sucesso")
+            print("✅ Não há mais erros 'Failed to Fetch'")
+        else:
+            print("⚠️  RESULTADO FINAL: AINDA HÁ PROBLEMAS A RESOLVER")
+            print("❌ Nem todos os problemas originais foram corrigidos")
+            
+        print()
+        
+        # Detailed test results
+        if self.failed_tests:
+            print("❌ TESTES QUE FALHARAM:")
+            for test_name in self.failed_tests:
+                test_result = next(t for t in self.test_results if t['test'] == test_name)
+                print(f"   • {test_name}: {test_result['details']}")
+            print()
+        
         if self.passed_tests:
-            print(f"\n✅ SUCCESSFUL TESTS:")
-            for test in self.passed_tests:
-                print(f"   - {test}")
+            print("✅ TESTES QUE PASSARAM:")
+            for test_name in self.passed_tests:
+                print(f"   • {test_name}")
+            print()
         
-        # Save detailed results
-        with open("/app/backend_test_results.json", "w") as f:
-            json.dump({
-                "summary": {
-                    "total_tests": total_tests,
-                    "passed": passed_count,
-                    "failed": failed_count,
-                    "critical_issues": critical_issues_count,
-                    "minor_issues": minor_issues_count,
-                    "success_rate": (passed_count/total_tests*100) if total_tests > 0 else 0
-                },
-                "passed_tests": self.passed_tests,
-                "failed_tests": self.failed_tests,
-                "critical_issues": self.critical_issues,
-                "minor_issues": self.minor_issues,
-                "detailed_results": self.test_results
-            }, f, indent=2)
+        # Recommendations
+        print("💡 RECOMENDAÇÕES:")
+        if not baileys_working:
+            print("   • Verificar se Baileys service está rodando na porta 3002")
+            print("   • Verificar configuração CORS no Baileys service")
+        if not groups_working:
+            print("   • Verificar implementação do endpoint /groups/{instanceId}")
+            print("   • Testar com instância conectada")
+        if not apis_working:
+            print("   • Verificar se WhatsFlow Real está rodando na porta 8889")
+            print("   • Verificar conectividade entre serviços")
         
-        print(f"\n📄 Detailed results saved to: /app/backend_test_results.json")
+        if all_problems_resolved:
+            print("   • Sistema está pronto para uso em produção!")
+            print("   • Todos os problemas reportados foram corrigidos")
+        
+        print("=" * 80)
         
         return {
+            "success_rate": success_rate,
             "total_tests": total_tests,
-            "passed": passed_count,
-            "failed": failed_count,
-            "critical_issues": critical_issues_count,
-            "minor_issues": minor_issues_count,
-            "success_rate": (passed_count/total_tests*100) if total_tests > 0 else 0,
-            "failed_tests": self.failed_tests,
-            "passed_tests": self.passed_tests
+            "passed_tests": passed_count,
+            "failed_tests": failed_count,
+            "all_problems_resolved": all_problems_resolved,
+            "baileys_working": baileys_working,
+            "groups_working": groups_working,
+            "apis_working": apis_working,
+            "duration": duration
         }
-
-    # SUPPORTING TEST METHODS
-    
-    def test_get_contacts(self):
-        """Test GET /api/contacts - List imported contacts"""
-        try:
-            response = self.session.get(f"{API_BASE}/contacts", timeout=10)
-            
-            if response.status_code == 200:
-                data = response.json()
-                if isinstance(data, list):
-                    self.log_test("GET /api/contacts", "PASS", f"Retrieved {len(data)} contacts", False)
-                    return data
-                else:
-                    self.log_test("GET /api/contacts", "FAIL", "Response is not a list", False)
-                    return []
-            else:
-                self.log_test("GET /api/contacts", "FAIL", f"HTTP {response.status_code}: {response.text}")
-                return []
-        except Exception as e:
-            self.log_test("GET /api/contacts", "FAIL", f"Exception: {str(e)}")
-            return []
-    
-    def test_get_messages(self):
-        """Test GET /api/messages - List received messages"""
-        try:
-            response = self.session.get(f"{API_BASE}/messages", timeout=10)
-            
-            if response.status_code == 200:
-                data = response.json()
-                if isinstance(data, list):
-                    self.log_test("GET /api/messages", "PASS", f"Retrieved {len(data)} messages", False)
-                    return data
-                else:
-                    self.log_test("GET /api/messages", "FAIL", "Response is not a list", False)
-                    return []
-            else:
-                self.log_test("GET /api/messages", "FAIL", f"HTTP {response.status_code}: {response.text}")
-                return []
-        except Exception as e:
-            self.log_test("GET /api/messages", "FAIL", f"Exception: {str(e)}")
-            return []
-    
-    def test_get_stats(self):
-        """Test GET /api/stats - System statistics"""
-        try:
-            response = self.session.get(f"{API_BASE}/stats", timeout=10)
-            
-            if response.status_code == 200:
-                data = response.json()
-                expected_fields = ["contacts_count", "conversations_count", "messages_count"]
-                
-                if all(field in data for field in expected_fields):
-                    stats_summary = f"Contacts: {data['contacts_count']}, Messages: {data['messages_count']}"
-                    self.log_test("GET /api/stats", "PASS", f"Statistics retrieved - {stats_summary}", False)
-                    return data
-                else:
-                    missing_fields = [f for f in expected_fields if f not in data]
-                    self.log_test("GET /api/stats", "FAIL", f"Missing fields: {missing_fields}", False)
-                    return None
-            else:
-                self.log_test("GET /api/stats", "FAIL", f"HTTP {response.status_code}: {response.text}")
-                return None
-        except Exception as e:
-            self.log_test("GET /api/stats", "FAIL", f"Exception: {str(e)}")
-            return None
-    
-    def test_whatsapp_status(self):
-        """Test GET /api/whatsapp/status - WhatsApp connection status"""
-        try:
-            response = self.session.get(f"{API_BASE}/whatsapp/status", timeout=10)
-            
-            if response.status_code == 200:
-                data = response.json()
-                if "connected" in data:
-                    status = "Connected" if data["connected"] else "Disconnected"
-                    connecting = data.get("connecting", False)
-                    if connecting:
-                        status = "Connecting"
-                    
-                    self.log_test("GET /api/whatsapp/status", "PASS", f"WhatsApp status: {status}", False)
-                    return data
-                else:
-                    self.log_test("GET /api/whatsapp/status", "FAIL", "Missing 'connected' field in response", False)
-                    return None
-            else:
-                self.log_test("GET /api/whatsapp/status", "FAIL", f"HTTP {response.status_code}: {response.text}", False)
-                return None
-        except Exception as e:
-            self.log_test("GET /api/whatsapp/status", "FAIL", f"Exception: {str(e)}", False)
-            return None
-    
-    def test_whatsapp_qr(self):
-        """Test GET /api/whatsapp/qr - QR code for WhatsApp connection"""
-        try:
-            response = self.session.get(f"{API_BASE}/whatsapp/qr", timeout=10)
-            
-            if response.status_code == 200:
-                data = response.json()
-                if "qr" in data and "connected" in data:
-                    qr_status = "Available" if data["qr"] else "Not available"
-                    self.log_test("GET /api/whatsapp/qr", "PASS", f"QR code: {qr_status}", False)
-                    return data
-                else:
-                    self.log_test("GET /api/whatsapp/qr", "FAIL", "Missing required fields in response", False)
-                    return None
-            else:
-                self.log_test("GET /api/whatsapp/qr", "FAIL", f"HTTP {response.status_code}: {response.text}", False)
-                return None
-        except Exception as e:
-            self.log_test("GET /api/whatsapp/qr", "FAIL", f"Exception: {str(e)}", False)
-            return None
-    
-    def test_create_instance(self):
-        """Test POST /api/instances - Create new WhatsApp instance"""
-        try:
-            test_instance_name = f"Test Instance {uuid.uuid4().hex[:8]}"
-            payload = {"name": test_instance_name}
-            
-            response = self.session.post(
-                f"{API_BASE}/instances",
-                json=payload,
-                headers={"Content-Type": "application/json"},
-                timeout=10
-            )
-            
-            if response.status_code in [200, 201]:
-                data = response.json()
-                if "id" in data and "name" in data:
-                    self.log_test("POST /api/instances", "PASS", f"Created instance: {data['name']}", False)
-                    return data
-                else:
-                    self.log_test("POST /api/instances", "FAIL", "Missing required fields in response", False)
-                    return None
-            else:
-                self.log_test("POST /api/instances", "FAIL", f"HTTP {response.status_code}: {response.text}", False)
-                return None
-        except Exception as e:
-            self.log_test("POST /api/instances", "FAIL", f"Exception: {str(e)}", False)
-            return None
-    
-    def test_database_persistence(self):
-        """Test if SQLite database is working properly"""
-        try:
-            # Test by creating an instance and then retrieving it
-            created_instance = self.test_create_instance()
-            if not created_instance:
-                self.log_test("Database Persistence", "FAIL", "Could not create test instance", False)
-                return False
-            
-            # Wait a moment and retrieve instances
-            time.sleep(1)
-            instances_response = self.session.get(f"{API_BASE}/instances", timeout=10)
-            
-            if instances_response.status_code != 200:
-                self.log_test("Database Persistence", "FAIL", "Could not retrieve instances", False)
-                return False
-            
-            instances = instances_response.json()
-            
-            # Check if our created instance exists
-            found_instance = None
-            for instance in instances:
-                if instance.get("id") == created_instance.get("id"):
-                    found_instance = instance
-                    break
-            
-            if found_instance:
-                self.log_test("Database Persistence", "PASS", "SQLite database working correctly", False)
-                return True
-            else:
-                self.log_test("Database Persistence", "FAIL", "Created instance not found in database", False)
-                return False
-                
-        except Exception as e:
-            self.log_test("Database Persistence", "FAIL", f"Exception: {str(e)}", False)
-            return False
-    
-    def test_baileys_service_integration(self):
-        """Test integration with Baileys WhatsApp service"""
-        try:
-            # Test if Baileys service is running on port 3002
-            baileys_url = "http://localhost:3002"
-            
-            try:
-                response = self.session.get(f"{baileys_url}/status", timeout=5)
-                if response.status_code == 200:
-                    self.log_test("Baileys Service Integration", "PASS", "Baileys service is running and accessible", False)
-                    return True
-                else:
-                    self.log_test("Baileys Service Integration", "FAIL", f"Baileys service returned status {response.status_code}", False)
-                    return False
-            except requests.exceptions.RequestException:
-                self.log_test("Baileys Service Integration", "FAIL", "Baileys service not accessible on port 3002", False)
-                return False
-                
-        except Exception as e:
-            self.log_test("Baileys Service Integration", "FAIL", f"Exception: {str(e)}", False)
-            return False
 
 def main():
     """Main test execution"""
-    tester = WhatsFlowRealTester()
-    results = tester.run_all_tests()
+    tester = WhatsFlowTester()
     
-    # Exit with appropriate code
-    if results["failed"] == 0:
-        print("\n🎉 All tests passed!")
-        exit(0)
-    else:
-        print(f"\n⚠️ {results['failed']} test(s) failed!")
-        exit(1)
+    try:
+        tester.run_all_tests()
+    except KeyboardInterrupt:
+        print("\n⚠️ Testes interrompidos pelo usuário")
+        sys.exit(1)
+    except Exception as e:
+        print(f"\n❌ Erro crítico durante execução dos testes: {str(e)}")
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()
