@@ -642,6 +642,88 @@ HTML_APP = '''<!DOCTYPE html>
             text-align: center;
         }
         
+        /* Groups Section Styles */
+        .groups-container {
+            margin-top: 1rem;
+        }
+        
+        .groups-header {
+            margin-bottom: 1rem;
+        }
+        
+        .group-card {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+            background: var(--bg-secondary);
+            transition: all 0.3s ease;
+        }
+        
+        .group-card:hover {
+            border-color: var(--primary);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .group-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .group-avatar {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+        
+        .group-details h4 {
+            margin: 0 0 0.25rem 0;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+        
+        .group-details p {
+            margin: 0 0 0.25rem 0;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+        
+        .group-details small {
+            color: var(--text-muted);
+            font-size: 0.75rem;
+        }
+        
+        .group-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .schedule-panel {
+            border-top: 1px solid var(--border);
+            padding-top: 1.5rem;
+        }
+        
+        .schedule-form .form-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 1rem;
+        }
+        
+        .scheduled-messages {
+            margin-top: 1rem;
+        }
+        
         .empty-chat-icon {
             font-size: 4rem;
             margin-bottom: 1rem;
