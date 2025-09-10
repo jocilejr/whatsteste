@@ -697,16 +697,19 @@ HTML_APP = '''<!DOCTYPE html>
             font-size: 0.8rem;
         }
         
-        /* WebSocket Status */
+        /* WebSocket Status Clean */
         .websocket-status {
             position: fixed;
             top: 1rem;
             right: 1rem;
-            padding: 0.5rem 1rem;
+            padding: 0.5rem 0.75rem;
             border-radius: 0.5rem;
             font-size: 0.8rem;
             font-weight: 500;
             z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
         .websocket-connected {
             background: rgba(37, 211, 102, 0.1);
