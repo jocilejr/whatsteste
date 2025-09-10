@@ -1254,8 +1254,8 @@ HTML_APP = '''<!DOCTYPE html>
                     <div class="status-dot"></div>
                     <span>Verificando conexão...</span>
                 </div>
-                <div class="real-connection-badge">
-                    🚀 Conexão REAL com WhatsApp via Baileys
+                <div class="subtitle" style="margin-top: 1rem;">
+                    🚀 Conexão REAL com WhatsApp via Baileys + WebSocket em tempo real
                 </div>
                 <div id="connected-user-info" style="display: none;"></div>
             </div>
@@ -1275,11 +1275,94 @@ HTML_APP = '''<!DOCTYPE html>
                         <div class="stat-number" id="messages-count">0</div>
                         <div class="stat-label">Mensagens</div>
                     </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="instances-count">0</div>
+                        <div class="stat-label">Instâncias</div>
+                    </div>
                 </div>
             </div>
         </div>
         
+        <!-- Instances Section - Design Profissional -->
         <div id="instances" class="section">
+            <div class="instances-section">
+                <div class="instances-header">
+                    <h2>📱 Gerenciar Instâncias</h2>
+                    <button class="btn btn-primary" onclick="showCreateModal()">
+                        <span>➕</span> Nova Instância
+                    </button>
+                </div>
+                <div id="instances-container" class="instances-grid">
+                    <div class="loading" style="grid-column: 1 / -1;">
+                        <div style="text-align: center; padding: 2rem;">Carregando instâncias...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Messages Section - Design WhatsApp Web -->
+        <div id="messages" class="section">
+            <div class="messages-section">
+                <div class="messages-header">
+                    <h2>💬 Central de Mensagens</h2>
+                    <div class="instance-selector">
+                        <label for="instanceSelect">Instância:</label>
+                        <select id="instanceSelect" onchange="switchInstance()">
+                            <option value="">Selecione uma instância</option>
+                        </select>
+                        <button class="btn btn-sm btn-secondary" onclick="refreshMessages()">
+                            🔄 Atualizar
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="messages-content">
+                    <div class="conversations-panel">
+                        <div class="conversations-header">
+                            <input type="text" class="search-box" placeholder="🔍 Buscar conversas..." 
+                                   id="searchConversations" onkeyup="searchConversations()">
+                        </div>
+                        <div class="conversations-list" id="conversationsList">
+                            <div class="empty-state">
+                                <div class="empty-icon">💬</div>
+                                <div class="empty-title">Nenhuma conversa</div>
+                                <p>Selecione uma instância para ver as conversas</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="chat-panel">
+                        <div class="chat-header" id="chatHeader">
+                            <div class="chat-contact-avatar" id="chatAvatar">?</div>
+                            <div class="chat-contact-info">
+                                <h4 id="chatContactName">Nome do Contato</h4>
+                                <p id="chatContactPhone">+55 11 99999-9999</p>
+                            </div>
+                        </div>
+                        
+                        <div class="messages-container" id="messagesContainer">
+                            <div class="empty-chat-state">
+                                <div class="empty-chat-icon">💭</div>
+                                <h3>Selecione uma conversa</h3>
+                                <p>Escolha uma conversa da lista para visualizar mensagens</p>
+                            </div>
+                        </div>
+                        
+                        <div class="message-input-area" id="messageInputArea">
+                            <textarea class="message-input" id="messageInput" 
+                                      placeholder="Digite sua mensagem..." 
+                                      onkeypress="handleMessageKeyPress(event)"></textarea>
+                            <button class="btn btn-success" onclick="sendMessage()">
+                                📤 Enviar
+                            </button>
+                            <button class="btn btn-secondary" onclick="sendWebhook()" title="Enviar Webhook">
+                                🔗 Webhook
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
             <div class="card">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                     <h2>📱 Instâncias WhatsApp</h2>
