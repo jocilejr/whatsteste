@@ -636,64 +636,65 @@ HTML_APP = '''<!DOCTYPE html>
             animation: pulse 2s infinite; 
         }
         
-        /* Buttons Profissionais */
+        /* Buttons Clean */
         .btn { 
-            padding: 0.6rem 1.2rem; 
-            border: none; 
-            border-radius: 0.6rem; 
+            padding: 0.5rem 1rem; 
+            border: 1px solid var(--border); 
+            border-radius: 0.5rem; 
             cursor: pointer; 
-            font-weight: 600; 
-            font-size: 0.85rem;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-weight: 500; 
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
             text-decoration: none;
             display: inline-flex;
             align-items: center;
-            gap: 0.4rem;
+            gap: 0.5rem;
             justify-content: center;
+            line-height: 1.2;
         }
         .btn-primary { 
-            background: var(--gradient-primary); 
+            background: var(--primary); 
             color: white;
-            box-shadow: var(--shadow);
+            border-color: var(--primary);
         }
         .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-lg);
+            background: var(--primary-dark);
+            border-color: var(--primary-dark);
         }
         .btn-success { 
-            background: var(--gradient-success); 
+            background: var(--primary-light); 
             color: white;
-            box-shadow: var(--shadow);
+            border-color: var(--primary-light);
         }
         .btn-success:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-lg);
+            background: var(--primary);
+            border-color: var(--primary);
         }
         .btn-danger { 
-            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); 
+            background: #dc2626; 
             color: white;
-            box-shadow: var(--shadow);
+            border-color: #dc2626;
         }
         .btn-danger:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-lg);
+            background: #b91c1c;
+            border-color: #b91c1c;
         }
         .btn-secondary {
-            background: var(--bg-primary);
-            color: var(--text-primary);
-            border: 1px solid var(--border);
+            background: white;
+            color: var(--text-secondary);
+            border-color: var(--border);
         }
         .btn-secondary:hover {
-            background: var(--border);
+            background: var(--bg-primary);
+            color: var(--text-primary);
         }
         .btn:disabled { 
             opacity: 0.5; 
             cursor: not-allowed; 
-            transform: none;
         }
         .btn-sm {
-            padding: 0.4rem 0.8rem;
-            font-size: 0.75rem;
+            padding: 0.4rem 0.75rem;
+            font-size: 0.8rem;
         }
         
         /* WebSocket Status */
