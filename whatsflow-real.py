@@ -2192,7 +2192,153 @@ HTML_APP = '''<!DOCTYPE html>
 </body>
 </html>'''
 
-# Database (same as Pure)
+# Database setup (same as before but with WebSocket integration)
+def init_db():
+    """Initialize SQLite database with WAL mode for better concurrency"""
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    
+    # Enable WAL mode for better concurrent access
+    cursor.execute("PRAGMA journal_mode = WAL")
+    cursor.execute("PRAGMA synchronous = NORMAL")
+    cursor.execute("PRAGMA cache_size = 1000")
+    cursor.execute("PRAGMA temp_store = MEMORY")
+    cursor.execute("PRAGMA mmap_size = 268435456")  # 256MB
+    
+    # Enhanced tables with better schema
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS instances (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            connected INTEGER DEFAULT 0,
+            user_name TEXT,
+            user_id TEXT,
+            contacts_count INTEGER DEFAULT 0,
+            messages_today INTEGER DEFAULT 0,
+            created_at TEXT
+        )
+    """)
+    
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS contacts (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            phone TEXT NOT NULL,
+            instance_id TEXT DEFAULT 'default',
+            avatar_url TEXT,
+            created_at TEXT
+        )
+    """)
+    
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS messages (
+            id TEXT PRIMARY KEY,
+            contact_name TEXT NOT NULL,
+            phone TEXT NOT NULL,
+            message TEXT NOT NULL,
+            direction TEXT NOT NULL,
+            instance_id TEXT DEFAULT 'default',
+            message_type TEXT DEFAULT 'text',
+            whatsapp_id TEXT,
+            created_at TEXT
+        )
+    """)
+    
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS chats (
+            id TEXT PRIMARY KEY,
+            contact_phone TEXT NOT NULL,
+            contact_name TEXT NOT NULL,
+            instance_id TEXT NOT NULL,
+            last_message TEXT,
+            last_message_time TEXT,
+            unread_count INTEGER DEFAULT 0,
+            created_at TEXT
+        )
+    """)
+    
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS flows (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            description TEXT,
+            nodes TEXT NOT NULL,
+            edges TEXT NOT NULL,
+            active INTEGER DEFAULT 0,
+            instance_id TEXT,
+            created_at TEXT,
+            updated_at TEXT
+        )
+    """)
+    
+    conn.commit()
+    conn.close()
+    print("✅ Banco de dados inicializado com suporte WebSocket")
+
+# WebSocket Server Functions
+if WEBSOCKETS_AVAILABLE:
+    async def websocket_handler(websocket, path):
+        """Handle WebSocket connections"""
+        websocket_clients.add(websocket)
+        logger.info(f"📱 Cliente WebSocket conectado. Total: {len(websocket_clients)}")
+        
+        try:
+            await websocket.wait_closed()
+        except websockets.exceptions.ConnectionClosed:
+            pass
+        finally:
+            websocket_clients.discard(websocket)
+            logger.info(f"📱 Cliente WebSocket desconectado. Total: {len(websocket_clients)}")
+
+    async def broadcast_message(message_data: Dict[str, Any]):
+        """Broadcast message to all connected WebSocket clients"""
+        if not websocket_clients:
+            return
+        
+        message = json.dumps(message_data)
+        disconnected_clients = set()
+        
+        for client in websocket_clients:
+            try:
+                await client.send(message)
+            except websockets.exceptions.ConnectionClosed:
+                disconnected_clients.add(client)
+            except Exception as e:
+                logger.error(f"❌ Erro ao enviar mensagem WebSocket: {e}")
+                disconnected_clients.add(client)
+        
+        # Remove disconnected clients
+        for client in disconnected_clients:
+            websocket_clients.discard(client)
+
+    def start_websocket_server():
+        """Start WebSocket server in a separate thread"""
+        def run_websocket():
+            try:
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                
+                start_server = websockets.serve(
+                    websocket_handler, 
+                    "localhost", 
+                    WEBSOCKET_PORT,
+                    ping_interval=30,
+                    ping_timeout=10
+                )
+                
+                logger.info(f"🔌 WebSocket server iniciado na porta {WEBSOCKET_PORT}")
+                loop.run_until_complete(start_server)
+                loop.run_forever()
+            except Exception as e:
+                logger.error(f"❌ Erro no WebSocket server: {e}")
+        
+        websocket_thread = threading.Thread(target=run_websocket, daemon=True)
+        websocket_thread.start()
+        return websocket_thread
+else:
+    def start_websocket_server():
+        print("⚠️ WebSocket não disponível - modo básico")
+        return None
 def init_db():
     """Initialize SQLite database with WAL mode for better concurrency"""
     conn = sqlite3.connect(DB_FILE)
