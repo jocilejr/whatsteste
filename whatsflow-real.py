@@ -3058,7 +3058,7 @@ HTML_APP = '''<!DOCTYPE html>
                 }
                 
                 // Use Baileys service to send message with corrected URL and proper error handling
-                const response = await fetch(`http://localhost:3002/send/${currentChat.instanceId}`, {
+                const response = await fetch(`http://127.0.0.1:3002/send/${currentChat.instanceId}`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
