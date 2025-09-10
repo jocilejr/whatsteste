@@ -4733,8 +4733,13 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                 
                 try:
                     data = json.dumps({}).encode('utf-8')
-                    req = urllib.request.Request(f'{BAILEYS_URL}/connect', data=data,
-                                               headers={'Content-Type': 'application/json'})
+ codex/add-error-handling-for-fetch-requests-tdpmgk
+                    req = urllib.request.Request(
+                        'http://127.0.0.1:3002/connect',
+                        data=data,
+                        headers={'Content-Type': 'application/json'},
+                    )
+
                     req.get_method = lambda: 'POST'
                     
                     with urllib.request.urlopen(req, timeout=5) as response:
@@ -4936,8 +4941,13 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                 
                 try:
                     data = json.dumps({}).encode('utf-8')
-                    req = urllib.request.Request(f'{BAILEYS_URL}/connect/{instance_id}', data=data,
-                                               headers={'Content-Type': 'application/json'})
+ codex/add-error-handling-for-fetch-requests-tdpmgk
+                    req = urllib.request.Request(
+                        f'http://127.0.0.1:3002/connect/{instance_id}',
+                        data=data,
+                        headers={'Content-Type': 'application/json'},
+                    )
+
                     req.get_method = lambda: 'POST'
                     
                     with urllib.request.urlopen(req, timeout=5) as response:
@@ -4972,8 +4982,13 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                 # Fallback usando urllib
                 import urllib.request
                 data = json.dumps({}).encode('utf-8')
-                req = urllib.request.Request(f'{BAILEYS_URL}/disconnect/{instance_id}', data=data,
-                                           headers={'Content-Type': 'application/json'})
+codex/add-error-handling-for-fetch-requests-tdpmgk
+                req = urllib.request.Request(
+                    f'http://127.0.0.1:3002/disconnect/{instance_id}',
+                    data=data,
+                    headers={'Content-Type': 'application/json'},
+                )
+
                 req.get_method = lambda: 'POST'
                 
                 with urllib.request.urlopen(req, timeout=5) as response:
@@ -5054,61 +5069,46 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             
             try:
                 import requests
-try:
-    import requests
-    try:
-        response = requests.post(
-            f'{BAILEYS_URL}/send/{instance_id}',
-            json=data,
-            timeout=10
-        )
-    except requests.exceptions.RequestException:
-        self.send_json_response({"error": "Serviço Baileys indisponível"}, 503)
-        return
+codex/add-error-handling-for-fetch-requests-tdpmgk
+                try:
+                    response = requests.post(
+                        f'http://127.0.0.1:3002/send/{instance_id}',
+                        json=data, timeout=10
+                    )
+                except requests.exceptions.RequestException as e:
+                    self.send_json_response({"error": "Serviço Baileys indisponível na porta 3002"}, 503)
+                    return
+                
+                if response.status_code == 200:
+                    # Save message to database
+                    conn = sqlite3.connect(DB_FILE)
+                    cursor = conn.cursor()
+                    
+                    message_id = str(uuid.uuid4())
+                    phone = to.replace('@s.whatsapp.net', '').replace('@c.us', '')
+                    
+                    cursor.execute("""
+                        INSERT INTO messages (id, contact_name, phone, message, direction, instance_id, created_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                    """, (message_id, f"Para {phone[-4:]}", phone, message, 'outgoing', instance_id, 
+                          datetime.now(timezone.utc).isoformat()))
+                    
+                    conn.commit()
+                    conn.close()
+                    
+                    self.send_json_response({"success": True, "instanceId": instance_id})
+                else:
+                    self.send_json_response({"error": "Erro ao enviar mensagem"}, 500)
+            except ImportError:
+                # Fallback usando urllib
+                import urllib.request
+                req_data = json.dumps(data).encode('utf-8')
+                req = urllib.request.Request(
+                    f'http://127.0.0.1:3002/send/{instance_id}',
+                    data=req_data,
+                    headers={'Content-Type': 'application/json'},
+                )
 
-    if response.status_code == 200:
-        # Save message to database
-        conn = sqlite3.connect(DB_FILE)
-        cursor = conn.cursor()
-        
-        message_id = str(uuid.uuid4())
-        phone = to.replace('@s.whatsapp.net', '').replace('@c.us', '')
-        
-        cursor.execute("""
-            INSERT INTO messages (id, contact_name, phone, message, direction, instance_id, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        """, (message_id, f"Para {phone[-4:]}", phone, message, 'outgoing', instance_id, 
-              datetime.now(timezone.utc).isoformat()))
-        
-        conn.commit()
-        conn.close()
-        
-        self.send_json_response({"success": True, "instanceId": instance_id})
-    else:
-        self.send_json_response({"error": "Erro ao enviar mensagem"}, 500)
-
-except ImportError:
-    # Fallback usando urllib
-    import urllib.request
-    req_data = json.dumps(data).encode('utf-8')
-
-    req = urllib.request.Request(
-        f'{BAILEYS_URL}/send/{instance_id}',
-        data=req_data,
-        headers={'Content-Type': 'application/json'}
-    )
-    req.get_method = lambda: 'POST'
-
-    try:
-        with urllib.request.urlopen(req, timeout=10) as response:
-            if response.status == 200:
-                conn = sqlite3.connect(DB_FILE)
-                cursor = conn.cursor()
-                # aqui continua o mesmo fluxo de salvar no banco...
-    except Exception:
-        self.send_json_response({"error": "Erro no fallback urllib"}, 500)
-
-                                           headers={'Content-Type': 'application/json'})
                 req.get_method = lambda: 'POST'
                 try:
                     with urllib.request.urlopen(req, timeout=10) as response:
