@@ -1290,9 +1290,9 @@ HTML_APP = '''<!DOCTYPE html>
         <div id="instances" class="section">
             <div class="instances-section">
                 <div class="instances-header">
-                    <h2>📱 Gerenciar Instâncias</h2>
+                    <h2>Gerenciar Instâncias</h2>
                     <button class="btn btn-primary" onclick="showCreateModal()">
-                        <span>➕</span> Nova Instância
+                        Nova Instância
                     </button>
                 </div>
                 <div id="instances-container" class="instances-grid">
