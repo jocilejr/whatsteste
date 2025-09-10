@@ -443,68 +443,6 @@ app.post('/send/:instanceId', async (req, res) => {
     }
 });
 
-app.get('/groups/:instanceId', async (req, res) => {
-    const { instanceId } = req.params;
-    const instance = instances.get(instanceId);
-    
-    if (!instance || !instance.connected || !instance.sock) {
-        return res.status(400).json({ error: 'Instância não conectada', instanceId: instanceId });
-    }
-    
-    try {
-        console.log(`📥 Buscando grupos da instância ${instanceId}...`);
-        
-        // Get all chats and filter for groups
-        const chats = await instance.sock.getChats();
-        const groups = chats.filter(chat => chat.id.endsWith('@g.us'));
-        
-        // Get detailed group info
-        const groupsInfo = await Promise.all(groups.map(async (group) => {
-            try {
-                // Get group metadata
-                const metadata = await instance.sock.groupMetadata(group.id);
-                
-                return {
-                    id: group.id,
-                    name: metadata.subject || group.name || 'Grupo sem nome',
-                    description: metadata.desc || '',
-                    participants: metadata.participants || [],
-                    participantsCount: metadata.participants?.length || 0,
-                    owner: metadata.owner,
-                    created: metadata.creation,
-                    lastMessage: group.conversationTimestamp,
-                    unreadCount: group.unreadCount || 0
-                };
-            } catch (err) {
-                console.log(`⚠️ Erro ao obter metadados do grupo ${group.id}:`, err.message);
-                return {
-                    id: group.id,
-                    name: group.name || 'Grupo sem nome',
-                    description: '',
-                    participants: [],
-                    participantsCount: 0,
-                    owner: null,
-                    created: null,
-                    lastMessage: group.conversationTimestamp,
-                    unreadCount: group.unreadCount || 0
-                };
-            }
-        }));
-        
-        console.log(`📊 ${groupsInfo.length} grupos encontrados na instância ${instanceId}`);
-        res.json({ 
-            success: true, 
-            groups: groupsInfo,
-            instanceId: instanceId,
-            count: groupsInfo.length
-        });
-        
-    } catch (error) {
-        console.error(`❌ Erro ao buscar grupos da instância ${instanceId}:`, error);
-        res.status(500).json({ error: error.message, instanceId: instanceId });
-    }
-});
-
 // Health check endpoint
 app.get('/health', (req, res) => {
     const connectedInstances = Array.from(instances.values()).filter(i => i.connected).length;
