@@ -3384,12 +3384,11 @@ HTML_APP = '''<!DOCTYPE html>
                 select.innerHTML = '<option value="">Selecione uma instância</option>';
                 
                 instances.forEach(instance => {
-                    if (instance.connected) { // Only show connected instances
-                        const option = document.createElement('option');
-                        option.value = instance.id;
-                        option.textContent = `${instance.name} (Conectado)`;
-                        select.appendChild(option);
-                    }
+                    const option = document.createElement('option');
+                    option.value = instance.id;
+                    const status = instance.connected ? '(Conectado)' : '(Desconectado)';
+                    option.textContent = `${instance.name} ${status}`;
+                    select.appendChild(option);
                 });
                 
                 console.log('✅ Instâncias para grupos carregadas');
