@@ -1350,7 +1350,7 @@ HTML_APP = '''<!DOCTYPE html>
             </div>
         </div>
         
-        <!-- Messages Section - Design WhatsApp Web -->
+        <!-- Messages Section - Design WhatsApp Web Fullscreen -->
         <div id="messages" class="section">
             <div class="messages-section">
                 <div class="messages-header">
@@ -1360,17 +1360,14 @@ HTML_APP = '''<!DOCTYPE html>
                         <select id="instanceSelect" onchange="switchInstance()">
                             <option value="">Selecione uma instância</option>
                         </select>
-                        <button class="btn btn-sm btn-secondary" onclick="refreshMessages()">
-                            Atualizar
-                        </button>
+                        <button class="btn btn-secondary" onclick="loadConversations()">🔄 Atualizar</button>
                     </div>
                 </div>
                 
                 <div class="messages-content">
                     <div class="conversations-panel">
-                        <div class="conversations-header">
-                            <input type="text" class="search-box" placeholder="🔍 Buscar conversas..." 
-                                   id="searchConversations" onkeyup="searchConversations()">
+                        <div class="search-bar">
+                            <input type="text" placeholder="🔍 Buscar conversas..." class="search-input">
                         </div>
                         <div class="conversations-list" id="conversationsList">
                             <div class="empty-state">
