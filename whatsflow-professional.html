@@ -1088,6 +1088,120 @@
         </div>
     </div>
 
-    <script src="/app/whatsflow-professional.js"></script>
+    <script>
+        // Include JS inline for better loading
+        fetch('/app/whatsflow-professional.js')
+            .then(response => response.text())
+            .then(jsCode => {
+                const script = document.createElement('script');
+                script.textContent = jsCode;
+                document.head.appendChild(script);
+            })
+            .catch(() => {
+                console.error('❌ Erro ao carregar JavaScript externo, carregando inline...');
+                // Fallback: load minimal JS inline
+                initializeBasicApp();
+            });
+            
+        function initializeBasicApp() {
+            console.log('🚀 Inicializando WhatsFlow Professional - Modo Básico...');
+            
+            // Basic navigation
+            window.showSection = function(name) {
+                document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+                document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+                document.getElementById(name).classList.add('active');
+                event.target.classList.add('active');
+            };
+            
+            // Load instances on page load
+            loadInstances();
+            loadStats();
+            
+            async function loadInstances() {
+                try {
+                    const response = await fetch('/api/instances');
+                    const instances = await response.json();
+                    renderInstances(instances);
+                } catch (error) {
+                    console.error('❌ Erro ao carregar instâncias:', error);
+                }
+            }
+            
+            function renderInstances(instances) {
+                const container = document.getElementById('instances-container');
+                
+                if (!instances || instances.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state" style="grid-column: 1 / -1;">
+                            <div class="empty-icon">📱</div>
+                            <div class="empty-title">Nenhuma instância</div>
+                            <p>Crie sua primeira instância WhatsApp para começar</p>
+                            <br>
+                            <button class="btn btn-primary" onclick="alert('Modal em desenvolvimento')">
+                                🚀 Criar Primeira Instância
+                            </button>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = instances.map(instance => `
+                    <div class="instance-card ${instance.connected ? 'connected' : ''}">
+                        <div class="instance-header">
+                            <div class="instance-info">
+                                <h3>${instance.name}</h3>
+                                <div class="instance-id">ID: ${instance.id.substring(0, 12)}...</div>
+                            </div>
+                            <div class="status-indicator ${instance.connected ? 'status-connected' : 'status-disconnected'}">
+                                <div class="status-dot"></div>
+                                <span>${instance.connected ? 'Conectado' : 'Desconectado'}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="instance-stats">
+                            <div class="stat-box">
+                                <div class="stat-number">${instance.contacts_count || 0}</div>
+                                <div class="stat-label">Contatos</div>
+                            </div>
+                            <div class="stat-box">
+                                <div class="stat-number">${instance.messages_today || 0}</div>
+                                <div class="stat-label">Mensagens</div>
+                            </div>
+                        </div>
+                        
+                        <div class="instance-actions">
+                            ${!instance.connected ? 
+                                `<button class="btn btn-success" onclick="alert('Funcionalidade em desenvolvimento')">
+                                    🔗 Conectar
+                                </button>` :
+                                `<button class="btn btn-secondary" disabled>✅ Conectado</button>`
+                            }
+                            <button class="btn btn-sm btn-primary" onclick="alert('QR Code em desenvolvimento')" title="Ver QR Code">
+                                📋
+                            </button>
+                            <button class="btn btn-sm btn-danger" onclick="alert('Exclusão em desenvolvimento')" title="Excluir">
+                                🗑️
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+            
+            async function loadStats() {
+                try {
+                    const response = await fetch('/api/stats');
+                    const stats = await response.json();
+                    
+                    document.getElementById('contacts-count').textContent = stats.contacts_count || 0;
+                    document.getElementById('conversations-count').textContent = stats.conversations_count || 0;
+                    document.getElementById('messages-count').textContent = stats.messages_count || 0;
+                    document.getElementById('instances-count').textContent = stats.instances_count || 0;
+                } catch (error) {
+                    console.error('❌ Erro ao carregar estatísticas:', error);
+                }
+            }
+        }
+    </script>
 </body>
 </html>
