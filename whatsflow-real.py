@@ -1850,6 +1850,7 @@ HTML_APP = '''<!DOCTYPE html>
         }
 
         let currentChat = null;
+        let messagesPollingInterval = null;
 
         async function openChat(phone, contactName, instanceId) {
             currentChat = { phone, contactName, instanceId };
