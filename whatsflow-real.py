@@ -3856,14 +3856,14 @@ async def campaign_scheduler():
             cursor = conn.cursor()
             cursor.execute(
                 """
-                SELECT id, phone, message, instance_id, weekdays, last_sent_at
+                SELECT id, contact_phone, message, instance_id, weekdays, last_sent_at
                 FROM campaign_messages
                 WHERE send_time = ?
                 """,
                 (current_time,),
             )
             rows = cursor.fetchall()
-            for msg_id, phone, message, instance_id, weekdays, last_sent_at in rows:
+            for msg_id, contact_phone, message, instance_id, weekdays, last_sent_at in rows:
                 if weekdays:
                     days = [int(d) for d in weekdays.split(',') if d.strip()]
                     if weekday not in days:
@@ -3875,7 +3875,7 @@ async def campaign_scheduler():
                             continue
                     except Exception:
                         pass
-                if send_via_baileys(phone, message, instance_id or 'default'):
+                if send_via_baileys(contact_phone, message, instance_id or 'default'):
                     cursor.execute(
                         "UPDATE campaign_messages SET last_sent_at = ? WHERE id = ?",
                         (now.astimezone(timezone.utc).isoformat(), msg_id),
