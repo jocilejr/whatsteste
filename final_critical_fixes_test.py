@@ -30,7 +30,7 @@ import os
 
 # Configuration
 WHATSFLOW_REAL_URL = "http://localhost:8889"
-BAILEYS_SERVICE_URL = "http://localhost:3002"
+BAILEYS_SERVICE_URL = os.getenv("BAILEYS_URL", "http://localhost:3002")
 BACKEND_API_URL = "http://localhost:8001/api"
 FRONTEND_URL = "http://localhost:3000"
 
