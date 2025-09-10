@@ -2166,10 +2166,491 @@ HTML_APP = '''<!DOCTYPE html>
             `).join('');
         }
 
+        
+        // Messages and Instance Selection Functions
+        let currentInstanceId = null;
+        let currentChat = null;
+        
+        async function loadInstancesForSelect() {
+            try {
+                const response = await fetch('/api/instances');
+                const instances = await response.json();
+                
+                const select = document.getElementById('instanceSelect');
+                select.innerHTML = '<option value="">Todas as instâncias</option>';
+                
+                instances.forEach(instance => {
+                    const option = document.createElement('option');
+                    option.value = instance.id;
+                    option.textContent = `${instance.name} ${instance.connected ? '(Conectado)' : '(Desconectado)'}`;
+                    select.appendChild(option);
+                });
+                
+                // Load all conversations by default
+                loadConversations();
+                
+            } catch (error) {
+                console.error('❌ Erro ao carregar instâncias para seletor:', error);
+            }
+        }
+        
+        function switchInstance() {
+            const select = document.getElementById('instanceSelect');
+            currentInstanceId = select.value || null; // null means all instances
+            
+            console.log('📱 Instância selecionada:', currentInstanceId || 'Todas');
+            loadConversations();
+            clearCurrentChat();
+        }
+        
+        async function loadConversations() {
+            try {
+                const url = currentInstanceId ? 
+                    `/api/chats?instance_id=${currentInstanceId}` : 
+                    '/api/chats';
+                
+                const response = await fetch(url);
+                const conversations = await response.json();
+                
+                renderConversations(conversations);
+                
+            } catch (error) {
+                console.error('❌ Erro ao carregar conversas:', error);
+                document.getElementById('conversationsList').innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">❌</div>
+                        <div class="empty-title">Erro ao carregar</div>
+                    </div>
+                `;
+            }
+        }
+        
+        function renderConversations(conversations) {
+            const container = document.getElementById('conversationsList');
+            
+            if (!conversations || conversations.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">💬</div>
+                        <div class="empty-title">Nenhuma conversa</div>
+                        <p>${currentInstanceId ? 'Nenhuma conversa nesta instância' : 'As conversas aparecerão aqui quando receber mensagens'}</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = conversations.map(chat => `
+                <div class="conversation-item" onclick="openChat('${chat.contact_phone}', '${chat.contact_name}', '${chat.instance_id}')">
+                    <div class="conversation-avatar">
+                        ${getContactInitial(chat.contact_name, chat.contact_phone)}
+                    </div>
+                    <div class="conversation-info">
+                        <div class="conversation-name">${getContactDisplayName(chat.contact_name, chat.contact_phone)}</div>
+                        <div class="conversation-last-message">${chat.last_message || 'Nova conversa'}</div>
+                    </div>
+                    <div class="conversation-meta">
+                        <div class="conversation-time">
+                            ${chat.last_message_time ? new Date(chat.last_message_time).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : ''}
+                        </div>
+                        ${chat.unread_count > 0 ? `<div class="unread-badge">${chat.unread_count}</div>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function getContactDisplayName(name, phone) {
+            // Se o nome é um número de telefone ou está vazio, usar o número formatado
+            if (!name || name === phone || /^\+?\d+$/.test(name)) {
+                return formatPhoneNumber(phone);
+            }
+            return name;
+        }
+        
+        function formatPhoneNumber(phone) {
+            // Formatar número do telefone para exibição
+            const cleaned = phone.replace(/\D/g, '');
+            if (cleaned.length === 13 && cleaned.startsWith('55')) {
+                return `+55 (${cleaned.substr(2, 2)}) ${cleaned.substr(4, 5)}-${cleaned.substr(9)}`;
+            } else if (cleaned.length === 11) {
+                return `(${cleaned.substr(0, 2)}) ${cleaned.substr(2, 5)}-${cleaned.substr(7)}`;
+            }
+            return phone;
+        }
+        
+        function getContactInitial(name, phone) {
+            if (name && name !== phone && !/^\+?\d+$/.test(name)) {
+                return name.charAt(0).toUpperCase();
+            }
+            // Se é número de telefone, usar o último dígito
+            const digits = phone.replace(/\D/g, '');
+            return digits.slice(-1);
+        }
+        
+        function searchConversations() {
+            const query = document.getElementById('searchConversations').value.toLowerCase();
+            const items = document.querySelectorAll('.conversation-item');
+            
+            items.forEach(item => {
+                const name = item.querySelector('.conversation-name').textContent.toLowerCase();
+                const message = item.querySelector('.conversation-last-message').textContent.toLowerCase();
+                
+                if (name.includes(query) || message.includes(query)) {
+                    item.style.display = 'flex';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+        
+        async function openChat(phone, contactName, instanceId) {
+            currentChat = { phone, contactName, instanceId };
+            
+            // Update active conversation
+            document.querySelectorAll('.conversation-item').forEach(item => item.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+            
+            // Update chat header
+            const displayName = getContactDisplayName(contactName, phone);
+            document.getElementById('chatContactName').textContent = displayName;
+            document.getElementById('chatContactPhone').textContent = formatPhoneNumber(phone);
+            document.getElementById('chatAvatar').textContent = getContactInitial(contactName, phone);
+            
+            // Show chat header and input area
+            document.getElementById('chatHeader').classList.add('active');
+            document.getElementById('messageInputArea').classList.add('active');
+            
+            // Load messages
+            await loadChatMessages(phone, instanceId);
+        }
+        
+        async function loadChatMessages(phone, instanceId) {
+            try {
+                const response = await fetch(`/api/messages?phone=${phone}&instance_id=${instanceId}`);
+                const messages = await response.json();
+                
+                const container = document.getElementById('messagesContainer');
+                
+                if (messages.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-chat-state">
+                            <div class="empty-chat-icon">💭</div>
+                            <h3>Nenhuma mensagem ainda</h3>
+                            <p>Comece uma conversa!</p>
+                        </div>
+                    `;
+                } else {
+                    container.innerHTML = messages.map(msg => `
+                        <div class="message-bubble ${msg.direction}">
+                            <div class="message-content ${msg.direction}">
+                                <div class="message-text">${msg.message}</div>
+                                <div class="message-time">
+                                    ${new Date(msg.created_at).toLocaleTimeString('pt-BR', { 
+                                        hour: '2-digit', 
+                                        minute: '2-digit' 
+                                    })}
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                    
+                    container.scrollTop = container.scrollHeight;
+                }
+                
+            } catch (error) {
+                console.error('❌ Erro ao carregar mensagens:', error);
+                document.getElementById('messagesContainer').innerHTML = `
+                    <div class="empty-chat-state">
+                        <div style="color: red;">❌ Erro ao carregar mensagens</div>
+                    </div>
+                `;
+            }
+        }
+        
+        function clearCurrentChat() {
+            currentChat = null;
+            document.getElementById('chatHeader').classList.remove('active');
+            document.getElementById('messageInputArea').classList.remove('active');
+            document.getElementById('messagesContainer').innerHTML = `
+                <div class="empty-chat-state">
+                    <div class="empty-chat-icon">💭</div>
+                    <h3>Selecione uma conversa</h3>
+                    <p>Escolha uma conversa da lista para visualizar mensagens</p>
+                </div>
+            `;
+        }
+        
+        function handleMessageKeyPress(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+        
+        async function sendMessage() {
+            if (!currentChat) return;
+            
+            const messageInput = document.getElementById('messageInput');
+            const message = messageInput.value.trim();
+            
+            if (!message) return;
+            
+            try {
+                const response = await fetch(`/api/messages/send/${currentChat.instanceId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        to: currentChat.phone,
+                        message: message
+                    })
+                });
+                
+                if (response.ok) {
+                    messageInput.value = '';
+                    
+                    // Add message to UI immediately
+                    const container = document.getElementById('messagesContainer');
+                    const messageDiv = document.createElement('div');
+                    messageDiv.className = 'message-bubble outgoing';
+                    messageDiv.innerHTML = `
+                        <div class="message-content outgoing">
+                            <div class="message-text">${message}</div>
+                            <div class="message-time">
+                                ${new Date().toLocaleTimeString('pt-BR', { 
+                                    hour: '2-digit', 
+                                    minute: '2-digit' 
+                                })}
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(messageDiv);
+                    container.scrollTop = container.scrollHeight;
+                    
+                    // Update conversations list
+                    loadConversations();
+                    
+                } else {
+                    console.error('❌ Erro ao enviar mensagem');
+                    alert('❌ Erro ao enviar mensagem');
+                }
+                
+            } catch (error) {
+                console.error('❌ Erro ao enviar mensagem:', error);
+                alert('❌ Erro de conexão');
+            }
+        }
+        
+        function refreshMessages() {
+            loadConversations();
+            if (currentChat) {
+                loadChatMessages(currentChat.phone, currentChat.instanceId);
+            }
+        }
+        
+        async function sendWebhook() {
+            if (!currentChat) {
+                alert('❌ Selecione uma conversa primeiro');
+                return;
+            }
+            
+            const webhookUrl = prompt('URL do Webhook:', 'https://webhook.site/your-webhook-url');
+            if (!webhookUrl) return;
+            
+            try {
+                const chatData = {
+                    contact_name: currentChat.contactName,
+                    contact_phone: currentChat.phone,
+                    instance_id: currentChat.instanceId,
+                    timestamp: new Date().toISOString()
+                };
+                
+                const response = await fetch('/api/webhooks/send', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        url: webhookUrl,
+                        data: chatData
+                    })
+                });
+                
+                if (response.ok) {
+                    alert('✅ Webhook enviado com sucesso!');
+                } else {
+                    alert('❌ Erro ao enviar webhook');
+                }
+                
+            } catch (error) {
+                console.error('❌ Erro ao enviar webhook:', error);
+                alert('❌ Erro de conexão');
+            }
+        }
+        
+        // Flow Creator Functions
+        async function createNewFlow() {
+            const flowName = prompt('Nome do novo fluxo:', 'Meu Fluxo de Automação');
+            if (!flowName) return;
+            
+            const flowDescription = prompt('Descrição do fluxo (opcional):', 'Fluxo de resposta automática');
+            
+            try {
+                const response = await fetch('/api/flows', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: flowName,
+                        description: flowDescription || '',
+                        nodes: [
+                            {
+                                id: 'start',
+                                type: 'start',
+                                position: { x: 100, y: 100 },
+                                data: { label: 'Início' }
+                            }
+                        ],
+                        edges: [],
+                        active: false
+                    })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    alert(`✅ Fluxo "${flowName}" criado com sucesso!`);
+                    loadFlows();
+                } else {
+                    alert('❌ Erro ao criar fluxo');
+                }
+                
+            } catch (error) {
+                console.error('❌ Erro ao criar fluxo:', error);
+                alert('❌ Erro de conexão');
+            }
+        }
+        
+        async function loadFlows() {
+            try {
+                const response = await fetch('/api/flows');
+                const flows = await response.json();
+                renderFlows(flows);
+            } catch (error) {
+                console.error('❌ Erro ao carregar fluxos:', error);
+                document.getElementById('flows-container').innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">❌</div>
+                        <div class="empty-title">Erro ao carregar fluxos</div>
+                    </div>
+                `;
+            }
+        }
+        
+        function renderFlows(flows) {
+            const container = document.getElementById('flows-container');
+            
+            if (!flows || flows.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">🎯</div>
+                        <div class="empty-title">Nenhum fluxo criado ainda</div>
+                        <p>Crie fluxos de automação para otimizar seu atendimento</p>
+                        <br>
+                        <button class="btn btn-primary" onclick="createNewFlow()">
+                            🚀 Criar Primeiro Fluxo
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = `
+                <div class="flows-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem;">
+                    ${flows.map(flow => `
+                        <div class="flow-card" style="background: white; border: 1px solid #e5e7eb; border-radius: 0.5rem; padding: 1.5rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                                <div>
+                                    <h3 style="margin: 0 0 0.5rem 0; font-size: 1.125rem; font-weight: 600;">${flow.name}</h3>
+                                    <p style="margin: 0; color: #6b7280; font-size: 0.875rem;">${flow.description || 'Sem descrição'}</p>
+                                </div>
+                                <div style="padding: 0.25rem 0.75rem; border-radius: 1rem; font-size: 0.75rem; font-weight: 600; ${flow.active ? 'background: rgba(16, 185, 129, 0.1); color: #059669;' : 'background: rgba(239, 68, 68, 0.1); color: #dc2626;'}">
+                                    ${flow.active ? 'Ativo' : 'Inativo'}
+                                </div>
+                            </div>
+                            
+                            <div style="margin: 1rem 0; padding: 1rem; background: #f9fafb; border-radius: 0.5rem;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                                    <span style="font-size: 0.8rem; color: #6b7280;">Nós:</span>
+                                    <span style="font-weight: 600;">${flow.nodes ? flow.nodes.length : 0}</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                                    <span style="font-size: 0.8rem; color: #6b7280;">Criado:</span>
+                                    <span style="font-size: 0.8rem;">${new Date(flow.created_at).toLocaleDateString('pt-BR')}</span>
+                                </div>
+                            </div>
+                            
+                            <div style="display: flex; gap: 0.5rem;">
+                                <button class="btn btn-sm btn-primary" onclick="editFlow('${flow.id}')">
+                                    ✏️ Editar
+                                </button>
+                                <button class="btn btn-sm ${flow.active ? 'btn-secondary' : 'btn-success'}" onclick="toggleFlow('${flow.id}', ${flow.active})">
+                                    ${flow.active ? '⏸️ Pausar' : '▶️ Ativar'}
+                                </button>
+                                <button class="btn btn-sm btn-danger" onclick="deleteFlow('${flow.id}', '${flow.name}')">
+                                    🗑️ Excluir
+                                </button>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+        
+        function editFlow(flowId) {
+            alert(`🚧 Editor de Fluxos em Desenvolvimento!\n\nFluxo ID: ${flowId}\n\nEm breve você poderá editar fluxos com interface drag-and-drop.\n\nFuncionalidades planejadas:\n• Editor visual\n• Nós de condição\n• Nós de resposta\n• Nós de delay\n• Integração com instâncias`);
+        }
+        
+        async function toggleFlow(flowId, currentStatus) {
+            try {
+                const response = await fetch(`/api/flows/${flowId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        active: !currentStatus
+                    })
+                });
+                
+                if (response.ok) {
+                    loadFlows();
+                } else {
+                    alert('❌ Erro ao alterar status do fluxo');
+                }
+            } catch (error) {
+                console.error('❌ Erro ao alterar fluxo:', error);
+                alert('❌ Erro de conexão');
+            }
+        }
+        
+        async function deleteFlow(flowId, flowName) {
+            if (!confirm(`Excluir fluxo "${flowName}"?\n\nEsta ação não pode ser desfeita.`)) return;
+            
+            try {
+                const response = await fetch(`/api/flows/${flowId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    alert(`✅ Fluxo "${flowName}" excluído com sucesso!`);
+                    loadFlows();
+                } else {
+                    alert('❌ Erro ao excluir fluxo');
+                }
+            } catch (error) {
+                console.error('❌ Erro ao excluir fluxo:', error);
+                alert('❌ Erro de conexão');
+            }
+        }
+
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
             loadStats();
             checkConnectionStatus();
+            loadInstancesForSelect(); // Load instances for message selector
             
             // Start status polling
             statusPollingInterval = setInterval(checkConnectionStatus, 5000);
