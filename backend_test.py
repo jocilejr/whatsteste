@@ -293,10 +293,10 @@ class WhatsFlowTester:
         print("-" * 50)
         
         apis_to_test = [
-            ("/api/dashboard/stats", "Dashboard Stats"),
-            ("/api/whatsapp/instances", "WhatsApp Instances"),
+            ("/api/stats", "Dashboard Stats"),
+            ("/api/instances", "WhatsApp Instances"),
             ("/api/contacts", "Contacts"),
-            ("/api/devices", "Devices")
+            ("/api/chats", "Chats")
         ]
         
         all_passed = True
