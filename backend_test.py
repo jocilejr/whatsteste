@@ -8,12 +8,13 @@ Testing the 3 critical problems reported in the review request:
 3. "Layout da área de mensagens muito feio e antiprofissional" (Backend support for professional interface)
 
 Expected corrections:
-1. URLs changed from localhost:3002 to 127.0.0.1:3002 in frontend JavaScript
+1. URLs moved to configurable BAILEYS_URL environment variable
 2. /groups/{instanceId} endpoint implemented in Baileys service
 3. CORS configuration updated to accept both localhost and 127.0.0.1
 4. Design completely renovated with elegant and professional interface
 """
 
+import os
 import requests
 import json
 import time
@@ -25,7 +26,7 @@ class WhatsFlowTester:
     def __init__(self):
         # Service URLs based on the review request
         self.whatsflow_url = "http://127.0.0.1:8889"  # WhatsFlow Real Python service
-        self.baileys_url = "http://127.0.0.1:3002"    # Baileys Node.js service
+        self.baileys_url = os.getenv("BAILEYS_URL", "http://localhost:3002")    # Baileys Node.js service
         self.frontend_url = "http://127.0.0.1:3000"   # Frontend React service
         
         self.test_results = []
@@ -67,7 +68,7 @@ class WhatsFlowTester:
     def test_baileys_connectivity(self) -> bool:
         """
         TESTE 1: Conectividade Frontend-Baileys
-        Teste fetch direto de http://127.0.0.1:3002/health
+        Teste fetch direto de ${BAILEYS_URL}/health
         """
         print("🔍 TESTE 1: CONECTIVIDADE FRONTEND-BAILEYS")
         print("-" * 50)
@@ -118,7 +119,7 @@ class WhatsFlowTester:
     def test_groups_endpoint(self) -> bool:
         """
         TESTE 2: Groups Endpoint
-        Teste GET http://127.0.0.1:3002/groups/test-instance
+        Teste GET ${BAILEYS_URL}/groups/test-instance
         """
         print("🔍 TESTE 2: GROUPS ENDPOINT")
         print("-" * 50)
@@ -198,7 +199,7 @@ class WhatsFlowTester:
     def test_send_endpoint(self) -> bool:
         """
         TESTE 3: Send Endpoint
-        Teste POST http://127.0.0.1:3002/send/test-instance
+        Teste POST ${BAILEYS_URL}/send/test-instance
         """
         print("🔍 TESTE 3: SEND ENDPOINT")
         print("-" * 50)

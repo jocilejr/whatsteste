@@ -1,38 +1,31 @@
 import unittest
 from unittest.mock import patch
-import urllib.request
-from urllib.error import URLError
+import requests
 
 # Helper functions mimicking fetch layer error handling
 
 def fetch_groups():
     try:
-        urllib.request.urlopen("http://127.0.0.1:3002/groups/test", timeout=1)
+        requests.get("http://127.0.0.1:3002/groups/test", timeout=1)
         return ""  # Success path is not relevant for this test
-    except URLError:
+    except requests.exceptions.RequestException:
         return "Serviço Baileys indisponível na porta 3002"
 
 def send_message():
     try:
-        req = urllib.request.Request(
-            "http://127.0.0.1:3002/send/test",
-            data=b"{}",
-            headers={"Content-Type": "application/json"},
-            method="POST",
-        )
-        urllib.request.urlopen(req, timeout=1)
+        requests.post("http://127.0.0.1:3002/send/test", json={}, timeout=1)
         return ""
-    except URLError:
+    except requests.exceptions.RequestException:
         return "Serviço Baileys indisponível na porta 3002"
 
 
 class BaileysUnavailableTest(unittest.TestCase):
-    @patch("urllib.request.urlopen", side_effect=URLError("down"))
-    def test_groups_unavailable_message(self, mock_open):
+    @patch("requests.get", side_effect=requests.exceptions.ConnectionError)
+    def test_groups_unavailable_message(self, mock_get):
         self.assertEqual(fetch_groups(), "Serviço Baileys indisponível na porta 3002")
 
-    @patch("urllib.request.urlopen", side_effect=URLError("down"))
-    def test_send_unavailable_message(self, mock_open):
+    @patch("requests.post", side_effect=requests.exceptions.ConnectionError)
+    def test_send_unavailable_message(self, mock_post):
         self.assertEqual(send_message(), "Serviço Baileys indisponível na porta 3002")
 
 

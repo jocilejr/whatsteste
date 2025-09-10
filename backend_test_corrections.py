@@ -26,7 +26,7 @@ import os
 # Configuration - Testing all backend systems
 WHATSFLOW_URL = "http://localhost:8889"  # WhatsFlow Real standalone
 BACKEND_URL = "http://localhost:8001"    # FastAPI backend (supervisor)
-BAILEYS_URL = "http://localhost:3002"    # Baileys Node.js service
+BAILEYS_URL = os.getenv("BAILEYS_URL", "http://localhost:3002")    # Baileys Node.js service
 FRONTEND_URL = "http://localhost:3000"   # React frontend
 
 # API endpoints
