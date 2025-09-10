@@ -13,6 +13,7 @@ Validating all specific corrections from review request:
 7. Envio de mensagens Baileys - URL corrigida
 """
 
+import os
 import requests
 import json
 import re
@@ -21,7 +22,7 @@ from datetime import datetime
 class FinalReviewValidator:
     def __init__(self):
         self.whatsflow_url = "http://localhost:8889"
-        self.baileys_url = "http://localhost:3002"
+        self.baileys_url = os.getenv("BAILEYS_URL", "http://localhost:3002")
         self.session = requests.Session()
         self.validations = []
         

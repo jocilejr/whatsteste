@@ -552,8 +552,9 @@ app.get('/health', (req, res) => {
 });
 
 const PORT = process.env.PORT || 3002;
+const BAILEYS_URL = process.env.BAILEYS_URL || `http://localhost:${PORT}`;
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Baileys service rodando na porta ${PORT}`);
-    console.log(`📊 Health check: http://localhost:${PORT}/health`);
+    console.log(`📊 Health check: ${BAILEYS_URL}/health`);
     console.log('⏳ Aguardando comandos para conectar instâncias...');
 });
