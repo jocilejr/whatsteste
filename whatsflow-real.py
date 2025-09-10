@@ -23,6 +23,8 @@ import urllib.parse
 import logging
 from typing import Set, Dict, Any
 import asyncio
+import base64
+import cgi
 
 # Try to import websockets, fallback gracefully if not available
 try:
@@ -2000,26 +2002,64 @@ HTML_APP = r'''<!DOCTYPE html>
                     </div>
                 </div>
                 
-                <!-- Schedule Messages Panel -->  
+                <!-- Schedule Messages Panel -->
                 <div class="schedule-panel" style="margin-top: 2rem;">
                     <h3>📅 Agendamento de Mensagens</h3>
-                    <div class="schedule-form">
-                        <div class="form-row">
-                            <select id="scheduleGroupSelect" style="flex: 1; margin-right: 10px;">
-                                <option value="">Selecione um grupo</option>
-                            </select>
-                            <input type="datetime-local" id="scheduleDateTime" style="flex: 1; margin-right: 10px;">
-                            <button class="btn btn-success" onclick="scheduleMessage()">📤 Agendar</button>
-                        </div>
-                        <textarea id="scheduleMessage" placeholder="Digite a mensagem para agendar..." 
-                                 style="width: 100%; margin-top: 10px; height: 80px;"></textarea>
-                    </div>
-                    
-                    <div class="scheduled-messages" id="scheduledMessages">
-                        <h4>Mensagens Agendadas</h4>
+                    <button class="btn btn-primary" onclick="openScheduleModal()">+ Novo Agendamento</button>
+                    <div class="scheduled-messages" id="scheduledMessages" style="margin-top:1rem;">
                         <div class="empty-state">
                             <p>Nenhuma mensagem agendada</p>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Schedule Modal -->
+                <div id="scheduleModal" class="modal" style="display:none;">
+                    <div class="modal-content">
+                        <span class="close" onclick="closeScheduleModal()">&times;</span>
+                        <h3>Novo Agendamento</h3>
+                        <div class="form-group">
+                            <label>Grupo</label>
+                            <select id="scheduleGroupSelect">
+                                <option value="">Selecione um grupo</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Recorrência</label>
+                            <select id="recurrenceSelect" onchange="toggleRecurrenceOptions()">
+                                <option value="once">Única</option>
+                                <option value="daily">Diária</option>
+                                <option value="weekly">Semanal</option>
+                            </select>
+                            <select id="weekdaySelect" style="display:none; margin-top:10px;">
+                                <option value="0">Domingo</option>
+                                <option value="1">Segunda</option>
+                                <option value="2">Terça</option>
+                                <option value="3">Quarta</option>
+                                <option value="4">Quinta</option>
+                                <option value="5">Sexta</option>
+                                <option value="6">Sábado</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Horário da execução</label>
+                            <input type="time" id="scheduleTime">
+                        </div>
+                        <div class="form-group">
+                            <label>Tipo de mensagem</label>
+                            <select id="messageType" onchange="toggleMediaInput()">
+                                <option value="text">Texto</option>
+                                <option value="image">Imagem</option>
+                                <option value="video">Vídeo</option>
+                                <option value="audio">Áudio</option>
+                                <option value="document">Documento</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <textarea id="scheduleText" placeholder="Mensagem..." style="width:100%;height:80px;"></textarea>
+                            <input type="file" id="scheduleMedia" style="display:none;margin-top:10px;">
+                        </div>
+                        <button class="btn btn-success" onclick="submitSchedule()">📤 Agendar</button>
                     </div>
                 </div>
             </div>
@@ -3601,67 +3641,91 @@ HTML_APP = r'''<!DOCTYPE html>
             });
         }
         
-        async function scheduleMessage() {
-            const groupId = document.getElementById('scheduleGroupSelect').value;
-            const dateTime = document.getElementById('scheduleDateTime').value;
-            const message = document.getElementById('scheduleMessage').value.trim();
-            
-            if (!groupId || !dateTime || !message) {
-                alert('❌ Preencha todos os campos para agendar uma mensagem');
-                return;
-            }
-            
-            const instanceId = document.getElementById('groupInstanceSelect').value;
-            if (!instanceId) {
-                alert('❌ Selecione uma instância primeiro');
-                return;
-            }
-            
-            try {
-                const response = await fetch('/api/messages/schedule', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        instanceId: instanceId,
-                        groupId: groupId,
-                        message: message,
-                        scheduledFor: dateTime,
-                        type: 'group'
-                    })
-                });
-                
-                const result = await response.json();
-                
-                if (response.ok && result.success) {
-                    alert('✅ Mensagem agendada com sucesso!');
-                    // Clear form
-                    document.getElementById('scheduleGroupSelect').value = '';
-                    document.getElementById('scheduleDateTime').value = '';
-                    document.getElementById('scheduleMessage').value = '';
-                    loadScheduledMessages();
-                } else {
-                    throw new Error(result.error || 'Erro ao agendar mensagem');
-                }
-                
-            } catch (error) {
-                console.error('❌ Erro ao agendar mensagem:', error);
-                alert(`❌ Erro ao agendar mensagem: ${error.message}`);
+        function openScheduleModal() {
+            document.getElementById('scheduleModal').style.display = 'block';
+        }
+
+        function closeScheduleModal() {
+            document.getElementById('scheduleModal').style.display = 'none';
+        }
+
+        function toggleMediaInput() {
+            const type = document.getElementById('messageType').value;
+            const fileInput = document.getElementById('scheduleMedia');
+            if (type === 'text') {
+                fileInput.style.display = 'none';
+            } else {
+                fileInput.style.display = 'block';
             }
         }
-        
+
+        function toggleRecurrenceOptions() {
+            const rec = document.getElementById('recurrenceSelect').value;
+            document.getElementById('weekdaySelect').style.display = rec === 'weekly' ? 'block' : 'none';
+        }
+
+        async function submitSchedule() {
+            const instanceId = document.getElementById('groupInstanceSelect').value;
+            const groupId = document.getElementById('scheduleGroupSelect').value;
+            const content = document.getElementById('scheduleText').value;
+            const mediaType = document.getElementById('messageType').value;
+            const recurrence = document.getElementById('recurrenceSelect').value;
+            const weekday = document.getElementById('weekdaySelect').value;
+            const time = document.getElementById('scheduleTime').value;
+            const file = document.getElementById('scheduleMedia').files[0];
+
+            if (!instanceId || !groupId || !time) {
+                alert('❌ Preencha todos os campos obrigatórios');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('instance_id', instanceId);
+            formData.append('group_id', groupId);
+            formData.append('content', content);
+            formData.append('media_type', mediaType);
+            formData.append('recurrence', recurrence);
+            formData.append('weekday', weekday);
+            formData.append('send_time', time);
+            if (file) formData.append('media', file);
+
+            const response = await fetch('/api/messages/schedule', { method: 'POST', body: formData });
+            const result = await response.json();
+            if (response.ok && result.success) {
+                loadScheduledMessages();
+                closeScheduleModal();
+            } else {
+                alert('❌ Erro ao agendar mensagem');
+            }
+        }
+
         async function loadScheduledMessages() {
             try {
                 const response = await fetch('/api/messages/scheduled');
                 const result = await response.json();
-                
-                if (response.ok && result.success) {
-                    renderScheduledMessages(result.messages || []);
+                const container = document.getElementById('scheduledMessages');
+                container.innerHTML = '';
+                if (!Array.isArray(result) || result.length === 0) {
+                    container.innerHTML = '<div class="empty-state"><p>Nenhuma mensagem agendada</p></div>';
+                    return;
                 }
-                
+                result.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'scheduled-item';
+                    div.innerHTML = `<strong>${item.group_id}</strong> - ${item.send_time} (${item.recurrence}) <button onclick="deleteSchedule('${item.id}')">❌</button>`;
+                    container.appendChild(div);
+                });
             } catch (error) {
                 console.error('❌ Erro ao carregar mensagens agendadas:', error);
             }
         }
+
+        async function deleteSchedule(id) {
+            await fetch('/api/messages/scheduled/' + id, { method: 'DELETE' });
+            loadScheduledMessages();
+        }
+
+        loadScheduledMessages();
     </script>
 </body>
 </html>'''
@@ -3776,6 +3840,24 @@ def init_db():
             attachment TEXT
         )
     """)
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS scheduled_messages (
+            id TEXT PRIMARY KEY,
+            instance_id TEXT NOT NULL,
+            group_id TEXT NOT NULL,
+            content TEXT,
+            media_type TEXT DEFAULT 'text',
+            media_path TEXT,
+            recurrence TEXT NOT NULL,
+            weekday INTEGER,
+            send_time TEXT,
+            next_run TEXT NOT NULL
+        )
+    """)
+
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_scheduled_next_run ON scheduled_messages(next_run)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_scheduled_instance ON scheduled_messages(instance_id)")
     
     conn.commit()
     conn.close()
@@ -3830,6 +3912,86 @@ def send_via_baileys(phone: str, message: str, instance_id: str = "default") -> 
         conn.commit()
         conn.close()
     return success
+
+
+def baileys_post(url: str, data: Dict[str, Any]) -> None:
+    import requests  # type: ignore
+    requests.post(url, json=data, timeout=10)
+
+
+def send_scheduled_message(instance_id: str, group_id: str, content: str, media_type: str, media_path: str) -> bool:
+    """Send a scheduled message including optional media."""
+    data = {"to": group_id, "type": media_type or "text", "message": content or ""}
+    if media_type and media_type != "text" and media_path:
+        try:
+            with open(media_path, "rb") as f:
+                data[media_type] = base64.b64encode(f.read()).decode("utf-8")
+        except Exception:
+            return False
+    try:
+        baileys_post(f"http://127.0.0.1:{BAILEYS_PORT}/send/{instance_id}", data)
+        return True
+    except Exception:
+        return False
+
+
+def calculate_next_run(recurrence: str, send_time: str, weekday: int | None = None, base_dt: datetime | None = None) -> str:
+    """Calculate next run datetime based on recurrence."""
+    now = base_dt or datetime.now()
+    if recurrence == "once":
+        return send_time
+    hour, minute = map(int, send_time.split(":"))
+    target = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
+    if recurrence == "daily":
+        if target <= now:
+            target += timedelta(days=1)
+    elif recurrence == "weekly" and weekday is not None:
+        days_ahead = (weekday - now.weekday()) % 7
+        target = target + timedelta(days=days_ahead)
+        if target <= now:
+            target += timedelta(days=7)
+    return target.isoformat()
+
+
+def process_scheduled_messages(now: datetime | None = None) -> None:
+    """Process due scheduled messages once."""
+    current = now or datetime.now()
+    conn = sqlite3.connect(DB_FILE)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT * FROM scheduled_messages WHERE next_run <= ?",
+        (current.isoformat(),),
+    )
+    rows = cursor.fetchall()
+    for row in rows:
+        sent = send_scheduled_message(
+            row["instance_id"],
+            row["group_id"],
+            row["content"],
+            row["media_type"],
+            row["media_path"],
+        )
+        if sent:
+            if row["recurrence"] == "once":
+                cursor.execute("DELETE FROM scheduled_messages WHERE id = ?", (row["id"],))
+            else:
+                next_run = calculate_next_run(row["recurrence"], row["send_time"], row["weekday"])
+                cursor.execute(
+                    "UPDATE scheduled_messages SET next_run = ? WHERE id = ?",
+                    (next_run, row["id"]),
+                )
+    conn.commit()
+    conn.close()
+
+
+async def scheduled_message_scheduler():
+    while True:
+        try:
+            process_scheduled_messages()
+        except Exception as e:
+            logger.error(f"Erro no agendador de mensagens: {e}")
+        await asyncio.sleep(60)
 
 
 async def campaign_scheduler():
@@ -4692,6 +4854,8 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             self.handle_get_messages_filtered()
         elif self.path == '/api/webhooks':
             self.handle_get_webhooks()
+        elif self.path == '/api/messages/scheduled':
+            self.handle_get_scheduled_messages()
         else:
             self.send_error(404, "Not Found")
     
@@ -4727,6 +4891,8 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
         elif self.path.startswith('/api/messages/send/'):
             instance_id = self.path.split('/')[-1]
             self.handle_send_message(instance_id)
+        elif self.path == '/api/messages/schedule':
+            self.handle_schedule_message()
         elif self.path == '/api/flows':
             self.handle_create_flow()
         elif self.path == '/api/campaigns':
@@ -4756,6 +4922,9 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
         elif self.path.startswith('/api/campaigns/'):
             campaign_id = self.path.split('/')[-1]
             self.handle_delete_campaign(campaign_id)
+        elif self.path.startswith('/api/messages/scheduled/'):
+            schedule_id = self.path.split('/')[-1]
+            self.handle_delete_scheduled_message(schedule_id)
         else:
             self.send_error(404, "Not Found")
     
@@ -4820,6 +4989,100 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             messages = [dict(row) for row in cursor.fetchall()]
             conn.close()
             self.send_json_response(messages)
+        except Exception as e:
+            self.send_json_response({"error": str(e)}, 500)
+
+    def handle_schedule_message(self):
+        try:
+            content_type = self.headers.get('Content-Type', '')
+            if 'multipart/form-data' in content_type:
+                form = cgi.FieldStorage(fp=self.rfile, headers=self.headers,
+                                       environ={'REQUEST_METHOD': 'POST', 'CONTENT_TYPE': content_type})
+                instance_id = form.getvalue('instance_id', 'default')
+                group_id = form.getvalue('group_id', '')
+                content = form.getvalue('content', '')
+                media_type = form.getvalue('media_type', 'text')
+                recurrence = form.getvalue('recurrence', 'once')
+                weekday = form.getvalue('weekday')
+                send_time = form.getvalue('send_time', '')
+                media_path = None
+                if 'media' in form and getattr(form['media'], 'file', None):
+                    uploads_dir = os.path.join(os.getcwd(), 'uploads')
+                    os.makedirs(uploads_dir, exist_ok=True)
+                    filename = f"{uuid.uuid4()}_{form['media'].filename}" if form['media'].filename else str(uuid.uuid4())
+                    media_path = os.path.join(uploads_dir, filename)
+                    with open(media_path, 'wb') as f:
+                        f.write(form['media'].file.read())
+            else:
+                length = int(self.headers.get('Content-Length', 0))
+                data = json.loads(self.rfile.read(length).decode('utf-8')) if length else {}
+                instance_id = data.get('instanceId') or data.get('instance_id') or 'default'
+                group_id = data.get('groupId') or data.get('group_id', '')
+                content = data.get('content') or data.get('message', '')
+                media_type = data.get('mediaType') or data.get('media_type', 'text')
+                recurrence = data.get('recurrence', 'once')
+                weekday = data.get('weekday')
+                send_time = data.get('sendTime') or data.get('send_time') or data.get('scheduledFor', '')
+                media_path = data.get('media_path')
+
+            if not group_id or not send_time:
+                self.send_json_response({"error": "Dados inválidos"}, 400)
+                return
+
+            if recurrence == 'once' and len(send_time) > 5:
+                next_run = send_time
+                send_time_val = send_time[11:16]
+            else:
+                next_run = calculate_next_run(recurrence, send_time, int(weekday) if weekday else None)
+                send_time_val = send_time
+
+            schedule_id = str(uuid.uuid4())
+            conn = sqlite3.connect(DB_FILE)
+            cursor = conn.cursor()
+            cursor.execute(
+                """
+                INSERT INTO scheduled_messages (id, instance_id, group_id, content, media_type, media_path, recurrence, weekday, send_time, next_run)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    schedule_id,
+                    instance_id,
+                    group_id,
+                    content,
+                    media_type,
+                    media_path,
+                    recurrence,
+                    int(weekday) if weekday else None,
+                    send_time_val,
+                    next_run,
+                ),
+            )
+            conn.commit()
+            conn.close()
+            self.send_json_response({"success": True, "id": schedule_id})
+        except Exception as e:
+            self.send_json_response({"error": str(e)}, 500)
+
+    def handle_get_scheduled_messages(self):
+        try:
+            conn = sqlite3.connect(DB_FILE)
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM scheduled_messages ORDER BY next_run ASC")
+            messages = [dict(row) for row in cursor.fetchall()]
+            conn.close()
+            self.send_json_response(messages)
+        except Exception as e:
+            self.send_json_response({"error": str(e)}, 500)
+
+    def handle_delete_scheduled_message(self, schedule_id: str):
+        try:
+            conn = sqlite3.connect(DB_FILE)
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM scheduled_messages WHERE id = ?", (schedule_id,))
+            conn.commit()
+            conn.close()
+            self.send_json_response({"success": True})
         except Exception as e:
             self.send_json_response({"error": str(e)}, 500)
     
@@ -6089,6 +6352,7 @@ def main():
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     loop.create_task(campaign_scheduler())
+    loop.create_task(scheduled_message_scheduler())
 
     print("✅ WhatsFlow Professional configurado!")
     print(f"🌐 Interface: http://localhost:{PORT}")
