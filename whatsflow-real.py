@@ -1940,55 +1940,6 @@ HTML_APP = '''<!DOCTYPE html>
             }
         }
 
-        async function sendMessage() {
-            if (!currentChat) return;
-            
-            const messageInput = document.getElementById('message-input');
-            const message = messageInput.value.trim();
-            
-            if (!message) return;
-            
-            try {
-                const response = await fetch(`/api/messages/send/${currentChat.instanceId}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        to: currentChat.phone,
-                        message: message
-                    })
-                });
-                
-                if (response.ok) {
-                    messageInput.value = '';
-                    
-                    // Add message to UI immediately
-                    const messagesContainer = document.getElementById('messages-container');
-                    const messageDiv = document.createElement('div');
-                    messageDiv.className = 'message outgoing';
-                    messageDiv.style.cssText = 'margin-bottom: 15px; display: flex; justify-content: flex-end;';
-                    messageDiv.innerHTML = `
-                        <div class="message-bubble" style="max-width: 70%; padding: 10px 15px; border-radius: 15px; background: #007bff; color: white; border-bottom-right-radius: 5px;">
-                            <div class="message-text">${message}</div>
-                            <div class="message-time" style="font-size: 0.8em; margin-top: 5px; opacity: 0.7;">
-                                ${new Date().toLocaleTimeString()}
-                            </div>
-                        </div>
-                    `;
-                    messagesContainer.appendChild(messageDiv);
-                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
-                    
-                } else {
-                    alert('❌ Erro ao enviar mensagem');
-                }
-                
-            } catch (error) {
-                console.error('Erro ao enviar mensagem:', error);
-                alert('❌ Erro de conexão');
-            }
-        }
-
         async function sendWebhook() {
             if (!currentChat) {
                 alert('❌ Selecione uma conversa primeiro');
