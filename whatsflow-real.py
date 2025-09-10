@@ -20,6 +20,17 @@ import time
 import signal
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import urllib.parse
+import logging
+from typing import Set, Dict, Any
+
+# Try to import websockets, fallback gracefully if not available
+try:
+    import asyncio
+    import websockets
+    WEBSOCKETS_AVAILABLE = True
+except ImportError:
+    WEBSOCKETS_AVAILABLE = False
+    print("⚠️ WebSocket não disponível - executando sem tempo real")
 
 # Configurações
 DB_FILE = "whatsflow.db"
