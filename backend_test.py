@@ -1,13 +1,28 @@
 #!/usr/bin/env python3
 """
-Backend Test Suite for WhatsFlow Real - Enhanced Testing
-Testing all API endpoints running on port 8889 with focus on:
-- Clean design implementation
-- Message system functionality  
-- Contact names (pushName) with fallback
-- WebSocket functionality
-- Database operations with real names
-- Logs verification
+Backend Test Suite for WhatsFlow Real - Final Complete Testing
+Testing all corrected problems from review request:
+
+CORRECTED PROBLEMS TO VERIFY:
+1. Instance selection in Messages tab - GET /api/instances should return instances for selector
+2. Flow creator functionality - GET/POST/PUT/DELETE /api/flows endpoints
+3. Clean design implementation - Backend support for clean interface
+4. Improved messaging system - GET /api/chats, GET /api/messages with filtering
+5. Database verification - flows table, chats table with real names
+
+CRITICAL ENDPOINTS TO TEST:
+- GET /api/instances (must return instances for selector)
+- GET /api/chats (must return conversations, filtered by instance_id if specified)
+- GET /api/flows (must return flows)
+- POST /api/flows (must create new flows)
+- PUT /api/flows/{id} (must update flows)
+- DELETE /api/flows/{id} (must delete flows)
+- GET /api/messages?phone=X&instance_id=Y (must return filtered messages)
+
+DATABASE VERIFICATIONS:
+- flows table must exist and be functional
+- chats table must have data with real names
+- System must support filtering by instance_id
 """
 
 import requests
