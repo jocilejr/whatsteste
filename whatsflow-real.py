@@ -11,7 +11,7 @@ Acesso: http://localhost:8888
 import json
 import sqlite3
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import os
 import subprocess
 import sys
@@ -3738,14 +3738,33 @@ def init_db():
     """)
 
     cursor.execute("""
+        CREATE TABLE IF NOT EXISTS campaigns (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            description TEXT,
+            recurrence_type TEXT NOT NULL,
+            send_time TEXT NOT NULL,
+            instance_id TEXT,
+            created_at TEXT,
+            updated_at TEXT,
+            last_sent_at TEXT
+        )
+    """)
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS campaign_groups (
+            campaign_id TEXT NOT NULL,
+            group_id TEXT NOT NULL,
+            PRIMARY KEY (campaign_id, group_id)
+        )
+    """)
+
+    cursor.execute("""
         CREATE TABLE IF NOT EXISTS campaign_messages (
             id TEXT PRIMARY KEY,
-            phone TEXT NOT NULL,
-            message TEXT NOT NULL,
-            instance_id TEXT DEFAULT 'default',
-            send_time TEXT NOT NULL,
-            weekdays TEXT,
-            last_sent_at TEXT
+            campaign_id TEXT NOT NULL,
+            message_text TEXT NOT NULL,
+            attachment TEXT
         )
     """)
     
@@ -3821,36 +3840,56 @@ class CampaignScheduler:
     def check_campaigns(self):
         now = datetime.now()
         current_time = now.strftime("%H:%M")
-        weekday = now.weekday()  # Monday = 0
 
         conn = sqlite3.connect(DB_FILE)
         cursor = conn.cursor()
         cursor.execute(
             """
-            SELECT id, phone, message, instance_id, weekdays, last_sent_at
-            FROM campaign_messages
+            SELECT id, instance_id, recurrence_type, last_sent_at
+            FROM campaigns
             WHERE send_time = ?
             """,
             (current_time,),
         )
         rows = cursor.fetchall()
-        for msg_id, phone, message, instance_id, weekdays, last_sent_at in rows:
-            if weekdays:
-                days = [int(d) for d in weekdays.split(',') if d.strip()]
-                if weekday not in days:
-                    continue
-            if last_sent_at:
+        for campaign_id, instance_id, recurrence_type, last_sent_at in rows:
+            should_send = False
+            if not last_sent_at:
+                should_send = True
+            else:
                 try:
                     last = datetime.fromisoformat(last_sent_at)
-                    if last.date() == now.date():
-                        continue
+                    if recurrence_type == 'daily' and last.date() < now.date():
+                        should_send = True
+                    elif recurrence_type == 'weekly' and now - last >= timedelta(days=7):
+                        should_send = True
                 except Exception:
-                    pass
-            if send_via_baileys(phone, message, instance_id or 'default'):
-                cursor.execute(
-                    "UPDATE campaign_messages SET last_sent_at = ? WHERE id = ?",
-                    (now.isoformat(), msg_id),
-                )
+                    should_send = True
+
+            if not should_send:
+                continue
+
+            cursor.execute(
+                "SELECT group_id FROM campaign_groups WHERE campaign_id = ?",
+                (campaign_id,),
+            )
+            groups = [g[0] for g in cursor.fetchall()]
+
+            cursor.execute(
+                "SELECT message_text FROM campaign_messages WHERE campaign_id = ?",
+                (campaign_id,),
+            )
+            messages = [m[0] for m in cursor.fetchall()]
+
+            for group_id in groups:
+                for message in messages:
+                    send_via_baileys(group_id, message, instance_id or 'default')
+
+            cursor.execute(
+                "UPDATE campaigns SET last_sent_at = ? WHERE id = ?",
+                (now.isoformat(), campaign_id),
+            )
+
         conn.commit()
         conn.close()
 
@@ -4650,6 +4689,9 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             self.handle_get_chats()
         elif self.path == '/api/flows':
             self.handle_get_flows()
+        elif self.path.startswith('/api/campaigns/'):
+            campaign_id = self.path.split('/')[-1]
+            self.handle_get_campaign(campaign_id)
         elif self.path == '/api/campaigns':
             self.handle_get_campaigns()
         elif self.path.startswith('/api/groups/'):
@@ -5751,6 +5793,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                     'instance_id': row[5],
                     'created_at': row[6],
                     'updated_at': row[7],
+                    'last_sent_at': row[8],
                     'groups': groups,
                     'messages': messages
                 })
@@ -5760,6 +5803,58 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
 
         except Exception as e:
             print(f"❌ Erro ao obter campanhas: {e}")
+            self.send_json_response({'error': str(e)}, 500)
+
+    def handle_get_campaign(self, campaign_id):
+        """Get a single campaign"""
+        try:
+            conn = sqlite3.connect(DB_FILE)
+            cursor = conn.cursor()
+
+            cursor.execute("SELECT * FROM campaigns WHERE id = ?", (campaign_id,))
+            row = cursor.fetchone()
+            if not row:
+                conn.close()
+                self.send_json_response({'error': 'Campanha não encontrada'}, 404)
+                return
+
+            cursor.execute(
+                "SELECT group_id FROM campaign_groups WHERE campaign_id = ?",
+                (campaign_id,),
+            )
+            groups = [g[0] for g in cursor.fetchall()]
+
+            cursor.execute(
+                "SELECT id, message_text, attachment FROM campaign_messages WHERE campaign_id = ?",
+                (campaign_id,),
+            )
+            messages = []
+            for m in cursor.fetchall():
+                messages.append({
+                    'id': m[0],
+                    'text': m[1],
+                    'attachment': m[2]
+                })
+
+            campaign = {
+                'id': row[0],
+                'name': row[1],
+                'description': row[2],
+                'recurrence_type': row[3],
+                'send_time': row[4],
+                'instance_id': row[5],
+                'created_at': row[6],
+                'updated_at': row[7],
+                'last_sent_at': row[8],
+                'groups': groups,
+                'messages': messages
+            }
+
+            conn.close()
+            self.send_json_response(campaign)
+
+        except Exception as e:
+            print(f"❌ Erro ao obter campanha: {e}")
             self.send_json_response({'error': str(e)}, 500)
 
     def handle_create_campaign(self):
@@ -5775,8 +5870,8 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             cursor = conn.cursor()
 
             cursor.execute("""
-                INSERT INTO campaigns (id, name, description, recurrence_type, send_time, instance_id, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO campaigns (id, name, description, recurrence_type, send_time, instance_id, created_at, updated_at, last_sent_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 campaign_id,
                 data['name'],
@@ -5785,7 +5880,8 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                 data.get('send_time'),
                 data.get('instance_id'),
                 datetime.now(timezone.utc).isoformat(),
-                datetime.now(timezone.utc).isoformat()
+                datetime.now(timezone.utc).isoformat(),
+                None
             ))
 
             for group_id in data.get('groups', []):
