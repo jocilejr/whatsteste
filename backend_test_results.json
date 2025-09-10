@@ -1,161 +1,167 @@
 {
   "summary": {
-    "total_tests": 21,
-    "passed": 19,
-    "failed": 2,
-    "success_rate": 90.47619047619048
+    "total_tests": 18,
+    "passed": 14,
+    "failed": 4,
+    "critical_issues": 4,
+    "minor_issues": 0,
+    "success_rate": 77.77777777777779
   },
   "passed_tests": [
     "Server Connectivity",
-    "GET /api/instances",
+    "Instance Selector Data",
+    "GET /api/flows",
+    "GET /api/chats",
+    "Database Flows Table",
     "GET /api/contacts",
     "GET /api/messages",
     "GET /api/stats",
-    "GET /api/chats",
-    "GET /api/messages (filtered)",
     "GET /api/whatsapp/status",
     "GET /api/whatsapp/qr",
-    "POST /api/messages/receive",
-    "GET /api/webhooks",
     "POST /api/instances",
-    "POST /api/instances/{id}/connect",
     "POST /api/instances",
-    "GET /api/instances",
     "Database Persistence",
-    "Database Schema",
-    "Baileys Service Integration",
-    "Logs Verification"
+    "Baileys Service Integration"
   ],
   "failed_tests": [
-    "Contact Names",
-    "WebSocket Status"
+    "POST /api/flows",
+    "GET /api/chats (filtered)",
+    "Filtered Messages System",
+    "Database Real Names"
   ],
+  "critical_issues": [
+    "POST /api/flows: No ID returned in response",
+    "GET /api/chats (filtered): Filtering failed: 404",
+    "Filtered Messages System: Missing phone or instance_id for testing",
+    "Database Real Names: Exception: no such column: user_name"
+  ],
+  "minor_issues": [],
   "detailed_results": [
     {
       "test": "Server Connectivity",
       "status": "PASS",
-      "details": "Server responding on port 8889",
-      "timestamp": "2025-09-10T03:08:55.783134"
+      "details": "WhatsFlow Real server responding on port 8889",
+      "timestamp": "2025-09-10T03:33:12.914650",
+      "is_critical": true
     },
     {
-      "test": "GET /api/instances",
+      "test": "Instance Selector Data",
       "status": "PASS",
-      "details": "Retrieved 18 instances",
-      "timestamp": "2025-09-10T03:08:55.785631"
+      "details": "Retrieved 20 instances, 20 valid for selector",
+      "timestamp": "2025-09-10T03:33:12.917226",
+      "is_critical": true
     },
     {
-      "test": "GET /api/contacts",
+      "test": "GET /api/flows",
       "status": "PASS",
-      "details": "Retrieved 5 contacts",
-      "timestamp": "2025-09-10T03:08:55.787995"
+      "details": "Retrieved 0 flows",
+      "timestamp": "2025-09-10T03:33:12.919363",
+      "is_critical": true
     },
     {
-      "test": "GET /api/messages",
-      "status": "PASS",
-      "details": "Retrieved 6 messages",
-      "timestamp": "2025-09-10T03:08:55.790239"
-    },
-    {
-      "test": "GET /api/stats",
-      "status": "PASS",
-      "details": "Statistics retrieved - Contacts: 5, Messages: 6",
-      "timestamp": "2025-09-10T03:08:55.792307"
+      "test": "POST /api/flows",
+      "status": "FAIL",
+      "details": "No ID returned in response",
+      "timestamp": "2025-09-10T03:33:12.927619",
+      "is_critical": true
     },
     {
       "test": "GET /api/chats",
       "status": "PASS",
-      "details": "Retrieved 4 chats, 4 with proper names",
-      "timestamp": "2025-09-10T03:08:55.794629"
+      "details": "Retrieved 5 chats, 5 with real names",
+      "timestamp": "2025-09-10T03:33:12.929903",
+      "is_critical": true
     },
     {
-      "test": "GET /api/messages (filtered)",
+      "test": "GET /api/chats (filtered)",
+      "status": "FAIL",
+      "details": "Filtering failed: 404",
+      "timestamp": "2025-09-10T03:33:12.933593",
+      "is_critical": true
+    },
+    {
+      "test": "Filtered Messages System",
+      "status": "FAIL",
+      "details": "Missing phone or instance_id for testing",
+      "timestamp": "2025-09-10T03:33:12.937709",
+      "is_critical": true
+    },
+    {
+      "test": "Database Flows Table",
       "status": "PASS",
-      "details": "Retrieved 0 filtered messages for 5511888888888",
-      "timestamp": "2025-09-10T03:08:55.799022"
+      "details": "flows table exists with 1 records, all required columns present",
+      "timestamp": "2025-09-10T03:33:12.938487",
+      "is_critical": true
+    },
+    {
+      "test": "Database Real Names",
+      "status": "FAIL",
+      "details": "Exception: no such column: user_name",
+      "timestamp": "2025-09-10T03:33:12.938934",
+      "is_critical": true
+    },
+    {
+      "test": "GET /api/contacts",
+      "status": "PASS",
+      "details": "Retrieved 6 contacts",
+      "timestamp": "2025-09-10T03:33:12.940781",
+      "is_critical": false
+    },
+    {
+      "test": "GET /api/messages",
+      "status": "PASS",
+      "details": "Retrieved 8 messages",
+      "timestamp": "2025-09-10T03:33:12.942645",
+      "is_critical": false
+    },
+    {
+      "test": "GET /api/stats",
+      "status": "PASS",
+      "details": "Statistics retrieved - Contacts: 6, Messages: 8",
+      "timestamp": "2025-09-10T03:33:12.944438",
+      "is_critical": false
     },
     {
       "test": "GET /api/whatsapp/status",
       "status": "PASS",
       "details": "WhatsApp status: Disconnected",
-      "timestamp": "2025-09-10T03:08:55.803351"
+      "timestamp": "2025-09-10T03:33:12.998449",
+      "is_critical": false
     },
     {
       "test": "GET /api/whatsapp/qr",
       "status": "PASS",
       "details": "QR code: Not available",
-      "timestamp": "2025-09-10T03:08:55.807451"
-    },
-    {
-      "test": "POST /api/messages/receive",
-      "status": "PASS",
-      "details": "Message received with pushName: Jo\u00e3o Silva",
-      "timestamp": "2025-09-10T03:08:55.815705"
-    },
-    {
-      "test": "Contact Names",
-      "status": "FAIL",
-      "details": "Test contact not found after message",
-      "timestamp": "2025-09-10T03:08:56.826516"
-    },
-    {
-      "test": "GET /api/webhooks",
-      "status": "PASS",
-      "details": "Retrieved 0 webhooks",
-      "timestamp": "2025-09-10T03:08:56.827969"
+      "timestamp": "2025-09-10T03:33:13.003683",
+      "is_critical": false
     },
     {
       "test": "POST /api/instances",
       "status": "PASS",
-      "details": "Created instance: Test Instance 1f442864",
-      "timestamp": "2025-09-10T03:08:56.835605"
-    },
-    {
-      "test": "POST /api/instances/{id}/connect",
-      "status": "PASS",
-      "details": "Connection initiated successfully",
-      "timestamp": "2025-09-10T03:08:56.840636"
+      "details": "Created instance: Test Instance add36831",
+      "timestamp": "2025-09-10T03:33:13.010701",
+      "is_critical": false
     },
     {
       "test": "POST /api/instances",
       "status": "PASS",
-      "details": "Created instance: Test Instance b9becf14",
-      "timestamp": "2025-09-10T03:08:56.847930"
-    },
-    {
-      "test": "GET /api/instances",
-      "status": "PASS",
-      "details": "Retrieved 20 instances",
-      "timestamp": "2025-09-10T03:08:57.850859"
+      "details": "Created instance: Test Instance 039868e6",
+      "timestamp": "2025-09-10T03:33:13.015511",
+      "is_critical": false
     },
     {
       "test": "Database Persistence",
       "status": "PASS",
       "details": "SQLite database working correctly",
-      "timestamp": "2025-09-10T03:08:57.850910"
-    },
-    {
-      "test": "Database Schema",
-      "status": "PASS",
-      "details": "Database schema valid, found real contact names: ['Jo\u00e3o Silva', 'Maria Santos', 'Pedro Costa']",
-      "timestamp": "2025-09-10T03:08:57.851647"
+      "timestamp": "2025-09-10T03:33:14.018200",
+      "is_critical": false
     },
     {
       "test": "Baileys Service Integration",
       "status": "PASS",
       "details": "Baileys service is running and accessible",
-      "timestamp": "2025-09-10T03:08:57.854697"
-    },
-    {
-      "test": "WebSocket Status",
-      "status": "FAIL",
-      "details": "WebSocket port 8890 not accessible",
-      "timestamp": "2025-09-10T03:08:57.854886"
-    },
-    {
-      "test": "Logs Verification",
-      "status": "PASS",
-      "details": "Log files found but limited contact information",
-      "timestamp": "2025-09-10T03:08:57.855221"
+      "timestamp": "2025-09-10T03:33:14.020779",
+      "is_critical": false
     }
   ]
 }
