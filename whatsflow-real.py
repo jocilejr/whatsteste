@@ -84,18 +84,44 @@ HTML_APP = '''<!DOCTYPE html>
         }
         
         .container { 
-            max-width: 100vw; 
-            margin: 0; 
-            padding: 0;
+            max-width: 1200px; 
+            margin: 0 auto; 
+            padding: 0 20px;
             height: 100vh;
             display: flex;
             flex-direction: column;
         }
         
-        /* Messages section fullscreen */
+        /* Add professional spacing */
+        body {
+            margin: 0;
+            padding: 0;
+            background: #f8f9fa;
+        }
+        
+        /* Navigation improvements */
+        .nav {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin: 20px 0;
+            padding: 8px;
+        }
+        
+        /* Sections with professional spacing */
+        .section {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin: 0 0 20px 0;
+            min-height: calc(100vh - 200px);
+        }
+        
+        /* Messages section improvements */
         #messages.section {
-            height: calc(100vh - 60px); /* Account for nav height */
-            max-height: calc(100vh - 60px);
+            height: calc(100vh - 120px);
+            max-height: calc(100vh - 120px);
+            margin: 0;
         }
         
         .messages-section {
