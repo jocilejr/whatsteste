@@ -26,7 +26,8 @@ app = FastAPI()
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 
-WHATSAPP_SERVICE_URL = "http://localhost:3001"
+# Base URL for Baileys service (configurable via env)
+BAILEYS_SERVICE_URL = os.getenv("BAILEYS_SERVICE_URL", "http://127.0.0.1:3002")
 
 # Define Models
 class StatusCheck(BaseModel):
@@ -350,10 +351,11 @@ async def send_whatsapp_message(message: OutgoingMessage):
     """Send message via WhatsApp service"""
     try:
         async with httpx.AsyncClient() as http_client:
+            instance_path = f"/{message.device_id}" if message.device_id else ""
             response = await http_client.post(
-                f"{WHATSAPP_SERVICE_URL}/send",
+                f"{BAILEYS_SERVICE_URL}/send{instance_path}",
                 json={
-                    "phone_number": message.phone_number,
+                    "to": message.phone_number,
                     "message": message.message
                 }
             )
@@ -366,7 +368,7 @@ async def get_qr_code():
     """Get current QR code for authentication"""
     try:
         async with httpx.AsyncClient() as http_client:
-            response = await http_client.get(f"{WHATSAPP_SERVICE_URL}/qr")
+            response = await http_client.get(f"{BAILEYS_SERVICE_URL}/qr")
             return response.json()
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -376,7 +378,17 @@ async def get_whatsapp_status():
     """Get WhatsApp connection status"""
     try:
         async with httpx.AsyncClient() as http_client:
-            response = await http_client.get(f"{WHATSAPP_SERVICE_URL}/status")
+            response = await http_client.get(f"{BAILEYS_SERVICE_URL}/status")
+            return response.json()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/whatsapp/health")
+async def get_whatsapp_health():
+    """Proxy health check to Baileys service"""
+    try:
+        async with httpx.AsyncClient() as http_client:
+            response = await http_client.get(f"{BAILEYS_SERVICE_URL}/health")
             return response.json()
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

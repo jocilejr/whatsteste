@@ -2688,10 +2688,10 @@ HTML_APP = r'''<!DOCTYPE html>
 
         async function sendMessage(phone, message) {
             try {
-                const response = await fetch('__BAILEYS_URL__/send', {
+                const response = await fetch('/api/whatsapp/send', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ to: phone, message: message })
+                    body: JSON.stringify({ phone_number: phone, message: message })
                 });
                 
                 if (response.ok) {
@@ -3052,27 +3052,24 @@ HTML_APP = r'''<!DOCTYPE html>
             try {
                 console.log('📤 Enviando mensagem para:', currentChat.phone, 'via instância:', currentChat.instanceId);
                 
-                // First check if Baileys service is available
-                const healthResponse = await fetch('__BAILEYS_URL__/health', {
-                    method: 'GET',
-                    timeout: 5000
-                });
-                
+                // Check backend health before sending
+                const healthResponse = await fetch('/api/whatsapp/health');
+
                 if (!healthResponse.ok) {
                     throw new Error('Serviço Baileys não está disponível');
                 }
-                
-                // Use Baileys service to send message with corrected URL and proper error handling
-                const response = await fetch(`__BAILEYS_URL__/send/${currentChat.instanceId}`, {
+
+                // Send via backend which proxies to Baileys
+                const response = await fetch('/api/whatsapp/send', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'Accept': 'application/json'
                     },
                     body: JSON.stringify({
-                        to: currentChat.phone,
+                        phone_number: currentChat.phone,
                         message: message,
-                        type: 'text'
+                        device_id: currentChat.instanceId
                     })
                 });
                 
@@ -3657,7 +3654,7 @@ HTML_APP = r'''<!DOCTYPE html>
     </script>
 </body>
 </html>'''
-HTML_APP = HTML_APP.replace('__BAILEYS_URL__', BAILEYS_URL)
+
 
 # Database setup (same as before but with WebSocket integration)
 def init_db():
