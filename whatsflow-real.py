@@ -1517,7 +1517,10 @@ HTML_APP = '''<!DOCTYPE html>
             } else if (name === 'contacts') {
                 loadContacts();
             } else if (name === 'messages') {
-                loadInstancesForSelect(); // Load instances for message selector
+                // Only load if not already loaded to avoid double loading
+                if (!document.getElementById('instanceSelect').innerHTML.includes('option')) {
+                    loadInstancesForSelect();
+                }
             } else if (name === 'flows') {
                 loadFlows();
             }
