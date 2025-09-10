@@ -1307,14 +1307,14 @@ HTML_APP = '''<!DOCTYPE html>
         <div id="messages" class="section">
             <div class="messages-section">
                 <div class="messages-header">
-                    <h2>💬 Central de Mensagens</h2>
+                    <h2>Central de Mensagens</h2>
                     <div class="instance-selector">
                         <label for="instanceSelect">Instância:</label>
                         <select id="instanceSelect" onchange="switchInstance()">
                             <option value="">Selecione uma instância</option>
                         </select>
                         <button class="btn btn-sm btn-secondary" onclick="refreshMessages()">
-                            🔄 Atualizar
+                            Atualizar
                         </button>
                     </div>
                 </div>
