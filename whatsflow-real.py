@@ -4538,6 +4538,9 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             self.handle_get_chats()
         elif self.path == '/api/flows':
             self.handle_get_flows()
+        elif self.path.startswith('/api/groups/'):
+            instance_id = self.path.split('/')[-1]
+            self.handle_get_groups(instance_id)
         elif self.path == '/api/webhooks/send':
             self.handle_send_webhook()
         elif self.path.startswith('/api/whatsapp/status/'):
@@ -5052,6 +5055,36 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                 
         except Exception as e:
             self.send_json_response({"qr": None, "connected": False, "error": str(e), "instanceId": instance_id})
+
+    def handle_get_groups(self, instance_id):
+        try:
+            try:
+                import requests
+                try:
+                    response = requests.get(f'{BAILEYS_URL}/groups/{instance_id}', timeout=5)
+                except requests.exceptions.RequestException:
+                    self.send_json_response({"error": "Serviço Baileys indisponível na porta 3002"}, 503)
+                    return
+
+                if response.status_code == 200:
+                    data = response.json()
+                    self.send_json_response(data)
+                else:
+                    self.send_json_response({"error": "Erro ao obter grupos"}, response.status_code)
+            except ImportError:
+                import urllib.request
+                import urllib.error
+                try:
+                    with urllib.request.urlopen(f'{BAILEYS_URL}/groups/{instance_id}', timeout=5) as resp:
+                        if resp.status == 200:
+                            data = json.loads(resp.read().decode('utf-8'))
+                            self.send_json_response(data)
+                        else:
+                            self.send_json_response({"error": "Erro ao obter grupos"}, resp.status)
+                except urllib.error.URLError:
+                    self.send_json_response({"error": "Serviço Baileys indisponível na porta 3002"}, 503)
+        except Exception as e:
+            self.send_json_response({"error": str(e)}, 500)
 
     def handle_send_message(self, instance_id):
         try:
