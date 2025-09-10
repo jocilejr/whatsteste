@@ -3773,12 +3773,12 @@ def check_node_installed():
         return False
 
 def main():
-    print("🤖 WhatsFlow Real - Conexão WhatsApp Verdadeira")
+    print("🚀 WhatsFlow Professional - Sistema Avançado")
     print("=" * 50)
-    print("✅ Python backend para interface")
+    print("✅ Python backend com WebSocket")
     print("✅ Node.js + Baileys para WhatsApp real")
-    print("✅ QR Code real para conexão")
-    print("✅ Mensagens reais enviadas/recebidas")
+    print("✅ Interface profissional moderna")
+    print("✅ Tempo real + Design refinado")
     print()
     
     # Check Node.js
@@ -3799,6 +3799,10 @@ def main():
     init_db()
     add_sample_data()
     
+    # Start WebSocket server
+    print("🔌 Iniciando servidor WebSocket...")
+    websocket_thread = start_websocket_server()
+    
     # Start Baileys service
     print("📱 Iniciando serviço WhatsApp (Baileys)...")
     baileys_manager = BaileysManager()
@@ -3815,8 +3819,9 @@ def main():
     baileys_thread.daemon = True
     baileys_thread.start()
     
-    print("✅ WhatsFlow Real configurado!")
+    print("✅ WhatsFlow Professional configurado!")
     print(f"🌐 Interface: http://localhost:{PORT}")
+    print(f"🔌 WebSocket: ws://localhost:{WEBSOCKET_PORT}")
     print(f"📱 WhatsApp Service: http://localhost:{BAILEYS_PORT}")
     print("🚀 Servidor iniciando...")
     print("   Para parar: Ctrl+C")
@@ -3827,9 +3832,10 @@ def main():
         print(f"✅ Servidor rodando na porta {PORT}")
         print("🔗 Pronto para conectar WhatsApp REAL!")
         print(f"🌐 Acesse: http://localhost:{PORT}")
+        print("🎉 Sistema profissional pronto para uso!")
         server.serve_forever()
     except KeyboardInterrupt:
-        print("\n👋 WhatsFlow Real finalizado!")
+        print("\n👋 WhatsFlow Professional finalizado!")
         baileys_manager.stop_baileys()
 
 if __name__ == "__main__":
