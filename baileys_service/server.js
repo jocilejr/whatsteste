@@ -428,18 +428,41 @@ app.post('/send/:instanceId', async (req, res) => {
     
     try {
         const jid = to.includes('@') ? to : `${to}@s.whatsapp.net`;
-        
+
         if (type === 'text') {
             await instance.sock.sendMessage(jid, { text: message });
-        } else if (type === 'image' && req.body.imageData) {
-            // Handle image sending (base64)
-            const buffer = Buffer.from(req.body.imageData, 'base64');
-            await instance.sock.sendMessage(jid, { 
-                image: buffer,
-                caption: message || ''
-            });
+        } else {
+            const mediaMap = {
+                image: { field: 'image', key: 'imageData' },
+                audio: { field: 'audio', key: 'audioData' },
+                video: { field: 'video', key: 'videoData' },
+                document: { field: 'document', key: 'documentData' }
+            };
+
+            const mediaInfo = mediaMap[type];
+
+            if (!mediaInfo) {
+                return res.status(400).json({ error: `Tipo de mídia '${type}' não suportado`, instanceId: instanceId });
+            }
+
+            const base64Data = req.body[mediaInfo.key];
+            if (!base64Data) {
+                return res.status(400).json({ error: `Dados base64 ausentes para o tipo '${type}'`, instanceId: instanceId });
+            }
+
+            const buffer = Buffer.from(base64Data, 'base64');
+            const msgOptions = { [mediaInfo.field]: buffer, caption: message || '' };
+
+            if (type === 'document') {
+                if (req.body.fileName) msgOptions.fileName = req.body.fileName;
+                if (req.body.mimeType || req.body.mimetype) {
+                    msgOptions.mimetype = req.body.mimeType || req.body.mimetype;
+                }
+            }
+
+            await instance.sock.sendMessage(jid, msgOptions);
         }
-        
+
         console.log(`📤 Mensagem enviada da instância ${instanceId} para ${to}`);
         res.json({ success: true, instanceId: instanceId });
     } catch (error) {
