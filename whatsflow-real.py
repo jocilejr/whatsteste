@@ -1841,6 +1841,9 @@ HTML_APP = r'''<!DOCTYPE html>
             <button class="nav-btn" onclick="showSection('flows')">
                 <span>🎯</span> Fluxos
             </button>
+            <button class="nav-btn" onclick="showSection('campaigns')">
+                <span>📢</span> Campanhas
+            </button>
         </nav>
         
         <div id="dashboard" class="section active">
@@ -2044,8 +2047,14 @@ HTML_APP = r'''<!DOCTYPE html>
                 </div>
             </div>
         </div>
+        <div id="campaigns" class="section">
+            <div class="card">
+                <h2>📢 Campanhas</h2>
+                <p>Utilize a interface React para gerenciar campanhas.</p>
+            </div>
+        </div>
     </div>
-    
+
     <div id="createModal" class="modal">
         <div class="modal-content">
             <h3>➕ Nova Instância WhatsApp</h3>
