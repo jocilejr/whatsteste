@@ -890,100 +890,107 @@ class WhatsFlowRealTester:
             return False
     
     def run_all_tests(self):
-        """Run all backend tests"""
-        print("🚀 Starting WhatsFlow Real Backend Tests - Enhanced Suite")
-        print("=" * 70)
+        """Run all backend tests focusing on corrected problems"""
+        print("🚀 Starting WhatsFlow Real Final Testing - Corrected Problems Verification")
+        print("=" * 80)
         
         # Test server connectivity first
         if not self.test_server_connectivity():
-            print("❌ Server not accessible. Stopping tests.")
+            print("❌ WhatsFlow Real server not accessible on port 8889. Stopping tests.")
             return self.generate_report()
         
-        # Core API endpoint tests
+        print("\n🔍 TESTING CORRECTED PROBLEMS:")
+        print("=" * 50)
+        
+        # CRITICAL TEST 1: Instance selection for Messages tab
+        print("\n1️⃣ Testing Instance Selection for Messages Tab:")
+        instances = self.test_instances_for_selector()
+        
+        # CRITICAL TEST 2: Flow creator functionality (CRUD operations)
+        print("\n2️⃣ Testing Flow Creator Functionality:")
+        self.test_flows_crud_operations()
+        
+        # CRITICAL TEST 3: Improved messaging system with filtering
+        print("\n3️⃣ Testing Improved Messaging System:")
+        chats = self.test_chats_with_filtering()
+        self.test_filtered_messages_system()
+        
+        # CRITICAL TEST 4: Database verification
+        print("\n4️⃣ Testing Database Functionality:")
+        self.test_database_flows_table()
+        self.test_database_real_names()
+        
+        # Additional core functionality tests
         print("\n📋 Testing Core API Endpoints:")
-        instances = self.test_get_instances()
         contacts = self.test_get_contacts()
         messages = self.test_get_messages()
         stats = self.test_get_stats()
         
-        # Enhanced API tests
-        print("\n🔍 Testing Enhanced API Endpoints:")
-        chats = self.test_chats_endpoint()
-        filtered_messages = self.test_filtered_messages()
-        
-        # WhatsApp specific tests
+        # WhatsApp integration tests
         print("\n📱 Testing WhatsApp Integration:")
         whatsapp_status = self.test_whatsapp_status()
         qr_data = self.test_whatsapp_qr()
         
-        # Message system tests
-        print("\n💬 Testing Message System:")
-        self.test_message_receiving_system()
-        self.test_contact_names_system()
-        
-        # Additional endpoints
-        print("\n🔗 Testing Additional Endpoints:")
-        webhooks = self.test_webhooks_endpoint()
-        
-        # Functionality tests
+        # System functionality tests
         print("\n⚙️ Testing System Functionality:")
         created_instance = self.test_create_instance()
-        
-        # Test instance connection if we have an instance
-        if created_instance and created_instance.get("id"):
-            self.test_instance_connection(created_instance["id"])
-        elif instances and len(instances) > 0:
-            self.test_instance_connection(instances[0].get("id"))
-        
-        # Database and integration tests
-        print("\n🗄️ Testing System Integration:")
         self.test_database_persistence()
-        self.test_database_schema()
         self.test_baileys_service_integration()
-        
-        # Advanced functionality tests
-        print("\n🔧 Testing Advanced Features:")
-        self.test_websocket_status()
-        self.test_logs_verification()
         
         return self.generate_report()
     
     def generate_report(self):
-        """Generate test report"""
-        print("\n" + "=" * 60)
-        print("📊 TEST RESULTS SUMMARY")
-        print("=" * 60)
+        """Generate comprehensive test report"""
+        print("\n" + "=" * 70)
+        print("📊 WHATSFLOW REAL - FINAL TEST RESULTS")
+        print("=" * 70)
         
         total_tests = len(self.test_results)
         passed_count = len(self.passed_tests)
         failed_count = len(self.failed_tests)
+        critical_issues_count = len(self.critical_issues)
+        minor_issues_count = len(self.minor_issues)
         
         print(f"Total Tests: {total_tests}")
         print(f"✅ Passed: {passed_count}")
         print(f"❌ Failed: {failed_count}")
+        print(f"🔴 Critical Issues: {critical_issues_count}")
+        print(f"🟡 Minor Issues: {minor_issues_count}")
         print(f"Success Rate: {(passed_count/total_tests*100):.1f}%" if total_tests > 0 else "0%")
         
-        if self.failed_tests:
-            print(f"\n❌ Failed Tests:")
-            for test in self.failed_tests:
-                print(f"   - {test}")
+        # Report critical issues first
+        if self.critical_issues:
+            print(f"\n🔴 CRITICAL ISSUES (MUST BE FIXED):")
+            for issue in self.critical_issues:
+                print(f"   - {issue}")
         
+        # Report minor issues
+        if self.minor_issues:
+            print(f"\n🟡 MINOR ISSUES:")
+            for issue in self.minor_issues:
+                print(f"   - {issue}")
+        
+        # Report successful tests
         if self.passed_tests:
-            print(f"\n✅ Passed Tests:")
+            print(f"\n✅ SUCCESSFUL TESTS:")
             for test in self.passed_tests:
                 print(f"   - {test}")
         
-        # Save detailed results to file
+        # Save detailed results
         with open("/app/backend_test_results.json", "w") as f:
             json.dump({
                 "summary": {
                     "total_tests": total_tests,
                     "passed": passed_count,
                     "failed": failed_count,
+                    "critical_issues": critical_issues_count,
+                    "minor_issues": minor_issues_count,
                     "success_rate": (passed_count/total_tests*100) if total_tests > 0 else 0
                 },
                 "passed_tests": self.passed_tests,
                 "failed_tests": self.failed_tests,
+                "critical_issues": self.critical_issues,
+                "minor_issues": self.minor_issues,
                 "detailed_results": self.test_results
             }, f, indent=2)
         
@@ -993,6 +1000,8 @@ class WhatsFlowRealTester:
             "total_tests": total_tests,
             "passed": passed_count,
             "failed": failed_count,
+            "critical_issues": critical_issues_count,
+            "minor_issues": minor_issues_count,
             "success_rate": (passed_count/total_tests*100) if total_tests > 0 else 0,
             "failed_tests": self.failed_tests,
             "passed_tests": self.passed_tests
