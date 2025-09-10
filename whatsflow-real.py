@@ -2478,23 +2478,47 @@ HTML_APP = '''<!DOCTYPE html>
                 return;
             }
 
-            container.innerHTML = conversations.map(chat => `
-                <div class="conversation-item" onclick="openChat('${chat.contact_phone}', '${chat.contact_name}', '${chat.instance_id}')">
-                    <div class="conversation-avatar">
-                        ${getContactInitial(chat.contact_name, chat.contact_phone)}
-                    </div>
-                    <div class="conversation-info">
-                        <div class="conversation-name">${getContactDisplayName(chat.contact_name, chat.contact_phone)}</div>
-                        <div class="conversation-last-message">${chat.last_message || 'Nova conversa'}</div>
-                    </div>
-                    <div class="conversation-meta">
-                        <div class="conversation-time">
-                            ${chat.last_message_time ? new Date(chat.last_message_time).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : ''}
+            container.innerHTML = conversations.map(chat => {
+                // Generate user avatar/photo
+                const userInitial = getContactInitial(chat.contact_name, chat.contact_phone);
+                const avatarColor = getAvatarColor(chat.contact_phone);
+                
+                return `
+                    <div class="conversation-item" onclick="openChat('${chat.contact_phone}', '${chat.contact_name}', '${chat.instance_id}')">
+                        <div class="conversation-avatar" style="background-color: ${avatarColor}">
+                            ${userInitial}
                         </div>
-                        ${chat.unread_count > 0 ? `<div class="unread-badge">${chat.unread_count}</div>` : ''}
+                        <div class="conversation-info">
+                            <div class="conversation-name">${getContactDisplayName(chat.contact_name, chat.contact_phone)}</div>
+                            <div class="conversation-last-message">${chat.last_message || 'Nova conversa'}</div>
+                        </div>
+                        <div class="conversation-meta">
+                            <div class="conversation-time">
+                                ${chat.last_message_time ? new Date(chat.last_message_time).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : ''}
+                            </div>
+                            ${chat.unread_count > 0 ? `<div class="unread-badge">${chat.unread_count}</div>` : ''}
+                        </div>
                     </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
+        }
+        
+        function getAvatarColor(phone) {
+            // Generate consistent color based on phone number
+            const colors = [
+                '#4285f4', '#34a853', '#fbbc05', '#ea4335',
+                '#9c27b0', '#673ab7', '#3f51b5', '#2196f3',
+                '#00bcd4', '#009688', '#4caf50', '#8bc34a',
+                '#cddc39', '#ffeb3b', '#ffc107', '#ff9800',
+                '#ff5722', '#795548', '#607d8b', '#e91e63'
+            ];
+            
+            let hash = 0;
+            for (let i = 0; i < phone.length; i++) {
+                hash = phone.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            
+            return colors[Math.abs(hash) % colors.length];
         }
         
         function getContactDisplayName(name, phone) {
