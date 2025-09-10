@@ -1426,7 +1426,60 @@ HTML_APP = '''<!DOCTYPE html>
             </div>
         </div>
         
-        <!-- Flows Section - Nova funcionalidade -->
+        <!-- Groups Section - Nova funcionalidade -->
+        <div id="groups" class="section">
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <h2>Gerenciar Grupos WhatsApp</h2>
+                    <div>
+                        <select id="groupInstanceSelect" onchange="loadGroupsFromInstance()" style="margin-right: 10px;">
+                            <option value="">Selecione uma instância</option>
+                        </select>
+                        <button class="btn btn-primary" onclick="loadGroupsFromInstance()">🔄 Atualizar Grupos</button>
+                    </div>
+                </div>
+                
+                <div class="groups-container">
+                    <div class="groups-header">
+                        <input type="text" class="search-box" placeholder="🔍 Buscar grupos..." 
+                               id="searchGroups" onkeyup="searchGroups()">
+                    </div>
+                    
+                    <div id="groups-container">
+                        <div class="empty-state">
+                            <div class="empty-icon">👥</div>
+                            <div class="empty-title">Nenhum grupo encontrado</div>
+                            <p>Selecione uma instância conectada para carregar os grupos do WhatsApp</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Schedule Messages Panel -->  
+                <div class="schedule-panel" style="margin-top: 2rem;">
+                    <h3>📅 Agendamento de Mensagens</h3>
+                    <div class="schedule-form">
+                        <div class="form-row">
+                            <select id="scheduleGroupSelect" style="flex: 1; margin-right: 10px;">
+                                <option value="">Selecione um grupo</option>
+                            </select>
+                            <input type="datetime-local" id="scheduleDateTime" style="flex: 1; margin-right: 10px;">
+                            <button class="btn btn-success" onclick="scheduleMessage()">📤 Agendar</button>
+                        </div>
+                        <textarea id="scheduleMessage" placeholder="Digite a mensagem para agendar..." 
+                                 style="width: 100%; margin-top: 10px; height: 80px;"></textarea>
+                    </div>
+                    
+                    <div class="scheduled-messages" id="scheduledMessages">
+                        <h4>Mensagens Agendadas</h4>
+                        <div class="empty-state">
+                            <p>Nenhuma mensagem agendada</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Flows Section - Funcionalidade existente -->
         <div id="flows" class="section">
             <div class="card">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
