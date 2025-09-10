@@ -1092,16 +1092,22 @@ HTML_APP = '''<!DOCTYPE html>
                     `;
                 } else {
                     chatList.innerHTML = chats.map(chat => `
-                        <div class="chat-item" onclick="openChat('${chat.contact_phone}', '${chat.contact_name}', '${chat.instance_id}')"
-                             style="padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; hover: background: #f5f5f5;">
-                            <div style="display: flex; align-items: center; gap: 10px;">
-                                <div class="contact-avatar" style="width: 40px; height: 40px; border-radius: 50%; background: #007bff; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold;">
-                                    ${chat.contact_name.charAt(0).toUpperCase()}
-                                </div>
-                                <div style="flex: 1;">
-                                    <div style="font-weight: bold; margin-bottom: 2px;">${chat.contact_name}</div>
-                                    <div style="color: #666; font-size: 0.9em; truncate: ellipsis;">${chat.last_message || 'Nova conversa'}</div>
-                                </div>
+                        <div class="chat-item fade-in" onclick="openChat('${chat.contact_phone}', '${chat.contact_name}', '${chat.instance_id}')">
+                            <div class="contact-avatar">
+                                ${chat.avatar_url ? 
+                                    `<img src="${chat.avatar_url}" alt="${chat.contact_name}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                     <div style="display: none; width: 100%; height: 100%; align-items: center; justify-content: center; font-weight: 700;">${chat.contact_name.charAt(0).toUpperCase()}</div>` :
+                                    `<span>${chat.contact_name.charAt(0).toUpperCase()}</span>`
+                                }
+                            </div>
+                            <div class="chat-info">
+                                <div class="chat-name">${chat.contact_name}</div>
+                                <div class="chat-message">${chat.last_message || 'Nova conversa'}</div>
+                            </div>
+                            <div class="chat-time">
+                                ${chat.last_message_time ? new Date(chat.last_message_time).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'}) : ''}
+                            </div>
+                        </div>
                                 ${chat.unread_count > 0 ? `<div class="unread-badge" style="background: #007bff; color: white; border-radius: 50%; padding: 2px 6px; font-size: 0.8em;">${chat.unread_count}</div>` : ''}
                             </div>
                         </div>
