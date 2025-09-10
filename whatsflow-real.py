@@ -91,7 +91,7 @@ HTML_APP = '''<!DOCTYPE html>
                 background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
         .modal.show { display: flex; }
         .modal-content { background: white; padding: 30px; border-radius: 16px; 
-                        width: 90%; max-width: 500px; }
+                        width: 90%; max-width: 500px; position: relative; z-index: 1001; }
         
         .form-input { width: 100%; padding: 12px; border: 2px solid #d1d5db; 
                      border-radius: 6px; font-size: 16px; }
