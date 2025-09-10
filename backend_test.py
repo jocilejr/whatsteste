@@ -1007,6 +1007,205 @@ class WhatsFlowRealTester:
             "passed_tests": self.passed_tests
         }
 
+    # SUPPORTING TEST METHODS
+    
+    def test_get_contacts(self):
+        """Test GET /api/contacts - List imported contacts"""
+        try:
+            response = self.session.get(f"{API_BASE}/contacts", timeout=10)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if isinstance(data, list):
+                    self.log_test("GET /api/contacts", "PASS", f"Retrieved {len(data)} contacts", False)
+                    return data
+                else:
+                    self.log_test("GET /api/contacts", "FAIL", "Response is not a list", False)
+                    return []
+            else:
+                self.log_test("GET /api/contacts", "FAIL", f"HTTP {response.status_code}: {response.text}")
+                return []
+        except Exception as e:
+            self.log_test("GET /api/contacts", "FAIL", f"Exception: {str(e)}")
+            return []
+    
+    def test_get_messages(self):
+        """Test GET /api/messages - List received messages"""
+        try:
+            response = self.session.get(f"{API_BASE}/messages", timeout=10)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if isinstance(data, list):
+                    self.log_test("GET /api/messages", "PASS", f"Retrieved {len(data)} messages", False)
+                    return data
+                else:
+                    self.log_test("GET /api/messages", "FAIL", "Response is not a list", False)
+                    return []
+            else:
+                self.log_test("GET /api/messages", "FAIL", f"HTTP {response.status_code}: {response.text}")
+                return []
+        except Exception as e:
+            self.log_test("GET /api/messages", "FAIL", f"Exception: {str(e)}")
+            return []
+    
+    def test_get_stats(self):
+        """Test GET /api/stats - System statistics"""
+        try:
+            response = self.session.get(f"{API_BASE}/stats", timeout=10)
+            
+            if response.status_code == 200:
+                data = response.json()
+                expected_fields = ["contacts_count", "conversations_count", "messages_count"]
+                
+                if all(field in data for field in expected_fields):
+                    stats_summary = f"Contacts: {data['contacts_count']}, Messages: {data['messages_count']}"
+                    self.log_test("GET /api/stats", "PASS", f"Statistics retrieved - {stats_summary}", False)
+                    return data
+                else:
+                    missing_fields = [f for f in expected_fields if f not in data]
+                    self.log_test("GET /api/stats", "FAIL", f"Missing fields: {missing_fields}", False)
+                    return None
+            else:
+                self.log_test("GET /api/stats", "FAIL", f"HTTP {response.status_code}: {response.text}")
+                return None
+        except Exception as e:
+            self.log_test("GET /api/stats", "FAIL", f"Exception: {str(e)}")
+            return None
+    
+    def test_whatsapp_status(self):
+        """Test GET /api/whatsapp/status - WhatsApp connection status"""
+        try:
+            response = self.session.get(f"{API_BASE}/whatsapp/status", timeout=10)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if "connected" in data:
+                    status = "Connected" if data["connected"] else "Disconnected"
+                    connecting = data.get("connecting", False)
+                    if connecting:
+                        status = "Connecting"
+                    
+                    self.log_test("GET /api/whatsapp/status", "PASS", f"WhatsApp status: {status}", False)
+                    return data
+                else:
+                    self.log_test("GET /api/whatsapp/status", "FAIL", "Missing 'connected' field in response", False)
+                    return None
+            else:
+                self.log_test("GET /api/whatsapp/status", "FAIL", f"HTTP {response.status_code}: {response.text}", False)
+                return None
+        except Exception as e:
+            self.log_test("GET /api/whatsapp/status", "FAIL", f"Exception: {str(e)}", False)
+            return None
+    
+    def test_whatsapp_qr(self):
+        """Test GET /api/whatsapp/qr - QR code for WhatsApp connection"""
+        try:
+            response = self.session.get(f"{API_BASE}/whatsapp/qr", timeout=10)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if "qr" in data and "connected" in data:
+                    qr_status = "Available" if data["qr"] else "Not available"
+                    self.log_test("GET /api/whatsapp/qr", "PASS", f"QR code: {qr_status}", False)
+                    return data
+                else:
+                    self.log_test("GET /api/whatsapp/qr", "FAIL", "Missing required fields in response", False)
+                    return None
+            else:
+                self.log_test("GET /api/whatsapp/qr", "FAIL", f"HTTP {response.status_code}: {response.text}", False)
+                return None
+        except Exception as e:
+            self.log_test("GET /api/whatsapp/qr", "FAIL", f"Exception: {str(e)}", False)
+            return None
+    
+    def test_create_instance(self):
+        """Test POST /api/instances - Create new WhatsApp instance"""
+        try:
+            test_instance_name = f"Test Instance {uuid.uuid4().hex[:8]}"
+            payload = {"name": test_instance_name}
+            
+            response = self.session.post(
+                f"{API_BASE}/instances",
+                json=payload,
+                headers={"Content-Type": "application/json"},
+                timeout=10
+            )
+            
+            if response.status_code in [200, 201]:
+                data = response.json()
+                if "id" in data and "name" in data:
+                    self.log_test("POST /api/instances", "PASS", f"Created instance: {data['name']}", False)
+                    return data
+                else:
+                    self.log_test("POST /api/instances", "FAIL", "Missing required fields in response", False)
+                    return None
+            else:
+                self.log_test("POST /api/instances", "FAIL", f"HTTP {response.status_code}: {response.text}", False)
+                return None
+        except Exception as e:
+            self.log_test("POST /api/instances", "FAIL", f"Exception: {str(e)}", False)
+            return None
+    
+    def test_database_persistence(self):
+        """Test if SQLite database is working properly"""
+        try:
+            # Test by creating an instance and then retrieving it
+            created_instance = self.test_create_instance()
+            if not created_instance:
+                self.log_test("Database Persistence", "FAIL", "Could not create test instance", False)
+                return False
+            
+            # Wait a moment and retrieve instances
+            time.sleep(1)
+            instances_response = self.session.get(f"{API_BASE}/instances", timeout=10)
+            
+            if instances_response.status_code != 200:
+                self.log_test("Database Persistence", "FAIL", "Could not retrieve instances", False)
+                return False
+            
+            instances = instances_response.json()
+            
+            # Check if our created instance exists
+            found_instance = None
+            for instance in instances:
+                if instance.get("id") == created_instance.get("id"):
+                    found_instance = instance
+                    break
+            
+            if found_instance:
+                self.log_test("Database Persistence", "PASS", "SQLite database working correctly", False)
+                return True
+            else:
+                self.log_test("Database Persistence", "FAIL", "Created instance not found in database", False)
+                return False
+                
+        except Exception as e:
+            self.log_test("Database Persistence", "FAIL", f"Exception: {str(e)}", False)
+            return False
+    
+    def test_baileys_service_integration(self):
+        """Test integration with Baileys WhatsApp service"""
+        try:
+            # Test if Baileys service is running on port 3002
+            baileys_url = "http://localhost:3002"
+            
+            try:
+                response = self.session.get(f"{baileys_url}/status", timeout=5)
+                if response.status_code == 200:
+                    self.log_test("Baileys Service Integration", "PASS", "Baileys service is running and accessible", False)
+                    return True
+                else:
+                    self.log_test("Baileys Service Integration", "FAIL", f"Baileys service returned status {response.status_code}", False)
+                    return False
+            except requests.exceptions.RequestException:
+                self.log_test("Baileys Service Integration", "FAIL", "Baileys service not accessible on port 3002", False)
+                return False
+                
+        except Exception as e:
+            self.log_test("Baileys Service Integration", "FAIL", f"Exception: {str(e)}", False)
+            return False
+
 def main():
     """Main test execution"""
     tester = WhatsFlowRealTester()
