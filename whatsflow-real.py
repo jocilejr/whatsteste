@@ -3571,30 +3571,27 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             message_id = data.get('messageId', str(uuid.uuid4()))
             message_type = data.get('messageType', 'text')
             
+            # Extract real contact name from WhatsApp data
+            contact_name = data.get('pushName', data.get('contactName', ''))
+            
             # Clean phone number
             phone = from_jid.replace('@s.whatsapp.net', '').replace('@c.us', '')
             
-            # Save message and create contact if needed
+            # If no name provided, use formatted phone number
+            if not contact_name or contact_name == phone:
+                formatted_phone = self.format_phone_number(phone)
+                contact_name = formatted_phone
+            
+            # Save message and create/update contact
             conn = sqlite3.connect(DB_FILE)
             cursor = conn.cursor()
             
-            # Check if contact exists
-            cursor.execute("SELECT id, name FROM contacts WHERE phone = ?", (phone,))
-            contact = cursor.fetchone()
-            
-            if not contact:
-                # Create new contact
-                contact_id = str(uuid.uuid4())
-                contact_name = f"Contato {phone[-4:]}"  # Use last 4 digits as name
-                
-                cursor.execute("""
-                    INSERT INTO contacts (id, name, phone, instance_id, created_at)
-                    VALUES (?, ?, ?, ?, ?)
-                """, (contact_id, contact_name, phone, instance_id, timestamp))
-                
-                print(f"📞 Novo contato criado: {contact_name} ({phone}) - Instância: {instance_id}")
-            else:
-                contact_id, contact_name = contact
+            # Create or update contact with real name
+            contact_id = f"{phone}_{instance_id}"
+            cursor.execute("""
+                INSERT OR REPLACE INTO contacts (id, name, phone, instance_id, created_at)
+                VALUES (?, ?, ?, ?, ?)
+            """, (contact_id, contact_name, phone, instance_id, timestamp))
             
             # Save message
             msg_id = str(uuid.uuid4())
@@ -3603,15 +3600,54 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (msg_id, contact_name, phone, message, 'incoming', instance_id, message_type, message_id, timestamp))
             
+            # Create or update chat conversation
+            chat_id = f"{phone}_{instance_id}"
+            cursor.execute("""
+                INSERT OR REPLACE INTO chats (id, contact_phone, contact_name, instance_id, last_message, last_message_time, unread_count, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, COALESCE((SELECT unread_count FROM chats WHERE id = ?), 0) + 1, ?)
+            """, (chat_id, phone, contact_name, instance_id, message[:100], timestamp, chat_id, timestamp))
+            
             conn.commit()
             conn.close()
             
-            print(f"📥 Mensagem recebida na instância {instance_id} de {contact_name}: {message[:50]}...")
+            print(f"📥 Mensagem recebida na instância {instance_id}")
+            print(f"👤 Contato: {contact_name} ({phone})")
+            print(f"💬 Mensagem: {message[:50]}...")
+            
+            # Broadcast via WebSocket if available
+            if WEBSOCKETS_AVAILABLE and websocket_clients:
+                asyncio.create_task(broadcast_message({
+                    'type': 'new_message',
+                    'message': {
+                        'id': msg_id,
+                        'contact_name': contact_name,
+                        'phone': phone,
+                        'message': message,
+                        'direction': 'incoming',
+                        'instance_id': instance_id,
+                        'created_at': timestamp
+                    }
+                }))
+            
             self.send_json_response({"success": True, "instanceId": instance_id})
             
         except Exception as e:
             print(f"❌ Erro ao processar mensagem: {e}")
             self.send_json_response({"error": str(e)}, 500)
+    
+    def format_phone_number(self, phone):
+        """Format phone number for Brazilian display"""
+        cleaned = phone.replace('+', '').replace('-', '').replace(' ', '')
+        
+        if len(cleaned) == 13 and cleaned.startswith('55'):
+            # Brazilian format: +55 (11) 99999-9999
+            return f"+55 ({cleaned[2:4]}) {cleaned[4:9]}-{cleaned[9:]}"
+        elif len(cleaned) == 11:
+            # Local format: (11) 99999-9999
+            return f"({cleaned[0:2]}) {cleaned[2:7]}-{cleaned[7:]}"
+        else:
+            # Return as is if format not recognized
+            return phone
     
     def handle_get_contacts(self):
         try:
