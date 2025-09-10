@@ -443,6 +443,37 @@ app.post('/send/:instanceId', async (req, res) => {
     }
 });
 
+// Groups endpoint - Get groups for instance
+app.get('/groups/:instanceId', (req, res) => {
+    const { instanceId } = req.params;
+    const instance = instances.get(instanceId);
+    
+    if (!instance || !instance.connected || !instance.sock) {
+        return res.json({ 
+            success: false, 
+            error: 'Instância não encontrada', 
+            instanceId: instanceId 
+        });
+    }
+    
+    try {
+        // For now, return empty groups since we need a connected instance to get real groups
+        res.json({
+            success: true,
+            groups: [],
+            instanceId: instanceId,
+            message: 'Nenhum grupo encontrado ou instância não conectada'
+        });
+    } catch (error) {
+        console.error(`❌ Erro ao buscar grupos da instância ${instanceId}:`, error);
+        res.json({ 
+            success: false, 
+            error: error.message, 
+            instanceId: instanceId 
+        });
+    }
+});
+
 // Health check endpoint
 app.get('/health', (req, res) => {
     const connectedInstances = Array.from(instances.values()).filter(i => i.connected).length;
