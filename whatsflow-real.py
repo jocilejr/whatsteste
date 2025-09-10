@@ -386,12 +386,13 @@ HTML_APP = '''<!DOCTYPE html>
         }
         
         .chat-header {
-            background: #f0f2f5;
-            padding: 16px 20px;
-            border-bottom: 1px solid #d1d7db;
+            background: linear-gradient(135deg, #ffffff 0%, #f8fffe 100%);
+            padding: 20px 24px;
+            border-bottom: 1px solid #e3f2f0;
             display: none;
             position: relative;
             z-index: 1;
+            box-shadow: 0 2px 12px rgba(18, 140, 126, 0.08);
         }
         
         .chat-header.active {
