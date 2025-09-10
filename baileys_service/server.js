@@ -283,7 +283,6 @@ async function connectInstance(instanceId) {
                                     messageType: message.message.conversation ? 'text' : 'media'
                                 })
                             });
-                            });
                             
                             if (response.ok) {
                                 break; // Success, exit retry loop
