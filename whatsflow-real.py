@@ -1176,15 +1176,39 @@ HTML_APP = r'''<!DOCTYPE html>
             border-top: 1px solid var(--border);
             padding-top: 1.5rem;
         }
-        
-        .schedule-form .form-row {
+
+        .preview-controls {
             display: flex;
+            align-items: center;
             gap: 10px;
             margin-bottom: 1rem;
         }
-        
+
         .scheduled-messages {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
             margin-top: 1rem;
+        }
+
+        .scheduled-card {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--bg-secondary);
+            padding: 12px 16px;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+        }
+
+        .scheduled-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .scheduled-info span {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
         }
         
         .empty-chat-icon {
@@ -1974,94 +1998,80 @@ HTML_APP = r'''<!DOCTYPE html>
             </div>
         </div>
         
-        <!-- Groups Section - Nova funcionalidade -->
+        <!-- Schedule Section -->
         <div id="groups" class="section">
             <div class="card">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                    <h2>Gerenciar Grupos WhatsApp</h2>
-                    <div>
-                        <select id="groupInstanceSelect" onchange="loadGroupsFromInstance()" style="margin-right: 10px;">
-                            <option value="">Selecione uma instância</option>
-                        </select>
-                        <button class="btn btn-primary" onclick="loadGroupsFromInstance()">🔄 Atualizar Grupos</button>
+                <div class="schedule-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <h2>📅 Agendamentos de Mensagens</h2>
+                    <button class="btn btn-primary" onclick="openScheduleModal()">+ Agendar mensagem</button>
+                </div>
+                <div class="preview-controls">
+                    <label for="previewWeekday">Dia da semana:</label>
+                    <select id="previewWeekday" onchange="loadScheduledMessages()">
+                        <option value="0">Domingo</option>
+                        <option value="1">Segunda</option>
+                        <option value="2">Terça</option>
+                        <option value="3">Quarta</option>
+                        <option value="4">Quinta</option>
+                        <option value="5">Sexta</option>
+                        <option value="6">Sábado</option>
+                    </select>
+                </div>
+                <div class="scheduled-messages" id="scheduledMessages">
+                    <div class="empty-state">
+                        <p>Nenhuma mensagem agendada</p>
                     </div>
                 </div>
-                
-                <div class="groups-container">
-                    <div class="groups-header">
-                        <input type="text" class="search-box" placeholder="🔍 Buscar grupos..." 
-                               id="searchGroups" onkeyup="searchGroups()">
-                    </div>
-                    
-                    <div id="groups-container">
-                        <div class="empty-state">
-                            <div class="empty-icon">👥</div>
-                            <div class="empty-title">Nenhum grupo encontrado</div>
-                            <p>Selecione uma instância conectada para carregar os grupos do WhatsApp</p>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Schedule Messages Panel -->
-                <div class="schedule-panel" style="margin-top: 2rem;">
-                    <h3>📅 Agendamento de Mensagens</h3>
-                    <button class="btn btn-primary" onclick="openScheduleModal()">+ Novo Agendamento</button>
-                    <div class="scheduled-messages" id="scheduledMessages" style="margin-top:1rem;">
-                        <div class="empty-state">
-                            <p>Nenhuma mensagem agendada</p>
-                        </div>
-                    </div>
-                </div>
+            </div>
+        </div>
 
-                <!-- Schedule Modal -->
-                <div id="scheduleModal" class="modal" style="display:none;">
-                    <div class="modal-content">
-                        <span class="close" onclick="closeScheduleModal()">&times;</span>
-                        <h3>Novo Agendamento</h3>
-                        <div class="form-group">
-                            <label>Grupo</label>
-                            <select id="scheduleGroupSelect">
-                                <option value="">Selecione um grupo</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Recorrência</label>
-                            <select id="recurrenceSelect" onchange="toggleRecurrenceOptions()">
-                                <option value="once">Única</option>
-                                <option value="daily">Diária</option>
-                                <option value="weekly">Semanal</option>
-                            </select>
-                            <select id="weekdaySelect" style="display:none; margin-top:10px;">
-                                <option value="0">Domingo</option>
-                                <option value="1">Segunda</option>
-                                <option value="2">Terça</option>
-                                <option value="3">Quarta</option>
-                                <option value="4">Quinta</option>
-                                <option value="5">Sexta</option>
-                                <option value="6">Sábado</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Horário da execução</label>
-                            <input type="time" id="scheduleTime">
-                        </div>
-                        <div class="form-group">
-                            <label>Tipo de mensagem</label>
-                            <select id="messageType" onchange="toggleMediaInput()">
-                                <option value="text">Texto</option>
-                                <option value="image">Imagem</option>
-                                <option value="video">Vídeo</option>
-                                <option value="audio">Áudio</option>
-                                <option value="document">Documento</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <textarea id="scheduleText" placeholder="Mensagem..." style="width:100%;height:80px;"></textarea>
-                            <input type="file" id="scheduleMedia" style="display:none;margin-top:10px;">
-                        </div>
-                        <button class="btn btn-success" onclick="submitSchedule()">📤 Agendar</button>
-                    </div>
+        <!-- Schedule Modal -->
+        <div id="scheduleModal" class="modal" style="display:none;">
+            <div class="modal-content">
+                <span class="close" onclick="closeScheduleModal()">&times;</span>
+                <h3>Agendar Mensagem</h3>
+                <div class="form-group">
+                    <label>Instância</label>
+                    <select id="scheduleInstanceSelect" onchange="loadGroupsForSchedule()">
+                        <option value="">Selecione uma instância</option>
+                    </select>
                 </div>
+                <div class="form-group">
+                    <label>Grupo</label>
+                    <select id="scheduleGroupSelect">
+                        <option value="">Selecione um grupo</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Dia da semana</label>
+                    <select id="weekdaySelect">
+                        <option value="0">Domingo</option>
+                        <option value="1">Segunda</option>
+                        <option value="2">Terça</option>
+                        <option value="3">Quarta</option>
+                        <option value="4">Quinta</option>
+                        <option value="5">Sexta</option>
+                        <option value="6">Sábado</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Horário</label>
+                    <input type="time" id="scheduleTime">
+                </div>
+                <div class="form-group">
+                    <label>Tipo de mensagem</label>
+                    <select id="messageType" onchange="toggleMediaInput()">
+                        <option value="text">Texto</option>
+                        <option value="image">Imagem</option>
+                        <option value="audio">Áudio</option>
+                        <option value="video">Vídeo</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <textarea id="scheduleText" placeholder="Mensagem..." style="width:100%;height:80px;"></textarea>
+                    <input type="file" id="scheduleMedia" style="display:none;margin-top:10px;" accept="image/*,audio/*,video/*">
+                </div>
+                <button class="btn btn-success" onclick="submitSchedule()">📤 Agendar</button>
             </div>
         </div>
         
@@ -2202,7 +2212,7 @@ HTML_APP = r'''<!DOCTYPE html>
                     loadInstancesForSelect();
                 }
             } else if (name === 'groups') {
-                loadInstancesForGroups();
+                loadScheduledMessages();
             } else if (name === 'flows') {
                 loadFlows();
             }
@@ -3425,15 +3435,13 @@ HTML_APP = r'''<!DOCTYPE html>
             if (statusPollingInterval) clearInterval(statusPollingInterval);
         });
         
-        // Groups Management Functions
-        async function loadInstancesForGroups() {
+        // Schedule Management Functions
+        async function loadInstancesForSchedule() {
             try {
                 const response = await fetch('/api/instances');
                 const instances = await response.json();
-                
-                const select = document.getElementById('groupInstanceSelect');
+                const select = document.getElementById('scheduleInstanceSelect');
                 select.innerHTML = '<option value="">Selecione uma instância</option>';
-                
                 instances.forEach(instance => {
                     const option = document.createElement('option');
                     option.value = instance.id;
@@ -3441,207 +3449,37 @@ HTML_APP = r'''<!DOCTYPE html>
                     option.textContent = `${instance.name} ${status}`;
                     select.appendChild(option);
                 });
-                
-                console.log('✅ Instâncias para grupos carregadas');
-                
             } catch (error) {
-                console.error('❌ Erro ao carregar instâncias para grupos:', error);
+                console.error('❌ Erro ao carregar instâncias:', error);
             }
         }
-        
-        async function loadGroupsFromInstance() {
-            const select = document.getElementById('groupInstanceSelect');
-            const instanceId = select.value;
-            
+
+        async function loadGroupsForSchedule() {
+            const instanceId = document.getElementById('scheduleInstanceSelect').value;
+            const select = document.getElementById('scheduleGroupSelect');
+            select.innerHTML = '<option value="">Carregando...</option>';
             if (!instanceId) {
-                document.getElementById('groups-container').innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-icon">👥</div>
-                        <div class="empty-title">Nenhum grupo encontrado</div>
-                        <p>Selecione uma instância conectada para carregar os grupos do WhatsApp</p>
-                    </div>
-                `;
+                select.innerHTML = '<option value="">Selecione uma instância</option>';
                 return;
             }
-            
             try {
-                // Show loading
-                document.getElementById('groups-container').innerHTML = `
-                    <div class="loading">
-                        <div style="text-align: center; padding: 2rem;">🔄 Carregando grupos...</div>
-                    </div>
-                `;
-                
-                // Request groups from Baileys with proper error handling
-                const response = await fetch(`/api/groups/${instanceId}`, {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json'
-                    },
-                    timeout: 10000
-                });
-                
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    let errorMessage = 'Erro ao carregar grupos';
-                    
-                    try {
-                        const errorData = JSON.parse(errorText);
-                        errorMessage = errorData.error || errorMessage;
-                    } catch (e) {
-                        // Use default error message
-                    }
-                    
-                    throw new Error(errorMessage);
-                }
-                
+                const response = await fetch(`/api/groups/${instanceId}`);
                 const result = await response.json();
-                
-                if (result.success && result.groups) {
-                    renderGroups(result.groups);
-                    populateScheduleGroupSelect(result.groups);
-                } else {
-                    throw new Error(result.error || 'Nenhum grupo encontrado para esta instância');
-                }
-                
+                select.innerHTML = '<option value="">Selecione um grupo</option>';
+                (result.groups || []).forEach(group => {
+                    const option = document.createElement('option');
+                    option.value = group.id;
+                    option.textContent = group.name || `Grupo ${group.id.split('@')[0]}`;
+                    select.appendChild(option);
+                });
             } catch (error) {
                 console.error('❌ Erro ao carregar grupos:', error);
-
-                let errorMessage = error.message;
-                if (error.message.includes('fetch') || error instanceof TypeError) {
-                    errorMessage = 'Serviço Baileys indisponível na porta 3002';
-                } else if (errorMessage.includes('não conectada')) {
-                    errorMessage = 'Esta instância não está conectada ao WhatsApp. Conecte primeiro na aba Instâncias.';
-                } else if (errorMessage.includes('não encontrada')) {
-                    errorMessage = 'Instância não encontrada. Verifique se ela foi criada corretamente.';
-                }
-
-                document.getElementById('groups-container').innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-icon">❌</div>
-                        <div class="empty-title">Erro ao carregar grupos</div>
-                        <p>${errorMessage}</p>
-                        <button class="btn btn-primary" onclick="loadGroupsFromInstance()">🔄 Tentar Reconectar</button>
-                        <a href="https://docs.example.com/baileys" target="_blank" class="btn btn-link">📚 Ver documentação</a>
-                    </div>
-                `;
+                select.innerHTML = '<option value="">Erro ao carregar</option>';
             }
         }
-        
-        function renderGroups(groups) {
-            const container = document.getElementById('groups-container');
-            
-            if (!groups || groups.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-icon">👥</div>
-                        <div class="empty-title">Nenhum grupo encontrado</div>
-                        <p>Esta instância não possui grupos ou não conseguiu carregá-los</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            container.innerHTML = groups.map(group => `
-                <div class="group-card" data-group-id="${group.id}">
-                    <div class="group-info">
-                        <div class="group-avatar">
-                            ${group.name ? group.name.charAt(0).toUpperCase() : '👥'}
-                        </div>
-                        <div class="group-details">
-                            <h4>${group.name || 'Grupo sem nome'}</h4>
-                            <p>${group.participants?.length || 0} participantes</p>
-                            <small>ID: ${group.id.split('@')[0]}</small>
-                        </div>
-                    </div>
-                    <div class="group-actions">
-                        <button class="btn btn-sm btn-primary" onclick="sendToGroup('${group.id}', '${group.name}')">
-                            📤 Enviar Mensagem
-                        </button>
-                        <button class="btn btn-sm btn-secondary" onclick="viewGroupInfo('${group.id}')">
-                            ℹ️ Info
-                        </button>
-                    </div>
-                </div>
-            `).join('');
-        }
-        
-        function populateScheduleGroupSelect(groups) {
-            const select = document.getElementById('scheduleGroupSelect');
-            select.innerHTML = '<option value="">Selecione um grupo</option>';
-            
-            groups.forEach(group => {
-                const option = document.createElement('option');
-                option.value = group.id;
-                option.textContent = group.name || `Grupo ${group.id.split('@')[0]}`;
-                select.appendChild(option);
-            });
-        }
-        
-        async function sendToGroup(groupId, groupName) {
-            const message = prompt(`💬 Enviar mensagem para o grupo "${groupName}":`, '');
-            if (!message || !message.trim()) return;
-            
-            const instanceId = document.getElementById('groupInstanceSelect').value;
-            if (!instanceId) {
-                alert('❌ Selecione uma instância primeiro');
-                return;
-            }
-            
-            try {
-                const response = await fetch(`/api/messages/send/${instanceId}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        to: groupId,
-                        message: message.trim(),
-                        type: 'text'
-                    })
-                });
 
-                const result = await response.json();
-
-                if (response.status === 503) {
-                    alert(`❌ ${result.error || 'Baileys service não disponível'}`);
-                } else if (response.ok && result.success) {
-                    alert('✅ Mensagem enviada para o grupo com sucesso!');
-                } else {
-                    throw new Error(result.error || 'Erro ao enviar mensagem');
-                }
-
-            } catch (error) {
-                console.error('❌ Erro ao enviar mensagem para grupo:', error);
-                if (error.message.includes('fetch') || error instanceof TypeError) {
-                    alert('❌ Serviço Baileys indisponível na porta 3002');
-                } else {
-                    alert(`❌ Erro ao enviar mensagem: ${error.message}`);
-                }
-            }
-        }
-        
-        function viewGroupInfo(groupId) {
-            // Placeholder for group info modal
-            alert(`ℹ️ Informações do grupo:\nID: ${groupId}\n\n(Funcionalidade em desenvolvimento)`);
-        }
-        
-        function searchGroups() {
-            const searchTerm = document.getElementById('searchGroups').value.toLowerCase();
-            const groupCards = document.querySelectorAll('.group-card');
-            
-            groupCards.forEach(card => {
-                const groupName = card.querySelector('h4').textContent.toLowerCase();
-                const groupId = card.querySelector('small').textContent.toLowerCase();
-                
-                if (groupName.includes(searchTerm) || groupId.includes(searchTerm)) {
-                    card.style.display = 'block';
-                } else {
-                    card.style.display = 'none';
-                }
-            });
-        }
-        
         function openScheduleModal() {
+            loadInstancesForSchedule();
             document.getElementById('scheduleModal').style.display = 'block';
         }
 
@@ -3659,17 +3497,11 @@ HTML_APP = r'''<!DOCTYPE html>
             }
         }
 
-        function toggleRecurrenceOptions() {
-            const rec = document.getElementById('recurrenceSelect').value;
-            document.getElementById('weekdaySelect').style.display = rec === 'weekly' ? 'block' : 'none';
-        }
-
         async function submitSchedule() {
-            const instanceId = document.getElementById('groupInstanceSelect').value;
+            const instanceId = document.getElementById('scheduleInstanceSelect').value;
             const groupId = document.getElementById('scheduleGroupSelect').value;
             const content = document.getElementById('scheduleText').value;
             const mediaType = document.getElementById('messageType').value;
-            const recurrence = document.getElementById('recurrenceSelect').value;
             const weekday = document.getElementById('weekdaySelect').value;
             const time = document.getElementById('scheduleTime').value;
             const file = document.getElementById('scheduleMedia').files[0];
@@ -3684,9 +3516,9 @@ HTML_APP = r'''<!DOCTYPE html>
             formData.append('group_id', groupId);
             formData.append('content', content);
             formData.append('media_type', mediaType);
-            formData.append('recurrence', recurrence);
             formData.append('weekday', weekday);
             formData.append('send_time', time);
+            formData.append('recurrence', 'weekly');
             if (file) formData.append('media', file);
 
             const response = await fetch('/api/messages/schedule', { method: 'POST', body: formData });
@@ -3700,19 +3532,27 @@ HTML_APP = r'''<!DOCTYPE html>
         }
 
         async function loadScheduledMessages() {
+            const selectedDay = document.getElementById('previewWeekday')?.value || '';
             try {
                 const response = await fetch('/api/messages/scheduled');
                 const result = await response.json();
                 const container = document.getElementById('scheduledMessages');
                 container.innerHTML = '';
-                if (!Array.isArray(result) || result.length === 0) {
+                const messages = Array.isArray(result) ? result.filter(item => selectedDay === '' || String(item.weekday) === selectedDay) : [];
+                if (messages.length === 0) {
                     container.innerHTML = '<div class="empty-state"><p>Nenhuma mensagem agendada</p></div>';
                     return;
                 }
-                result.forEach(item => {
+                messages.forEach(item => {
                     const div = document.createElement('div');
-                    div.className = 'scheduled-item';
-                    div.innerHTML = `<strong>${item.group_id}</strong> - ${item.send_time} (${item.recurrence}) <button onclick="deleteSchedule('${item.id}')">❌</button>`;
+                    div.className = 'scheduled-card';
+                    div.innerHTML = `
+                        <div class="scheduled-info">
+                            <strong>${item.group_id}</strong>
+                            <span>${item.send_time}</span>
+                        </div>
+                        <button class="btn btn-sm btn-danger" onclick="deleteSchedule('${item.id}')">❌</button>
+                    `;
                     container.appendChild(div);
                 });
             } catch (error) {
@@ -3725,6 +3565,7 @@ HTML_APP = r'''<!DOCTYPE html>
             loadScheduledMessages();
         }
 
+        document.getElementById('previewWeekday').value = new Date().getDay();
         loadScheduledMessages();
     </script>
 </body>
