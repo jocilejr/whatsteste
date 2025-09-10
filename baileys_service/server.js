@@ -261,7 +261,7 @@ async function connectInstance(instanceId) {
                                 })
                             });
                             
-                            console.log(`📦 Lote ${Math.floor(i / batchSize) + 1}/${Math.ceil(chats.length / batchSize)} enviado`);
+                            console.log(`📦 Lote ${Math.floor(i / batchSize) + 1}/${Math.ceil(enhancedChats.length / batchSize)} enviado`);
                             
                             // Small delay between batches
                             await new Promise(resolve => setTimeout(resolve, 1000));
