@@ -36,6 +36,15 @@ except ImportError:
 DB_FILE = "whatsflow.db"
 PORT = 8889
 BAILEYS_PORT = 3002
+WEBSOCKET_PORT = 8890
+
+# WebSocket clients management
+if WEBSOCKETS_AVAILABLE:
+    websocket_clients: Set[websockets.WebSocketServerProtocol] = set()
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # HTML da aplicação (mesmo do Pure, mas com conexão real)
 HTML_APP = '''<!DOCTYPE html>
