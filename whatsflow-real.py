@@ -325,11 +325,169 @@ HTML_APP = '''<!DOCTYPE html>
             margin-left: 8px;
         }
         
+        /* Chat Panel - Professional WhatsApp Design */
         .chat-panel {
             flex: 1;
             display: flex;
             flex-direction: column;
-            background: var(--bg-chat);
+            background: #efeae2;
+            position: relative;
+        }
+        
+        .chat-panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><defs><pattern id="pattern" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="10" cy="10" r="0.5" fill="%23d1d7db" opacity="0.3"/></pattern></defs><rect width="100" height="100" fill="url(%23pattern)"/></svg>');
+            opacity: 0.4;
+            pointer-events: none;
+        }
+        
+        .chat-header {
+            background: #f0f2f5;
+            padding: 16px 20px;
+            border-bottom: 1px solid #d1d7db;
+            display: none;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .chat-header.active {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .chat-contact-avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+        
+        .chat-contact-info h4 {
+            margin: 0 0 2px 0;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #111b21;
+        }
+        
+        .chat-contact-info p {
+            margin: 0;
+            color: #667781;
+            font-size: 0.85rem;
+        }
+        
+        .messages-container {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .empty-chat-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #667781;
+            text-align: center;
+        }
+        
+        .empty-chat-icon {
+            font-size: 4rem;
+            margin-bottom: 16px;
+            opacity: 0.7;
+        }
+        
+        .empty-chat-state h3 {
+            font-size: 1.4rem;
+            font-weight: 400;
+            color: #41525d;
+            margin: 0 0 8px 0;
+        }
+        
+        .empty-chat-state p {
+            font-size: 0.9rem;
+            color: #667781;
+            margin: 0;
+        }
+        
+        /* Message Input Area - Professional Design */
+        .message-input-area {
+            background: #f0f2f5;
+            padding: 16px 20px;
+            display: none;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .message-input-area.active {
+            display: flex;
+            gap: 12px;
+            align-items: flex-end;
+        }
+        
+        .message-input {
+            flex: 1;
+            min-height: 44px;
+            max-height: 120px;
+            padding: 12px 16px;
+            border: none;
+            border-radius: 24px;
+            background: white;
+            font-family: inherit;
+            font-size: 0.95rem;
+            line-height: 1.4;
+            resize: none;
+            outline: none;
+            box-shadow: 0 1px 2px rgba(11,20,26,.1);
+            transition: all 0.2s ease;
+        }
+        
+        .message-input:focus {
+            box-shadow: 0 2px 8px rgba(11,20,26,.15);
+        }
+        
+        .message-input::placeholder {
+            color: #8696a0;
+        }
+        
+        .message-input-area .btn-success {
+            min-width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: #00a884;
+            border: none;
+            color: white;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+        
+        .message-input-area .btn-success:hover {
+            background: #008f6c;
+            transform: scale(1.05);
+        }
+        
+        .message-input-area .btn-success:active {
+            transform: scale(0.95);
         }
         
         /* Header Clean Design */
