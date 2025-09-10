@@ -41,147 +41,147 @@
       "test": "Server Connectivity",
       "status": "PASS",
       "details": "WhatsFlow Real server responding on port 8889",
-      "timestamp": "2025-09-10T04:20:36.617237",
+      "timestamp": "2025-09-10T05:37:39.591446",
       "is_critical": true
     },
     {
       "test": "Instance Selector Data",
       "status": "PASS",
-      "details": "Retrieved 26 instances, 26 valid for selector",
-      "timestamp": "2025-09-10T04:20:36.620027",
+      "details": "Retrieved 1 instances, 1 valid for selector",
+      "timestamp": "2025-09-10T05:37:39.593976",
       "is_critical": true
     },
     {
       "test": "GET /api/flows",
       "status": "PASS",
       "details": "Retrieved 2 flows",
-      "timestamp": "2025-09-10T04:20:36.622314",
+      "timestamp": "2025-09-10T05:37:39.596243",
       "is_critical": true
     },
     {
       "test": "POST /api/flows",
       "status": "PASS",
-      "details": "Created flow with ID: 0f7f544d-49f6-4a34-8530-b7cbb1cf4cfc",
-      "timestamp": "2025-09-10T04:20:36.631089",
+      "details": "Created flow with ID: ba1ee9f8-dc16-4555-a606-cb6b0e735a3c",
+      "timestamp": "2025-09-10T05:37:39.604530",
       "is_critical": true
     },
     {
       "test": "PUT /api/flows/{id}",
       "status": "PASS",
-      "details": "Updated flow 0f7f544d-49f6-4a34-8530-b7cbb1cf4cfc",
-      "timestamp": "2025-09-10T04:20:36.639193",
+      "details": "Updated flow ba1ee9f8-dc16-4555-a606-cb6b0e735a3c",
+      "timestamp": "2025-09-10T05:37:39.612177",
       "is_critical": true
     },
     {
       "test": "DELETE /api/flows/{id}",
       "status": "PASS",
-      "details": "Deleted flow 0f7f544d-49f6-4a34-8530-b7cbb1cf4cfc",
-      "timestamp": "2025-09-10T04:20:36.646685",
+      "details": "Deleted flow ba1ee9f8-dc16-4555-a606-cb6b0e735a3c",
+      "timestamp": "2025-09-10T05:37:39.619838",
       "is_critical": true
     },
     {
       "test": "GET /api/chats",
       "status": "PASS",
-      "details": "Retrieved 5 chats, 5 with real names",
-      "timestamp": "2025-09-10T04:20:36.649067",
+      "details": "Retrieved 0 chats, 0 with real names",
+      "timestamp": "2025-09-10T05:37:39.622134",
       "is_critical": true
     },
     {
       "test": "GET /api/chats (filtering)",
       "status": "SKIP",
       "details": "Instance filtering not implemented in current version",
-      "timestamp": "2025-09-10T04:20:36.649102",
+      "timestamp": "2025-09-10T05:37:39.622167",
       "is_critical": false
     },
     {
       "test": "Filtered Messages System",
       "status": "PASS",
       "details": "Retrieved 0 filtered messages for 5511888888888",
-      "timestamp": "2025-09-10T04:20:36.653464",
+      "timestamp": "2025-09-10T05:37:39.626729",
       "is_critical": true
     },
     {
       "test": "Message Filtering with Instance",
       "status": "PASS",
       "details": "Retrieved 0 messages with instance filter",
-      "timestamp": "2025-09-10T04:20:36.655547",
+      "timestamp": "2025-09-10T05:37:39.628985",
       "is_critical": false
     },
     {
       "test": "Database Flows Table",
       "status": "PASS",
       "details": "flows table exists with 2 records, all required columns present",
-      "timestamp": "2025-09-10T04:20:36.656346",
+      "timestamp": "2025-09-10T05:37:39.629786",
       "is_critical": true
     },
     {
       "test": "Database Real Names",
       "status": "PASS",
-      "details": "Found 10 real names. Examples: ['Jo\u00e3o Silva', 'Maria Santos', 'Pedro Costa', 'Jo\u00e3o Silva', 'Maria Santos', 'Pedro Costa']",
-      "timestamp": "2025-09-10T04:20:36.656909",
+      "details": "Found 6 real names. Examples: ['Jo\u00e3o Silva', 'Maria Santos', 'Pedro Costa']",
+      "timestamp": "2025-09-10T05:37:39.630373",
       "is_critical": true
     },
     {
       "test": "GET /api/contacts",
       "status": "PASS",
       "details": "Retrieved 6 contacts",
-      "timestamp": "2025-09-10T04:20:36.658938",
+      "timestamp": "2025-09-10T05:37:39.632414",
       "is_critical": false
     },
     {
       "test": "GET /api/messages",
       "status": "PASS",
-      "details": "Retrieved 8 messages",
-      "timestamp": "2025-09-10T04:20:36.660960",
+      "details": "Retrieved 0 messages",
+      "timestamp": "2025-09-10T05:37:39.634287",
       "is_critical": false
     },
     {
       "test": "GET /api/stats",
       "status": "PASS",
-      "details": "Statistics retrieved - Contacts: 6, Messages: 8",
-      "timestamp": "2025-09-10T04:20:36.662880",
+      "details": "Statistics retrieved - Contacts: 6, Messages: 0",
+      "timestamp": "2025-09-10T05:37:39.636156",
       "is_critical": false
     },
     {
       "test": "GET /api/whatsapp/status",
       "status": "PASS",
       "details": "WhatsApp status: Disconnected",
-      "timestamp": "2025-09-10T04:20:36.667200",
+      "timestamp": "2025-09-10T05:37:39.692316",
       "is_critical": false
     },
     {
       "test": "GET /api/whatsapp/qr",
       "status": "PASS",
       "details": "QR code: Not available",
-      "timestamp": "2025-09-10T04:20:36.671371",
+      "timestamp": "2025-09-10T05:37:39.696786",
       "is_critical": false
     },
     {
       "test": "POST /api/instances",
       "status": "PASS",
-      "details": "Created instance: Test Instance b4672c06",
-      "timestamp": "2025-09-10T04:20:36.679182",
+      "details": "Created instance: Test Instance de0128c2",
+      "timestamp": "2025-09-10T05:37:39.704764",
       "is_critical": false
     },
     {
       "test": "POST /api/instances",
       "status": "PASS",
-      "details": "Created instance: Test Instance d19cf3c0",
-      "timestamp": "2025-09-10T04:20:36.686736",
+      "details": "Created instance: Test Instance a95d4a79",
+      "timestamp": "2025-09-10T05:37:39.712433",
       "is_critical": false
     },
     {
       "test": "Database Persistence",
       "status": "PASS",
       "details": "SQLite database working correctly",
-      "timestamp": "2025-09-10T04:20:37.689751",
+      "timestamp": "2025-09-10T05:37:40.715091",
       "is_critical": false
     },
     {
       "test": "Baileys Service Integration",
       "status": "PASS",
       "details": "Baileys service is running and accessible",
-      "timestamp": "2025-09-10T04:20:37.693038",
+      "timestamp": "2025-09-10T05:37:40.717816",
       "is_critical": false
     }
   ]
