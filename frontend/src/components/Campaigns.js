@@ -146,7 +146,11 @@ function CampaignForm({ initialData, onSave, onCancel }) {
       </div>
       <div className="form-row">
         <label>Mídia</label>
-        <input type="file" onChange={e => setMedia(e.target.files[0])} />
+        <input
+          type="file"
+          accept="text/plain,image/*,audio/*,video/*"
+          onChange={e => setMedia(e.target.files[0])}
+        />
       </div>
       <div className="form-actions">
         <button type="button" onClick={onCancel}>Cancelar</button>
@@ -183,6 +187,17 @@ export default function Campaigns() {
     fetchCampaigns();
   };
 
+  const handleDelete = async (id) => {
+    if (!window.confirm('Excluir campanha?')) return;
+    try {
+      await axios.delete(`${API}/campaigns/${id}`);
+      fetchCampaigns();
+    } catch (err) {
+      console.error('Erro ao excluir campanha', err);
+      alert('Erro ao excluir campanha');
+    }
+  };
+
   if (loading) {
     return <div className="loading">Carregando campanhas...</div>;
   }
@@ -214,7 +229,10 @@ export default function Campaigns() {
                 </div>
               )}
             </div>
-            <button onClick={() => { setEditing(c); setShowForm(true); }}>Editar</button>
+            <div className="campaign-actions">
+              <button onClick={() => { setEditing(c); setShowForm(true); }}>Editar</button>
+              <button onClick={() => handleDelete(c.id)}>Excluir</button>
+            </div>
           </div>
         ))}
       </div>
