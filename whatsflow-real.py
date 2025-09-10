@@ -2701,8 +2701,12 @@ HTML_APP = '''<!DOCTYPE html>
                     alert(`❌ Erro ao enviar: ${error.error || 'Erro desconhecido'}`);
                 }
             } catch (error) {
-                alert('❌ Erro de conexão ao enviar mensagem');
                 console.error('Send error:', error);
+                let errorMessage = 'Erro de conexão ao enviar mensagem';
+                if (error.message.includes('fetch') || error instanceof TypeError) {
+                    errorMessage = 'Serviço Baileys indisponível na porta 3002';
+                }
+                alert(`❌ ${errorMessage}`);
             }
         }
 
@@ -3123,7 +3127,7 @@ HTML_APP = '''<!DOCTYPE html>
                 let errorMessage = error.message;
                 
                 if (errorMessage.includes('fetch')) {
-                    errorMessage = 'Não foi possível conectar ao serviço Baileys. Verifique se está rodando na porta 3002.';
+                    errorMessage = 'Serviço Baileys indisponível na porta 3002';
                 } else if (errorMessage.includes('não conectada') || errorMessage.includes('não encontrada')) {
                     errorMessage = 'A instância não está conectada ao WhatsApp. Conecte primeiro na aba Instâncias.';
                 } else if (errorMessage.includes('timeout')) {
@@ -3457,20 +3461,23 @@ HTML_APP = '''<!DOCTYPE html>
                 
             } catch (error) {
                 console.error('❌ Erro ao carregar grupos:', error);
-                
+
                 let errorMessage = error.message;
-                if (errorMessage.includes('não conectada')) {
+                if (error.message.includes('fetch') || error instanceof TypeError) {
+                    errorMessage = 'Serviço Baileys indisponível na porta 3002';
+                } else if (errorMessage.includes('não conectada')) {
                     errorMessage = 'Esta instância não está conectada ao WhatsApp. Conecte primeiro na aba Instâncias.';
                 } else if (errorMessage.includes('não encontrada')) {
                     errorMessage = 'Instância não encontrada. Verifique se ela foi criada corretamente.';
                 }
-                
+
                 document.getElementById('groups-container').innerHTML = `
                     <div class="empty-state">
                         <div class="empty-icon">❌</div>
                         <div class="empty-title">Erro ao carregar grupos</div>
                         <p>${errorMessage}</p>
-                        <button class="btn btn-primary" onclick="loadGroupsFromInstance()">🔄 Tentar Novamente</button>
+                        <button class="btn btn-primary" onclick="loadGroupsFromInstance()">🔄 Tentar Reconectar</button>
+                        <a href="https://docs.example.com/baileys" target="_blank" class="btn btn-link">📚 Ver documentação</a>
                     </div>
                 `;
             }
@@ -3557,7 +3564,11 @@ HTML_APP = '''<!DOCTYPE html>
                 
             } catch (error) {
                 console.error('❌ Erro ao enviar mensagem para grupo:', error);
-                alert(`❌ Erro ao enviar mensagem: ${error.message}`);
+                if (error.message.includes('fetch') || error instanceof TypeError) {
+                    alert('❌ Serviço Baileys indisponível na porta 3002');
+                } else {
+                    alert(`❌ Erro ao enviar mensagem: ${error.message}`);
+                }
             }
         }
         
@@ -5043,58 +5054,86 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             
             try:
                 import requests
-                response = requests.post(f'{BAILEYS_URL}/send/{instance_id}',
-                                       json=data, timeout=10)
-                
-                if response.status_code == 200:
-                    # Save message to database
-                    conn = sqlite3.connect(DB_FILE)
-                    cursor = conn.cursor()
-                    
-                    message_id = str(uuid.uuid4())
-                    phone = to.replace('@s.whatsapp.net', '').replace('@c.us', '')
-                    
-                    cursor.execute("""
-                        INSERT INTO messages (id, contact_name, phone, message, direction, instance_id, created_at)
-                        VALUES (?, ?, ?, ?, ?, ?, ?)
-                    """, (message_id, f"Para {phone[-4:]}", phone, message, 'outgoing', instance_id, 
-                          datetime.now(timezone.utc).isoformat()))
-                    
-                    conn.commit()
-                    conn.close()
-                    
-                    self.send_json_response({"success": True, "instanceId": instance_id})
-                else:
-                    self.send_json_response({"error": "Erro ao enviar mensagem"}, 500)
-            except ImportError:
-                # Fallback usando urllib
-                import urllib.request
-                req_data = json.dumps(data).encode('utf-8')
-                req = urllib.request.Request(f'{BAILEYS_URL}/send/{instance_id}',
-                                           data=req_data, 
+try:
+    import requests
+    try:
+        response = requests.post(
+            f'{BAILEYS_URL}/send/{instance_id}',
+            json=data,
+            timeout=10
+        )
+    except requests.exceptions.RequestException:
+        self.send_json_response({"error": "Serviço Baileys indisponível"}, 503)
+        return
+
+    if response.status_code == 200:
+        # Save message to database
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        
+        message_id = str(uuid.uuid4())
+        phone = to.replace('@s.whatsapp.net', '').replace('@c.us', '')
+        
+        cursor.execute("""
+            INSERT INTO messages (id, contact_name, phone, message, direction, instance_id, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, (message_id, f"Para {phone[-4:]}", phone, message, 'outgoing', instance_id, 
+              datetime.now(timezone.utc).isoformat()))
+        
+        conn.commit()
+        conn.close()
+        
+        self.send_json_response({"success": True, "instanceId": instance_id})
+    else:
+        self.send_json_response({"error": "Erro ao enviar mensagem"}, 500)
+
+except ImportError:
+    # Fallback usando urllib
+    import urllib.request
+    req_data = json.dumps(data).encode('utf-8')
+
+    req = urllib.request.Request(
+        f'{BAILEYS_URL}/send/{instance_id}',
+        data=req_data,
+        headers={'Content-Type': 'application/json'}
+    )
+    req.get_method = lambda: 'POST'
+
+    try:
+        with urllib.request.urlopen(req, timeout=10) as response:
+            if response.status == 200:
+                conn = sqlite3.connect(DB_FILE)
+                cursor = conn.cursor()
+                # aqui continua o mesmo fluxo de salvar no banco...
+    except Exception:
+        self.send_json_response({"error": "Erro no fallback urllib"}, 500)
+
                                            headers={'Content-Type': 'application/json'})
                 req.get_method = lambda: 'POST'
-                
-                with urllib.request.urlopen(req, timeout=10) as response:
-                    if response.status == 200:
-                        conn = sqlite3.connect(DB_FILE)
-                        cursor = conn.cursor()
-                        
-                        message_id = str(uuid.uuid4())
-                        phone = to.replace('@s.whatsapp.net', '').replace('@c.us', '')
-                        
-                        cursor.execute("""
-                            INSERT INTO messages (id, contact_name, phone, message, direction, instance_id, created_at)
-                            VALUES (?, ?, ?, ?, ?, ?, ?)
-                        """, (message_id, f"Para {phone[-4:]}", phone, message, 'outgoing', instance_id,
-                              datetime.now(timezone.utc).isoformat()))
-                        
-                        conn.commit()
-                        conn.close()
-                        
-                        self.send_json_response({"success": True, "instanceId": instance_id})
-                    else:
-                        self.send_json_response({"error": "Erro ao enviar mensagem"}, 500)
+                try:
+                    with urllib.request.urlopen(req, timeout=10) as response:
+                        if response.status == 200:
+                            conn = sqlite3.connect(DB_FILE)
+                            cursor = conn.cursor()
+
+                            message_id = str(uuid.uuid4())
+                            phone = to.replace('@s.whatsapp.net', '').replace('@c.us', '')
+
+                            cursor.execute("""
+                                INSERT INTO messages (id, contact_name, phone, message, direction, instance_id, created_at)
+                                VALUES (?, ?, ?, ?, ?, ?, ?)
+                            """, (message_id, f"Para {phone[-4:]}", phone, message, 'outgoing', instance_id,
+                                  datetime.now(timezone.utc).isoformat()))
+
+                            conn.commit()
+                            conn.close()
+
+                            self.send_json_response({"success": True, "instanceId": instance_id})
+                        else:
+                            self.send_json_response({"error": "Erro ao enviar mensagem"}, 500)
+                except Exception:
+                    self.send_json_response({"error": "Serviço Baileys indisponível na porta 3002"}, 503)
+                    return
                 
         except Exception as e:
             self.send_json_response({"error": str(e)}, 500)
