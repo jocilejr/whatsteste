@@ -84,25 +84,320 @@ class WhatsFlowRealTester:
             self.log_test("Server Connectivity", "FAIL", f"Connection error: {str(e)}")
             return False
     
-    def test_get_instances(self):
-        """Test GET /api/instances - List WhatsApp instances"""
+    # CRITICAL TESTS FOR CORRECTED PROBLEMS
+    
+    def test_instances_for_selector(self):
+        """CRITICAL: Test GET /api/instances - Must return instances for Messages tab selector"""
         try:
             response = self.session.get(f"{API_BASE}/instances", timeout=10)
             
             if response.status_code == 200:
                 data = response.json()
                 if isinstance(data, list):
-                    self.log_test("GET /api/instances", "PASS", f"Retrieved {len(data)} instances")
-                    return data
+                    # Check if instances have required fields for selector
+                    valid_instances = 0
+                    for instance in data:
+                        if all(key in instance for key in ['id', 'name']):
+                            valid_instances += 1
+                    
+                    if valid_instances > 0:
+                        self.log_test("Instance Selector Data", "PASS", 
+                                    f"Retrieved {len(data)} instances, {valid_instances} valid for selector")
+                        return data
+                    else:
+                        self.log_test("Instance Selector Data", "FAIL", 
+                                    "No valid instances with required fields (id, name)")
+                        return []
                 else:
-                    self.log_test("GET /api/instances", "FAIL", "Response is not a list")
+                    self.log_test("Instance Selector Data", "FAIL", "Response is not a list")
                     return []
             else:
-                self.log_test("GET /api/instances", "FAIL", f"HTTP {response.status_code}: {response.text}")
+                self.log_test("Instance Selector Data", "FAIL", f"HTTP {response.status_code}: {response.text}")
                 return []
         except Exception as e:
-            self.log_test("GET /api/instances", "FAIL", f"Exception: {str(e)}")
+            self.log_test("Instance Selector Data", "FAIL", f"Exception: {str(e)}")
             return []
+    
+    def test_flows_crud_operations(self):
+        """CRITICAL: Test complete CRUD operations for flows (GET/POST/PUT/DELETE /api/flows)"""
+        flow_id = None
+        
+        # Test GET /api/flows
+        try:
+            response = self.session.get(f"{API_BASE}/flows", timeout=10)
+            if response.status_code == 200:
+                flows = response.json()
+                self.log_test("GET /api/flows", "PASS", f"Retrieved {len(flows)} flows")
+            else:
+                self.log_test("GET /api/flows", "FAIL", f"HTTP {response.status_code}: {response.text}")
+                return False
+        except Exception as e:
+            self.log_test("GET /api/flows", "FAIL", f"Exception: {str(e)}")
+            return False
+        
+        # Test POST /api/flows (Create new flow)
+        try:
+            test_flow = {
+                "name": f"Test Flow {uuid.uuid4().hex[:8]}",
+                "description": "Test flow for CRUD operations",
+                "trigger": "keyword",
+                "keyword": "test",
+                "response": "This is a test flow response"
+            }
+            
+            response = self.session.post(
+                f"{API_BASE}/flows",
+                json=test_flow,
+                headers={"Content-Type": "application/json"},
+                timeout=10
+            )
+            
+            if response.status_code in [200, 201]:
+                data = response.json()
+                if "id" in data:
+                    flow_id = data["id"]
+                    self.log_test("POST /api/flows", "PASS", f"Created flow with ID: {flow_id}")
+                else:
+                    self.log_test("POST /api/flows", "FAIL", "No ID returned in response")
+                    return False
+            else:
+                self.log_test("POST /api/flows", "FAIL", f"HTTP {response.status_code}: {response.text}")
+                return False
+        except Exception as e:
+            self.log_test("POST /api/flows", "FAIL", f"Exception: {str(e)}")
+            return False
+        
+        if not flow_id:
+            return False
+        
+        # Test PUT /api/flows/{id} (Update flow)
+        try:
+            updated_flow = {
+                "name": f"Updated Test Flow {uuid.uuid4().hex[:8]}",
+                "description": "Updated test flow description",
+                "response": "Updated test flow response"
+            }
+            
+            response = self.session.put(
+                f"{API_BASE}/flows/{flow_id}",
+                json=updated_flow,
+                headers={"Content-Type": "application/json"},
+                timeout=10
+            )
+            
+            if response.status_code in [200, 204]:
+                self.log_test("PUT /api/flows/{id}", "PASS", f"Updated flow {flow_id}")
+            else:
+                self.log_test("PUT /api/flows/{id}", "FAIL", f"HTTP {response.status_code}: {response.text}")
+        except Exception as e:
+            self.log_test("PUT /api/flows/{id}", "FAIL", f"Exception: {str(e)}")
+        
+        # Test DELETE /api/flows/{id} (Delete flow)
+        try:
+            response = self.session.delete(f"{API_BASE}/flows/{flow_id}", timeout=10)
+            
+            if response.status_code in [200, 204]:
+                self.log_test("DELETE /api/flows/{id}", "PASS", f"Deleted flow {flow_id}")
+                return True
+            else:
+                self.log_test("DELETE /api/flows/{id}", "FAIL", f"HTTP {response.status_code}: {response.text}")
+                return False
+        except Exception as e:
+            self.log_test("DELETE /api/flows/{id}", "FAIL", f"Exception: {str(e)}")
+            return False
+    
+    def test_chats_with_filtering(self):
+        """CRITICAL: Test GET /api/chats with instance filtering"""
+        try:
+            # Test basic chats endpoint
+            response = self.session.get(f"{API_BASE}/chats", timeout=10)
+            
+            if response.status_code == 200:
+                chats = response.json()
+                if isinstance(chats, list):
+                    # Check if chats have real names (not just phone numbers)
+                    real_names_count = 0
+                    for chat in chats:
+                        if "contact_name" in chat:
+                            name = chat["contact_name"]
+                            # Check if it's a real name (contains letters, not just numbers)
+                            if any(c.isalpha() for c in name) and not name.startswith("Contact "):
+                                real_names_count += 1
+                    
+                    self.log_test("GET /api/chats", "PASS", 
+                                f"Retrieved {len(chats)} chats, {real_names_count} with real names")
+                    
+                    # Test filtering by instance_id if we have instances
+                    instances_response = self.session.get(f"{API_BASE}/instances", timeout=10)
+                    if instances_response.status_code == 200:
+                        instances = instances_response.json()
+                        if instances:
+                            test_instance_id = instances[0].get("id")
+                            if test_instance_id:
+                                filtered_response = self.session.get(
+                                    f"{API_BASE}/chats?instance_id={test_instance_id}", 
+                                    timeout=10
+                                )
+                                if filtered_response.status_code == 200:
+                                    filtered_chats = filtered_response.json()
+                                    self.log_test("GET /api/chats (filtered)", "PASS", 
+                                                f"Retrieved {len(filtered_chats)} filtered chats")
+                                else:
+                                    self.log_test("GET /api/chats (filtered)", "FAIL", 
+                                                f"Filtering failed: {filtered_response.status_code}")
+                    
+                    return chats
+                else:
+                    self.log_test("GET /api/chats", "FAIL", "Response is not a list")
+                    return []
+            else:
+                self.log_test("GET /api/chats", "FAIL", f"HTTP {response.status_code}: {response.text}")
+                return []
+        except Exception as e:
+            self.log_test("GET /api/chats", "FAIL", f"Exception: {str(e)}")
+            return []
+    
+    def test_filtered_messages_system(self):
+        """CRITICAL: Test GET /api/messages?phone=X&instance_id=Y - Message filtering"""
+        try:
+            # First get contacts to test with
+            contacts_response = self.session.get(f"{API_BASE}/contacts", timeout=10)
+            if contacts_response.status_code != 200:
+                self.log_test("Filtered Messages System", "FAIL", "Could not get contacts for testing")
+                return False
+            
+            contacts = contacts_response.json()
+            if not contacts:
+                self.log_test("Filtered Messages System", "SKIP", "No contacts available for testing", False)
+                return True
+            
+            # Get instances for testing
+            instances_response = self.session.get(f"{API_BASE}/instances", timeout=10)
+            if instances_response.status_code != 200:
+                self.log_test("Filtered Messages System", "FAIL", "Could not get instances for testing")
+                return False
+            
+            instances = instances_response.json()
+            if not instances:
+                self.log_test("Filtered Messages System", "SKIP", "No instances available for testing", False)
+                return True
+            
+            # Test message filtering
+            test_contact = contacts[0]
+            test_instance = instances[0]
+            
+            phone = test_contact.get("phone", test_contact.get("phone_number", ""))
+            instance_id = test_instance.get("id")
+            
+            if phone and instance_id:
+                response = self.session.get(
+                    f"{API_BASE}/messages?phone={phone}&instance_id={instance_id}",
+                    timeout=10
+                )
+                
+                if response.status_code == 200:
+                    messages = response.json()
+                    self.log_test("Filtered Messages System", "PASS", 
+                                f"Retrieved {len(messages)} filtered messages for {phone}")
+                    return True
+                else:
+                    self.log_test("Filtered Messages System", "FAIL", 
+                                f"HTTP {response.status_code}: {response.text}")
+                    return False
+            else:
+                self.log_test("Filtered Messages System", "FAIL", 
+                            "Missing phone or instance_id for testing")
+                return False
+                
+        except Exception as e:
+            self.log_test("Filtered Messages System", "FAIL", f"Exception: {str(e)}")
+            return False
+    
+    def test_database_flows_table(self):
+        """CRITICAL: Verify flows table exists and is functional"""
+        try:
+            if not os.path.exists(DB_FILE):
+                self.log_test("Database Flows Table", "FAIL", f"Database file not found: {DB_FILE}")
+                return False
+            
+            conn = sqlite3.connect(DB_FILE)
+            cursor = conn.cursor()
+            
+            # Check if flows table exists
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='flows'")
+            flows_table = cursor.fetchone()
+            
+            if not flows_table:
+                self.log_test("Database Flows Table", "FAIL", "flows table does not exist")
+                conn.close()
+                return False
+            
+            # Check flows table schema
+            cursor.execute("PRAGMA table_info(flows)")
+            columns = [row[1] for row in cursor.fetchall()]
+            
+            required_columns = ["id", "name"]
+            missing_columns = [col for col in required_columns if col not in columns]
+            
+            if missing_columns:
+                self.log_test("Database Flows Table", "FAIL", f"Missing columns: {missing_columns}")
+                conn.close()
+                return False
+            
+            # Check if we can query flows
+            cursor.execute("SELECT COUNT(*) FROM flows")
+            flows_count = cursor.fetchone()[0]
+            
+            conn.close()
+            
+            self.log_test("Database Flows Table", "PASS", 
+                        f"flows table exists with {flows_count} records, all required columns present")
+            return True
+            
+        except Exception as e:
+            self.log_test("Database Flows Table", "FAIL", f"Exception: {str(e)}")
+            return False
+    
+    def test_database_real_names(self):
+        """CRITICAL: Verify chats/contacts have real names (pushName implementation)"""
+        try:
+            if not os.path.exists(DB_FILE):
+                self.log_test("Database Real Names", "FAIL", f"Database file not found: {DB_FILE}")
+                return False
+            
+            conn = sqlite3.connect(DB_FILE)
+            cursor = conn.cursor()
+            
+            # Check contacts table for real names
+            cursor.execute("SELECT name, phone FROM contacts WHERE name NOT LIKE 'Contact %' LIMIT 10")
+            real_named_contacts = cursor.fetchall()
+            
+            # Check messages table for pushName data
+            cursor.execute("SELECT DISTINCT user_name FROM messages WHERE user_name IS NOT NULL AND user_name != '' LIMIT 10")
+            pushname_data = cursor.fetchall()
+            
+            conn.close()
+            
+            real_names_found = len(real_named_contacts) + len(pushname_data)
+            
+            if real_names_found > 0:
+                sample_names = []
+                if real_named_contacts:
+                    sample_names.extend([contact[0] for contact in real_named_contacts[:3]])
+                if pushname_data:
+                    sample_names.extend([name[0] for name in pushname_data[:3]])
+                
+                self.log_test("Database Real Names", "PASS", 
+                            f"Found {real_names_found} real names. Examples: {sample_names}")
+                return True
+            else:
+                self.log_test("Database Real Names", "FAIL", 
+                            "No real names found - pushName system not working")
+                return False
+                
+        except Exception as e:
+            self.log_test("Database Real Names", "FAIL", f"Exception: {str(e)}")
+            return False
     
     def test_create_instance(self):
         """Test POST /api/instances - Create new WhatsApp instance"""
