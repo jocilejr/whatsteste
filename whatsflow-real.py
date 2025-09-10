@@ -3722,7 +3722,7 @@ def init_db():
             created_at TEXT
         )
     """)
-    
+
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS flows (
             id TEXT PRIMARY KEY,
@@ -3738,6 +3738,7 @@ def init_db():
     """)
 
     cursor.execute("""
+codex/add-periodic-background-task-for-campaign-messages
         CREATE TABLE IF NOT EXISTS campaign_messages (
             id TEXT PRIMARY KEY,
             phone TEXT NOT NULL,
@@ -3746,6 +3747,7 @@ def init_db():
             send_time TEXT NOT NULL,
             weekdays TEXT,
             last_sent_at TEXT
+
         )
     """)
     
@@ -4650,6 +4652,8 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             self.handle_get_chats()
         elif self.path == '/api/flows':
             self.handle_get_flows()
+        elif self.path == '/api/campaigns':
+            self.handle_get_campaigns()
         elif self.path.startswith('/api/groups/'):
             instance_id = self.path.split('/')[-1]
             self.handle_get_groups(instance_id)
@@ -4702,6 +4706,8 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             self.handle_send_message(instance_id)
         elif self.path == '/api/flows':
             self.handle_create_flow()
+        elif self.path == '/api/campaigns':
+            self.handle_create_campaign()
         elif self.path == '/api/webhooks/send':
             self.handle_send_webhook()
         else:
@@ -4711,6 +4717,9 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
         if self.path.startswith('/api/flows/'):
             flow_id = self.path.split('/')[-1]
             self.handle_update_flow(flow_id)
+        elif self.path.startswith('/api/campaigns/'):
+            campaign_id = self.path.split('/')[-1]
+            self.handle_update_campaign(campaign_id)
         else:
             self.send_error(404, "Not Found")
     
@@ -4721,6 +4730,9 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
         elif self.path.startswith('/api/flows/'):
             flow_id = self.path.split('/')[-1]
             self.handle_delete_flow(flow_id)
+        elif self.path.startswith('/api/campaigns/'):
+            campaign_id = self.path.split('/')[-1]
+            self.handle_delete_campaign(campaign_id)
         else:
             self.send_error(404, "Not Found")
     
@@ -5697,6 +5709,211 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
         except Exception as e:
             print(f"❌ Erro ao excluir fluxo: {e}")
             self.send_json_response({"error": str(e)}, 500)
+
+    # Campaign Management Functions
+    def handle_get_campaigns(self):
+        """Get all campaigns"""
+        try:
+            conn = sqlite3.connect(DB_FILE)
+            cursor = conn.cursor()
+
+            cursor.execute("""
+                SELECT * FROM campaigns
+                ORDER BY created_at DESC
+            """)
+
+            campaigns = []
+            for row in cursor.fetchall():
+                campaign_id = row[0]
+
+                cursor.execute(
+                    "SELECT group_id FROM campaign_groups WHERE campaign_id = ?",
+                    (campaign_id,)
+                )
+                groups = [g[0] for g in cursor.fetchall()]
+
+                cursor.execute(
+                    "SELECT id, message_text, attachment FROM campaign_messages WHERE campaign_id = ?",
+                    (campaign_id,)
+                )
+                messages = []
+                for m in cursor.fetchall():
+                    messages.append({
+                        'id': m[0],
+                        'text': m[1],
+                        'attachment': m[2]
+                    })
+
+                campaigns.append({
+                    'id': campaign_id,
+                    'name': row[1],
+                    'description': row[2],
+                    'recurrence_type': row[3],
+                    'send_time': row[4],
+                    'instance_id': row[5],
+                    'created_at': row[6],
+                    'updated_at': row[7],
+                    'groups': groups,
+                    'messages': messages
+                })
+
+            conn.close()
+            self.send_json_response(campaigns)
+
+        except Exception as e:
+            print(f"❌ Erro ao obter campanhas: {e}")
+            self.send_json_response({'error': str(e)}, 500)
+
+    def handle_create_campaign(self):
+        """Create new campaign"""
+        try:
+            content_length = int(self.headers.get('Content-Length', 0))
+            post_data = self.rfile.read(content_length)
+            data = json.loads(post_data.decode('utf-8'))
+
+            campaign_id = str(uuid.uuid4())
+
+            conn = sqlite3.connect(DB_FILE)
+            cursor = conn.cursor()
+
+            cursor.execute("""
+                INSERT INTO campaigns (id, name, description, recurrence_type, send_time, instance_id, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                campaign_id,
+                data['name'],
+                data.get('description', ''),
+                data.get('recurrence_type'),
+                data.get('send_time'),
+                data.get('instance_id'),
+                datetime.now(timezone.utc).isoformat(),
+                datetime.now(timezone.utc).isoformat()
+            ))
+
+            for group_id in data.get('groups', []):
+                cursor.execute(
+                    "INSERT OR IGNORE INTO campaign_groups (campaign_id, group_id) VALUES (?, ?)",
+                    (campaign_id, group_id)
+                )
+
+            for msg in data.get('messages', []):
+                message_id = str(uuid.uuid4())
+                cursor.execute(
+                    "INSERT INTO campaign_messages (id, campaign_id, message_text, attachment) VALUES (?, ?, ?, ?)",
+                    (message_id, campaign_id, msg.get('text'), msg.get('attachment'))
+                )
+
+            conn.commit()
+            conn.close()
+
+            print(f"✅ Campanha '{data['name']}' criada com ID: {campaign_id}")
+            self.send_json_response({
+                'success': True,
+                'campaign_id': campaign_id,
+                'message': f'Campanha "{data["name"]}" criada com sucesso'
+            })
+
+        except Exception as e:
+            print(f"❌ Erro ao criar campanha: {e}")
+            self.send_json_response({'error': str(e)}, 500)
+
+    def handle_update_campaign(self, campaign_id):
+        """Update campaign"""
+        try:
+            content_length = int(self.headers.get('Content-Length', 0))
+            post_data = self.rfile.read(content_length)
+            data = json.loads(post_data.decode('utf-8'))
+
+            conn = sqlite3.connect(DB_FILE)
+            cursor = conn.cursor()
+
+            update_fields = []
+            values = []
+
+            if 'name' in data:
+                update_fields.append('name = ?')
+                values.append(data['name'])
+
+            if 'description' in data:
+                update_fields.append('description = ?')
+                values.append(data['description'])
+
+            if 'recurrence_type' in data:
+                update_fields.append('recurrence_type = ?')
+                values.append(data['recurrence_type'])
+
+            if 'send_time' in data:
+                update_fields.append('send_time = ?')
+                values.append(data['send_time'])
+
+            if 'instance_id' in data:
+                update_fields.append('instance_id = ?')
+                values.append(data['instance_id'])
+
+            update_fields.append('updated_at = ?')
+            values.append(datetime.now(timezone.utc).isoformat())
+            values.append(campaign_id)
+
+            cursor.execute(f"""
+                UPDATE campaigns
+                SET {', '.join(update_fields)}
+                WHERE id = ?
+            """, values)
+
+            if cursor.rowcount == 0:
+                conn.close()
+                self.send_json_response({'error': 'Campanha não encontrada'}, 404)
+                return
+
+            if 'groups' in data:
+                cursor.execute("DELETE FROM campaign_groups WHERE campaign_id = ?", (campaign_id,))
+                for group_id in data['groups']:
+                    cursor.execute(
+                        "INSERT OR IGNORE INTO campaign_groups (campaign_id, group_id) VALUES (?, ?)",
+                        (campaign_id, group_id)
+                    )
+
+            if 'messages' in data:
+                cursor.execute("DELETE FROM campaign_messages WHERE campaign_id = ?", (campaign_id,))
+                for msg in data['messages']:
+                    message_id = msg.get('id', str(uuid.uuid4()))
+                    cursor.execute(
+                        "INSERT INTO campaign_messages (id, campaign_id, message_text, attachment) VALUES (?, ?, ?, ?)",
+                        (message_id, campaign_id, msg.get('text'), msg.get('attachment'))
+                    )
+
+            conn.commit()
+            conn.close()
+
+            print(f"✅ Campanha {campaign_id} atualizada")
+            self.send_json_response({'success': True, 'message': 'Campanha atualizada com sucesso'})
+
+        except Exception as e:
+            print(f"❌ Erro ao atualizar campanha: {e}")
+            self.send_json_response({'error': str(e)}, 500)
+
+    def handle_delete_campaign(self, campaign_id):
+        """Delete campaign"""
+        try:
+            conn = sqlite3.connect(DB_FILE)
+            cursor = conn.cursor()
+
+            cursor.execute("DELETE FROM campaign_groups WHERE campaign_id = ?", (campaign_id,))
+            cursor.execute("DELETE FROM campaign_messages WHERE campaign_id = ?", (campaign_id,))
+            cursor.execute("DELETE FROM campaigns WHERE id = ?", (campaign_id,))
+
+            if cursor.rowcount > 0:
+                conn.commit()
+                conn.close()
+                print(f"✅ Campanha {campaign_id} excluída")
+                self.send_json_response({'success': True, 'message': 'Campanha excluída com sucesso'})
+            else:
+                conn.close()
+                self.send_json_response({'error': 'Campanha não encontrada'}, 404)
+
+        except Exception as e:
+            print(f"❌ Erro ao excluir campanha: {e}")
+            self.send_json_response({'error': str(e)}, 500)
 
     def handle_send_webhook(self):
         """Send webhook"""
