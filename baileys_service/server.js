@@ -432,26 +432,19 @@ app.post('/send/:instanceId', async (req, res) => {
         if (type === 'text') {
             await instance.sock.sendMessage(jid, { text: message });
         } else {
-            const mediaMap = {
-                image: { field: 'image', key: 'imageData' },
-                audio: { field: 'audio', key: 'audioData' },
-                video: { field: 'video', key: 'videoData' },
-                document: { field: 'document', key: 'documentData' }
-            };
+            const supportedTypes = ['image', 'audio', 'video', 'document'];
 
-            const mediaInfo = mediaMap[type];
-
-            if (!mediaInfo) {
+            if (!supportedTypes.includes(type)) {
                 return res.status(400).json({ error: `Tipo de mídia '${type}' não suportado`, instanceId: instanceId });
             }
 
-            const base64Data = req.body[mediaInfo.key];
+            const base64Data = req.body[type] || req.body[`${type}Data`];
             if (!base64Data) {
-                return res.status(400).json({ error: `Dados base64 ausentes para o tipo '${type}'`, instanceId: instanceId });
+                return res.status(400).json({ error: `Campo '${type}' com dados base64 ausente`, instanceId: instanceId });
             }
 
             const buffer = Buffer.from(base64Data, 'base64');
-            const msgOptions = { [mediaInfo.field]: buffer, caption: message || '' };
+            const msgOptions = { [type]: buffer, caption: message || '' };
 
             if (type === 'document') {
                 if (req.body.fileName) msgOptions.fileName = req.body.fileName;
