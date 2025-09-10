@@ -1227,13 +1227,12 @@ HTML_APP = '''<!DOCTYPE html>
     </style>
 </head>
 <body>
-    <div class="websocket-status" id="websocketStatus">🔄 Conectando...</div>
+    <div class="websocket-status" id="websocketStatus">🔄 Conectando</div>
     
     <div class="container">
         <div class="header">
-            <h1>🚀 WhatsFlow Professional</h1>
-            <p>Sistema Avançado de Automação WhatsApp</p>
-            <div class="subtitle">✅ WebSocket • Tempo Real • Design Profissional</div>
+            <h1>WhatsFlow</h1>
+            <p>Sistema de Automação WhatsApp</p>
         </div>
         
         <nav class="nav">
