@@ -371,20 +371,20 @@ class WhatsFlowRealTester:
             cursor.execute("SELECT name, phone FROM contacts WHERE name NOT LIKE 'Contact %' LIMIT 10")
             real_named_contacts = cursor.fetchall()
             
-            # Check messages table for pushName data
-            cursor.execute("SELECT DISTINCT user_name FROM messages WHERE user_name IS NOT NULL AND user_name != '' LIMIT 10")
-            pushname_data = cursor.fetchall()
+            # Check messages table for contact_name data (WhatsFlow Real uses contact_name, not user_name)
+            cursor.execute("SELECT DISTINCT contact_name FROM messages WHERE contact_name IS NOT NULL AND contact_name != '' LIMIT 10")
+            contact_name_data = cursor.fetchall()
             
             conn.close()
             
-            real_names_found = len(real_named_contacts) + len(pushname_data)
+            real_names_found = len(real_named_contacts) + len(contact_name_data)
             
             if real_names_found > 0:
                 sample_names = []
                 if real_named_contacts:
                     sample_names.extend([contact[0] for contact in real_named_contacts[:3]])
-                if pushname_data:
-                    sample_names.extend([name[0] for name in pushname_data[:3]])
+                if contact_name_data:
+                    sample_names.extend([name[0] for name in contact_name_data[:3]])
                 
                 self.log_test("Database Real Names", "PASS", 
                             f"Found {real_names_found} real names. Examples: {sample_names}")
