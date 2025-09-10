@@ -84,9 +84,58 @@ HTML_APP = '''<!DOCTYPE html>
         }
         
         .container { 
-            max-width: 1400px; 
-            margin: 0 auto; 
-            padding: 1rem; 
+            max-width: 100vw; 
+            margin: 0; 
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* Messages section fullscreen */
+        #messages.section {
+            height: calc(100vh - 60px); /* Account for nav height */
+            max-height: calc(100vh - 60px);
+        }
+        
+        .messages-section {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .messages-header {
+            flex-shrink: 0;
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-secondary);
+        }
+        
+        .messages-content {
+            flex: 1;
+            display: flex;
+            height: calc(100% - 80px); /* Account for header */
+            min-height: 0; /* Important for flex children */
+        }
+        
+        .conversations-panel {
+            width: 300px;
+            border-right: 1px solid var(--border);
+            background: var(--bg-secondary);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .conversations-list {
+            flex: 1;
+            overflow-y: auto;
+        }
+        
+        .chat-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-chat);
         }
         
         /* Header Clean Design */
