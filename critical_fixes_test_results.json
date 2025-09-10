@@ -11,97 +11,97 @@
       "test": "WhatsFlow Real Service",
       "status": "PASS",
       "details": "Running on port 8889",
-      "timestamp": "2025-09-10T05:39:52.581793"
+      "timestamp": "2025-09-10T05:53:24.685989"
     },
     {
       "test": "Baileys Node.js Service",
       "status": "PASS",
-      "details": "Running on port 3002, uptime: 213.777629515s",
-      "timestamp": "2025-09-10T05:39:52.585213"
+      "details": "Running on port 3002, uptime: 204.308849259s",
+      "timestamp": "2025-09-10T05:53:24.689395"
     },
     {
       "test": "Groups Endpoint (Valid Instance)",
       "status": "FAIL",
       "details": "HTTP 404: {\"success\":false,\"error\":\"Inst\u00e2ncia n\u00e3o encontrada\",\"instanceId\":\"valid_instance_001\"}",
-      "timestamp": "2025-09-10T05:39:52.587507"
+      "timestamp": "2025-09-10T05:53:24.691313"
     },
     {
       "test": "Groups Endpoint (Invalid Instance)",
       "status": "FAIL",
       "details": "HTTP 404: {\"success\":false,\"error\":\"Inst\u00e2ncia n\u00e3o encontrada\",\"instanceId\":\"invalid_instance\"}",
-      "timestamp": "2025-09-10T05:39:52.589568"
+      "timestamp": "2025-09-10T05:53:24.693352"
     },
     {
       "test": "GET /api/chats (Basic)",
       "status": "PASS",
       "details": "Retrieved 0 chats successfully",
-      "timestamp": "2025-09-10T05:39:52.591997"
+      "timestamp": "2025-09-10T05:53:24.695762"
     },
     {
       "test": "GET /api/chats (With Instance Filter)",
       "status": "INFO",
       "details": "Instance filtering not implemented (expected)",
-      "timestamp": "2025-09-10T05:39:52.593648"
+      "timestamp": "2025-09-10T05:53:24.697289"
     },
     {
       "test": "Send Message (test_instance_001)",
       "status": "PASS",
       "details": "Proper error handling: Inst\u00e2ncia n\u00e3o conectada",
-      "timestamp": "2025-09-10T05:39:52.596212"
+      "timestamp": "2025-09-10T05:53:24.708168"
     },
     {
       "test": "Send Message (invalid_instance)",
       "status": "PASS",
       "details": "Proper error handling: Inst\u00e2ncia n\u00e3o conectada",
-      "timestamp": "2025-09-10T05:39:52.598332"
+      "timestamp": "2025-09-10T05:53:24.711037"
     },
     {
       "test": "Send Message (disconnected_instance)",
       "status": "PASS",
       "details": "Proper error handling: Inst\u00e2ncia n\u00e3o conectada",
-      "timestamp": "2025-09-10T05:39:52.600842"
+      "timestamp": "2025-09-10T05:53:24.712972"
     },
     {
       "test": "Interface - Como Funciona Removed",
       "status": "PASS",
       "details": "Como funciona section successfully removed from interface",
-      "timestamp": "2025-09-10T05:39:52.607742"
+      "timestamp": "2025-09-10T05:53:24.720135"
     },
     {
       "test": "Interface - Groups Section Present",
       "status": "PASS",
       "details": "Groups section properly implemented as replacement",
-      "timestamp": "2025-09-10T05:39:52.609758"
+      "timestamp": "2025-09-10T05:53:24.722421"
     },
     {
       "test": "GET /api/instances",
       "status": "PASS",
       "details": "Retrieved 3 items",
-      "timestamp": "2025-09-10T05:39:52.612228"
+      "timestamp": "2025-09-10T05:53:24.724811"
     },
     {
       "test": "GET /api/contacts",
       "status": "PASS",
       "details": "Retrieved 6 items",
-      "timestamp": "2025-09-10T05:39:52.614425"
+      "timestamp": "2025-09-10T05:53:24.726857"
     },
     {
       "test": "GET /api/messages",
       "status": "PASS",
       "details": "Retrieved 0 items",
-      "timestamp": "2025-09-10T05:39:52.616616"
+      "timestamp": "2025-09-10T05:53:24.728871"
     },
     {
       "test": "GET /api/stats",
       "status": "PASS",
       "details": "Retrieved data: 3 fields",
-      "timestamp": "2025-09-10T05:39:52.618676"
+      "timestamp": "2025-09-10T05:53:24.730817"
     },
     {
       "test": "GET /api/chats",
       "status": "PASS",
       "details": "Retrieved 0 items",
-      "timestamp": "2025-09-10T05:39:52.620850"
+      "timestamp": "2025-09-10T05:53:24.732814"
     }
   ]
 }
