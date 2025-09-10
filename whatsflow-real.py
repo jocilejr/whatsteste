@@ -4305,6 +4305,180 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
         except Exception as e:
             self.send_json_response({"error": str(e)}, 500)
     
+    # Flow Management Functions
+    def handle_get_flows(self):
+        """Get all flows"""
+        try:
+            conn = sqlite3.connect(DB_FILE)
+            cursor = conn.cursor()
+            
+            cursor.execute("""
+                SELECT * FROM flows 
+                ORDER BY created_at DESC
+            """)
+            
+            flows = []
+            for row in cursor.fetchall():
+                flows.append({
+                    'id': row[0],
+                    'name': row[1],
+                    'description': row[2],
+                    'nodes': json.loads(row[3]) if row[3] else [],
+                    'edges': json.loads(row[4]) if row[4] else [],
+                    'active': bool(row[5]),
+                    'instance_id': row[6],
+                    'created_at': row[7],
+                    'updated_at': row[8]
+                })
+            
+            conn.close()
+            self.send_json_response(flows)
+            
+        except Exception as e:
+            print(f"❌ Erro ao obter fluxos: {e}")
+            self.send_json_response({"error": str(e)}, 500)
+
+    def handle_create_flow(self):
+        """Create new flow"""
+        try:
+            content_length = int(self.headers.get('Content-Length', 0))
+            post_data = self.rfile.read(content_length)
+            data = json.loads(post_data.decode('utf-8'))
+            
+            flow_id = str(uuid.uuid4())
+            
+            conn = sqlite3.connect(DB_FILE)
+            cursor = conn.cursor()
+            
+            cursor.execute("""
+                INSERT INTO flows (id, name, description, nodes, edges, active, instance_id, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (flow_id, data['name'], data.get('description', ''), 
+                  json.dumps(data.get('nodes', [])), json.dumps(data.get('edges', [])),
+                  data.get('active', False), data.get('instance_id'),
+                  datetime.now(timezone.utc).isoformat(), datetime.now(timezone.utc).isoformat()))
+            
+            conn.commit()
+            conn.close()
+            
+            print(f"✅ Fluxo '{data['name']}' criado com ID: {flow_id}")
+            self.send_json_response({
+                'success': True,
+                'flow_id': flow_id,
+                'message': f'Fluxo "{data["name"]}" criado com sucesso'
+            })
+            
+        except Exception as e:
+            print(f"❌ Erro ao criar fluxo: {e}")
+            self.send_json_response({"error": str(e)}, 500)
+
+    def handle_update_flow(self, flow_id):
+        """Update flow"""
+        try:
+            content_length = int(self.headers.get('Content-Length', 0))
+            post_data = self.rfile.read(content_length)
+            data = json.loads(post_data.decode('utf-8'))
+            
+            conn = sqlite3.connect(DB_FILE)
+            cursor = conn.cursor()
+            
+            # Update only the provided fields
+            update_fields = []
+            values = []
+            
+            if 'name' in data:
+                update_fields.append('name = ?')
+                values.append(data['name'])
+                
+            if 'description' in data:
+                update_fields.append('description = ?')
+                values.append(data['description'])
+                
+            if 'nodes' in data:
+                update_fields.append('nodes = ?')
+                values.append(json.dumps(data['nodes']))
+                
+            if 'edges' in data:
+                update_fields.append('edges = ?')
+                values.append(json.dumps(data['edges']))
+                
+            if 'active' in data:
+                update_fields.append('active = ?')
+                values.append(data['active'])
+                
+            if 'instance_id' in data:
+                update_fields.append('instance_id = ?')
+                values.append(data['instance_id'])
+            
+            update_fields.append('updated_at = ?')
+            values.append(datetime.now(timezone.utc).isoformat())
+            
+            values.append(flow_id)
+            
+            cursor.execute(f"""
+                UPDATE flows 
+                SET {', '.join(update_fields)}
+                WHERE id = ?
+            """, values)
+            
+            if cursor.rowcount > 0:
+                conn.commit()
+                conn.close()
+                print(f"✅ Fluxo {flow_id} atualizado")
+                self.send_json_response({'success': True, 'message': 'Fluxo atualizado com sucesso'})
+            else:
+                conn.close()
+                self.send_json_response({'error': 'Fluxo não encontrado'}, 404)
+            
+        except Exception as e:
+            print(f"❌ Erro ao atualizar fluxo: {e}")
+            self.send_json_response({"error": str(e)}, 500)
+
+    def handle_delete_flow(self, flow_id):
+        """Delete flow"""
+        try:
+            conn = sqlite3.connect(DB_FILE)
+            cursor = conn.cursor()
+            
+            cursor.execute("DELETE FROM flows WHERE id = ?", (flow_id,))
+            
+            if cursor.rowcount > 0:
+                conn.commit()
+                conn.close()
+                print(f"✅ Fluxo {flow_id} excluído")
+                self.send_json_response({'success': True, 'message': 'Fluxo excluído com sucesso'})
+            else:
+                conn.close()
+                self.send_json_response({'error': 'Fluxo não encontrado'}, 404)
+            
+        except Exception as e:
+            print(f"❌ Erro ao excluir fluxo: {e}")
+            self.send_json_response({"error": str(e)}, 500)
+
+    def handle_send_webhook(self):
+        """Send webhook"""
+        try:
+            content_length = int(self.headers.get('Content-Length', 0))
+            post_data = self.rfile.read(content_length)
+            data = json.loads(post_data.decode('utf-8'))
+            
+            import urllib.request
+            
+            webhook_data = json.dumps(data['data']).encode()
+            req = urllib.request.Request(
+                data['url'],
+                data=webhook_data,
+                headers={'Content-Type': 'application/json'},
+                method='POST'
+            )
+            
+            with urllib.request.urlopen(req) as response:
+                self.send_json_response({'success': True, 'message': 'Webhook enviado com sucesso'})
+                
+        except Exception as e:
+            print(f"❌ Erro ao enviar webhook: {e}")
+            self.send_json_response({"error": str(e)}, 500)
+    
     def log_message(self, format, *args):
         # Suppress default logging
         pass
