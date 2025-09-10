@@ -244,8 +244,8 @@ async function connectInstance(instanceId) {
                         
                         // Process chats in batches to avoid overwhelming the system
                         const batchSize = 20;
-                        for (let i = 0; i < chats.length; i += batchSize) {
-                            const batch = chats.slice(i, i + batchSize);
+                        for (let i = 0; i < enhancedChats.length; i += batchSize) {
+                            const batch = enhancedChats.slice(i, i + batchSize);
                             
                             // Send batch to Python backend
                             const fetch = (await import('node-fetch')).default;
