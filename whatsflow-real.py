@@ -1655,15 +1655,6 @@ HTML_APP = '''<!DOCTYPE html>
                 </div>
             </div>
         </div>
-                
-                <h3 style="margin: 20px 0 10px 0;">🔗 Como funciona:</h3>
-                <p>1. <strong>Python</strong> roda a interface web e banco de dados</p>
-                <p>2. <strong>Node.js + Baileys</strong> conecta com WhatsApp real</p>
-                <p>3. <strong>Comunicação</strong> entre os dois via HTTP</p>
-                <p>4. <strong>QR Code real</strong> para conectar seu WhatsApp</p>
-                <p>5. <strong>Mensagens reais</strong> enviadas e recebidas</p>
-            </div>
-        </div>
     </div>
     
     <div id="createModal" class="modal">
