@@ -179,16 +179,34 @@ HTML_APP = '''<!DOCTYPE html>
             flex: 1;
             display: flex;
             min-height: 0;
-            background: #f0f2f5;
+            background: linear-gradient(135deg, #f8fafe 0%, #f0f7f4 100%);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 24px rgba(16, 24, 40, 0.06);
+            margin: 0 8px 8px 8px;
         }
         
-        /* Conversations Panel - Professional Design */
+        /* Conversations Panel - Ultra Professional Design */
         .conversations-panel {
-            width: 340px;
-            background: white;
-            border-right: 1px solid #e9edef;
+            width: 380px;
+            background: linear-gradient(180deg, #ffffff 0%, #fafbfc 100%);
+            border-right: 1px solid #e3e8ed;
             display: flex;
             flex-direction: column;
+            position: relative;
+        }
+        
+        .conversations-panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 1px;
+            height: 100%;
+            background: linear-gradient(180deg, 
+                rgba(18, 140, 126, 0.1) 0%, 
+                rgba(18, 140, 126, 0.05) 50%, 
+                rgba(18, 140, 126, 0.1) 100%);
         }
         
         .search-bar {
