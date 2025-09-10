@@ -27,85 +27,85 @@
       "test": "Server Connectivity",
       "status": "PASS",
       "details": "Server responding on port 8889",
-      "timestamp": "2025-09-09T23:50:58.839879"
+      "timestamp": "2025-09-10T03:07:36.859617"
     },
     {
       "test": "GET /api/instances",
       "status": "PASS",
-      "details": "Retrieved 8 instances",
-      "timestamp": "2025-09-09T23:50:58.842497"
+      "details": "Retrieved 16 instances",
+      "timestamp": "2025-09-10T03:07:36.862246"
     },
     {
       "test": "GET /api/contacts",
       "status": "PASS",
-      "details": "Retrieved 3 contacts",
-      "timestamp": "2025-09-09T23:50:58.844906"
+      "details": "Retrieved 5 contacts",
+      "timestamp": "2025-09-10T03:07:36.864717"
     },
     {
       "test": "GET /api/messages",
       "status": "PASS",
-      "details": "Retrieved 5 messages",
-      "timestamp": "2025-09-09T23:50:58.847175"
+      "details": "Retrieved 6 messages",
+      "timestamp": "2025-09-10T03:07:36.867148"
     },
     {
       "test": "GET /api/stats",
       "status": "PASS",
-      "details": "Statistics retrieved - Contacts: 3, Messages: 5",
-      "timestamp": "2025-09-09T23:50:58.849216"
+      "details": "Statistics retrieved - Contacts: 5, Messages: 6",
+      "timestamp": "2025-09-10T03:07:36.869243"
     },
     {
       "test": "GET /api/whatsapp/status",
       "status": "PASS",
       "details": "WhatsApp status: Disconnected",
-      "timestamp": "2025-09-09T23:50:58.853839"
+      "timestamp": "2025-09-10T03:07:36.874014"
     },
     {
       "test": "GET /api/whatsapp/qr",
       "status": "PASS",
       "details": "QR code: Not available",
-      "timestamp": "2025-09-09T23:50:58.858027"
+      "timestamp": "2025-09-10T03:07:36.883300"
     },
     {
       "test": "GET /api/webhooks",
       "status": "PASS",
       "details": "Retrieved 0 webhooks",
-      "timestamp": "2025-09-09T23:50:58.859710"
+      "timestamp": "2025-09-10T03:07:36.884844"
     },
     {
       "test": "POST /api/instances",
       "status": "PASS",
-      "details": "Created instance: Test Instance 2b6930ea",
-      "timestamp": "2025-09-09T23:50:58.868063"
+      "details": "Created instance: Test Instance ba8e93df",
+      "timestamp": "2025-09-10T03:07:36.892818"
     },
     {
       "test": "POST /api/instances/{id}/connect",
       "status": "PASS",
       "details": "Connection initiated successfully",
-      "timestamp": "2025-09-09T23:50:58.872885"
+      "timestamp": "2025-09-10T03:07:36.898743"
     },
     {
       "test": "POST /api/instances",
       "status": "PASS",
-      "details": "Created instance: Test Instance e35879ce",
-      "timestamp": "2025-09-09T23:50:58.881037"
+      "details": "Created instance: Test Instance 85f8359a",
+      "timestamp": "2025-09-10T03:07:36.906069"
     },
     {
       "test": "GET /api/instances",
       "status": "PASS",
-      "details": "Retrieved 10 instances",
-      "timestamp": "2025-09-09T23:50:59.883916"
+      "details": "Retrieved 18 instances",
+      "timestamp": "2025-09-10T03:07:37.909003"
     },
     {
       "test": "Database Persistence",
       "status": "PASS",
       "details": "SQLite database working correctly",
-      "timestamp": "2025-09-09T23:50:59.883972"
+      "timestamp": "2025-09-10T03:07:37.909053"
     },
     {
       "test": "Baileys Service Integration",
       "status": "PASS",
       "details": "Baileys service is running and accessible",
-      "timestamp": "2025-09-09T23:50:59.886786"
+      "timestamp": "2025-09-10T03:07:37.911824"
     }
   ]
 }
