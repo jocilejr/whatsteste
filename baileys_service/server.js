@@ -444,31 +444,106 @@ app.post('/send/:instanceId', async (req, res) => {
 });
 
 // Groups endpoint - Get groups for instance
-app.get('/groups/:instanceId', (req, res) => {
+app.get('/groups/:instanceId', async (req, res) => {
     const { instanceId } = req.params;
     const instance = instances.get(instanceId);
     
-    if (!instance || !instance.connected || !instance.sock) {
-        return res.json({ 
-            success: false, 
+    if (!instance) {
+        return res.status(404).json({ 
+            success: false,
             error: 'Instância não encontrada', 
             instanceId: instanceId 
         });
     }
     
-    try {
-        // For now, return empty groups since we need a connected instance to get real groups
-        res.json({
-            success: true,
-            groups: [],
-            instanceId: instanceId,
-            message: 'Nenhum grupo encontrado ou instância não conectada'
+    if (!instance.connected || !instance.sock) {
+        return res.status(400).json({ 
+            success: false,
+            error: 'Instância não está conectada ao WhatsApp. Conecte primeiro na aba Instâncias.', 
+            instanceId: instanceId 
         });
+    }
+    
+    try {
+        console.log(`📥 Buscando grupos da instância ${instanceId}...`);
+        
+        // Method 1: Try to get chats from store
+        let groups = [];
+        const store = instance.sock.ev;
+        
+        if (store.chats) {
+            const allChats = Object.values(store.chats);
+            groups = allChats.filter(chat => chat.id && chat.id.endsWith('@g.us'));
+            console.log(`📊 Método 1: ${groups.length} grupos encontrados no store`);
+        }
+        
+        // Method 2: If no groups found, try alternative method
+        if (groups.length === 0) {
+            try {
+                const chatsList = await instance.sock.getChatList();
+                groups = chatsList.filter(chat => chat.id && chat.id.endsWith('@g.us'));
+                console.log(`📊 Método 2: ${groups.length} grupos encontrados na lista de chats`);
+            } catch (e) {
+                console.log('⚠️ Método 2 falhou:', e.message);
+            }
+        }
+        
+        // Method 3: If still no groups, create mock data for testing
+        if (groups.length === 0) {
+            console.log('⚠️ Nenhum grupo encontrado, retornando dados vazios');
+        }
+        
+        // Get detailed group info
+        const groupsInfo = [];
+        
+        for (const group of groups) {
+            try {
+                // Try to get group metadata
+                const metadata = await instance.sock.groupMetadata(group.id);
+                
+                groupsInfo.push({
+                    id: group.id,
+                    name: metadata.subject || group.name || 'Grupo sem nome',
+                    description: metadata.desc || '',
+                    participants: metadata.participants || [],
+                    participantsCount: metadata.participants?.length || 0,
+                    owner: metadata.owner,
+                    created: metadata.creation,
+                    lastMessage: group.conversationTimestamp,
+                    unreadCount: group.unreadCount || 0
+                });
+            } catch (err) {
+                console.log(`⚠️ Erro ao obter metadados do grupo ${group.id}:`, err.message);
+                
+                // Fallback group info
+                const groupName = group.name || group.id.split('@')[0] || 'Grupo sem nome';
+                groupsInfo.push({
+                    id: group.id,
+                    name: groupName,
+                    description: '',
+                    participants: [],
+                    participantsCount: 0,
+                    owner: null,
+                    created: null,
+                    lastMessage: group.conversationTimestamp,
+                    unreadCount: group.unreadCount || 0
+                });
+            }
+        }
+        
+        res.json({ 
+            success: true, 
+            groups: groupsInfo,
+            instanceId: instanceId,
+            count: groupsInfo.length,
+            message: groupsInfo.length === 0 ? 'Nenhum grupo encontrado para esta instância. Certifique-se de que existem grupos no WhatsApp conectado.' : undefined
+        });
+        
     } catch (error) {
         console.error(`❌ Erro ao buscar grupos da instância ${instanceId}:`, error);
-        res.json({ 
-            success: false, 
-            error: error.message, 
+        res.status(500).json({ 
+            success: false,
+            error: `Erro interno: ${error.message}`, 
             instanceId: instanceId 
         });
     }
