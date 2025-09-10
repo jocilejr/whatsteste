@@ -2377,21 +2377,22 @@ HTML_APP = '''<!DOCTYPE html>
             sendButton.disabled = true;
             
             try {
-                // Use Baileys service to send message
-                const response = await fetch('http://localhost:3002/send', {
+                // Use Baileys service to send message with correct instanceId
+                const response = await fetch(`http://localhost:3002/send/${currentChat.instanceId}`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        instanceId: currentChat.instanceId,
                         to: currentChat.phone,
                         message: message,
                         type: 'text'
                     })
                 });
                 
-                if (response.ok) {
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
                     messageInput.value = '';
                     
                     // Add message to UI immediately for better UX
@@ -2415,13 +2416,17 @@ HTML_APP = '''<!DOCTYPE html>
                     console.log('✅ Mensagem enviada com sucesso');
                     
                 } else {
-                    console.error('❌ Erro ao enviar mensagem');
-                    alert('❌ Erro ao enviar mensagem. Verifique se a instância está conectada.');
+                    console.error('❌ Erro ao enviar mensagem:', result.error || 'Erro desconhecido');
+                    if (result.error && result.error.includes('não conectada')) {
+                        alert('❌ Instância não está conectada ao WhatsApp. Conecte primeiro na aba Instâncias.');
+                    } else {
+                        alert(`❌ Erro ao enviar mensagem: ${result.error || 'Erro desconhecido'}`);
+                    }
                 }
                 
             } catch (error) {
                 console.error('❌ Erro ao enviar mensagem:', error);
-                alert('❌ Erro de conexão com o serviço Baileys');
+                alert('❌ Erro de conexão com o serviço Baileys. Verifique se o serviço está rodando.');
             } finally {
                 // Restore button state
                 messageInput.disabled = false;
