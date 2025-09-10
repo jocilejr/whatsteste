@@ -1479,7 +1479,13 @@ HTML_APP = '''<!DOCTYPE html>
             
             // Show selected section
             document.getElementById(name).classList.add('active');
-            event.target.classList.add('active');
+            
+            // Find and activate the correct button
+            document.querySelectorAll('.nav-btn').forEach(b => {
+                if (b.onclick && b.onclick.toString().includes(`'${name}'`)) {
+                    b.classList.add('active');
+                }
+            });
             
             console.log('📄 Seção ativa:', name);
             
