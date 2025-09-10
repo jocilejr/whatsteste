@@ -1230,11 +1230,6 @@ HTML_APP = '''<!DOCTYPE html>
     <div class="websocket-status" id="websocketStatus">🔄 Conectando</div>
     
     <div class="container">
-        <div class="header">
-            <h1>WhatsFlow</h1>
-            <p>Sistema de Automação WhatsApp</p>
-        </div>
-        
         <nav class="nav">
             <button class="nav-btn active" onclick="showSection('dashboard')">
                 <span>📊</span> Dashboard
@@ -1247,6 +1242,9 @@ HTML_APP = '''<!DOCTYPE html>
             </button>
             <button class="nav-btn" onclick="showSection('messages')">
                 <span>💬</span> Mensagens
+            </button>
+            <button class="nav-btn" onclick="showSection('groups')">
+                <span>👥</span> Grupos
             </button>
             <button class="nav-btn" onclick="showSection('flows')">
                 <span>🎯</span> Fluxos
