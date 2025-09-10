@@ -2666,20 +2666,26 @@ HTML_APP = '''<!DOCTYPE html>
             sendButton.disabled = true;
             
             try {
-                // Use Baileys service to send message with correct instanceId
+                console.log('📤 Enviando mensagem para:', currentChat.phone, 'via instância:', currentChat.instanceId);
+                
+                // Use Baileys service to send message with corrected URL and proper error handling
                 const response = await fetch(`http://localhost:3002/send/${currentChat.instanceId}`, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
                     },
                     body: JSON.stringify({
                         to: currentChat.phone,
                         message: message,
                         type: 'text'
-                    })
+                    }),
+                    timeout: 15000
                 });
                 
                 const result = await response.json();
+                
+                console.log('📤 Resposta do envio:', result);
                 
                 if (response.ok && result.success) {
                     messageInput.value = '';
@@ -2704,18 +2710,35 @@ HTML_APP = '''<!DOCTYPE html>
                     
                     console.log('✅ Mensagem enviada com sucesso');
                     
+                    // Refresh conversations list to update last message
+                    setTimeout(() => loadConversations(), 1000);
+                    
                 } else {
-                    console.error('❌ Erro ao enviar mensagem:', result.error || 'Erro desconhecido');
-                    if (result.error && result.error.includes('não conectada')) {
-                        alert('❌ Instância não está conectada ao WhatsApp. Conecte primeiro na aba Instâncias.');
-                    } else {
-                        alert(`❌ Erro ao enviar mensagem: ${result.error || 'Erro desconhecido'}`);
+                    let errorMessage = result.error || 'Erro desconhecido ao enviar mensagem';
+                    
+                    if (errorMessage.includes('não conectada')) {
+                        errorMessage = 'A instância não está conectada ao WhatsApp. Conecte primeiro na aba Instâncias.';
+                    } else if (errorMessage.includes('não encontrada')) {
+                        errorMessage = 'Instância não encontrada. Verifique se ela foi criada corretamente.';
                     }
+                    
+                    console.error('❌ Erro ao enviar mensagem:', errorMessage);
+                    alert(`❌ Erro ao enviar mensagem: ${errorMessage}`);
                 }
                 
             } catch (error) {
                 console.error('❌ Erro ao enviar mensagem:', error);
-                alert('❌ Erro de conexão com o serviço Baileys. Verifique se o serviço está rodando.');
+                
+                let errorMessage = 'Erro de conexão com o serviço Baileys. Verifique se o serviço está rodando.';
+                
+                if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                    errorMessage = 'Não foi possível conectar ao serviço Baileys. Verifique se está rodando na porta 3002.';
+                } else if (error.message.includes('timeout')) {
+                    errorMessage = 'Timeout ao enviar mensagem. Tente novamente.';
+                }
+                
+                alert(`❌ ${errorMessage}`);
+                
             } finally {
                 // Restore button state
                 messageInput.disabled = false;
