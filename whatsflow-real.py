@@ -3462,6 +3462,8 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             self.handle_get_contacts()
         elif self.path == '/api/chats':
             self.handle_get_chats()
+        elif self.path == '/api/flows':
+            self.handle_get_flows()
         elif self.path == '/api/webhooks/send':
             self.handle_send_webhook()
         elif self.path.startswith('/api/whatsapp/status/'):
