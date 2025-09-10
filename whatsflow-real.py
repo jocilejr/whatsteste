@@ -2356,27 +2356,45 @@ HTML_APP = '''<!DOCTYPE html>
         }
         
         async function sendMessage() {
-            if (!currentChat) return;
+            if (!currentChat) {
+                alert('❌ Selecione uma conversa primeiro');
+                return;
+            }
             
             const messageInput = document.getElementById('messageInput');
             const message = messageInput.value.trim();
             
-            if (!message) return;
+            if (!message) {
+                alert('❌ Digite uma mensagem primeiro');
+                return;
+            }
+            
+            // Show sending indicator
+            messageInput.disabled = true;
+            const sendButton = document.querySelector('#messageInputArea .btn-success');
+            const originalText = sendButton.textContent;
+            sendButton.textContent = '📤 Enviando...';
+            sendButton.disabled = true;
             
             try {
-                const response = await fetch(`/api/messages/send/${currentChat.instanceId}`, {
+                // Use Baileys service to send message
+                const response = await fetch('http://localhost:3002/send', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
                     body: JSON.stringify({
+                        instanceId: currentChat.instanceId,
                         to: currentChat.phone,
-                        message: message
+                        message: message,
+                        type: 'text'
                     })
                 });
                 
                 if (response.ok) {
                     messageInput.value = '';
                     
-                    // Add message to UI immediately
+                    // Add message to UI immediately for better UX
                     const container = document.getElementById('messagesContainer');
                     const messageDiv = document.createElement('div');
                     messageDiv.className = 'message-bubble outgoing';
@@ -2394,17 +2412,22 @@ HTML_APP = '''<!DOCTYPE html>
                     container.appendChild(messageDiv);
                     container.scrollTop = container.scrollHeight;
                     
-                    // Update conversations list
-                    loadConversations();
+                    console.log('✅ Mensagem enviada com sucesso');
                     
                 } else {
                     console.error('❌ Erro ao enviar mensagem');
-                    alert('❌ Erro ao enviar mensagem');
+                    alert('❌ Erro ao enviar mensagem. Verifique se a instância está conectada.');
                 }
                 
             } catch (error) {
                 console.error('❌ Erro ao enviar mensagem:', error);
-                alert('❌ Erro de conexão');
+                alert('❌ Erro de conexão com o serviço Baileys');
+            } finally {
+                // Restore button state
+                messageInput.disabled = false;
+                sendButton.textContent = originalText;
+                sendButton.disabled = false;
+                messageInput.focus();
             }
         }
         
