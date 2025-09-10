@@ -3832,7 +3832,6 @@ def send_via_baileys(phone: str, message: str, instance_id: str = "default") -> 
     return success
 
 
- codex/add-background-task-for-campaign-messages
 async def campaign_scheduler():
     """Periodically check and send scheduled campaign messages."""
     while True:
