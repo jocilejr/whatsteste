@@ -45,14 +45,17 @@ class WhatsFlowRealTester:
         self.test_results = []
         self.failed_tests = []
         self.passed_tests = []
+        self.critical_issues = []
+        self.minor_issues = []
         
-    def log_test(self, test_name, status, details=""):
-        """Log test results"""
+    def log_test(self, test_name, status, details="", is_critical=True):
+        """Log test results with critical/minor classification"""
         result = {
             "test": test_name,
             "status": status,
             "details": details,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
+            "is_critical": is_critical
         }
         self.test_results.append(result)
         
@@ -61,14 +64,18 @@ class WhatsFlowRealTester:
             print(f"✅ {test_name}: {details}")
         else:
             self.failed_tests.append(test_name)
+            if is_critical:
+                self.critical_issues.append(f"{test_name}: {details}")
+            else:
+                self.minor_issues.append(f"{test_name}: {details}")
             print(f"❌ {test_name}: {details}")
     
     def test_server_connectivity(self):
-        """Test if the server is running and accessible"""
+        """Test if the WhatsFlow Real server is running on port 8889"""
         try:
             response = self.session.get(BASE_URL, timeout=10)
             if response.status_code == 200:
-                self.log_test("Server Connectivity", "PASS", f"Server responding on port 8889")
+                self.log_test("Server Connectivity", "PASS", f"WhatsFlow Real server responding on port 8889")
                 return True
             else:
                 self.log_test("Server Connectivity", "FAIL", f"Server returned status {response.status_code}")
