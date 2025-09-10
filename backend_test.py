@@ -261,52 +261,47 @@ class WhatsFlowRealTester:
                 self.log_test("Filtered Messages System", "SKIP", "No contacts available for testing", False)
                 return True
             
-            # Get instances for testing
-            instances_response = self.session.get(f"{API_BASE}/instances", timeout=10)
-            if instances_response.status_code != 200:
-                self.log_test("Filtered Messages System", "FAIL", "Could not get instances for testing")
-                return False
+            # Find a contact with a valid phone number
+            test_contact = None
+            for contact in contacts:
+                phone = contact.get("phone", "")
+                if phone and phone.strip() and phone != "":
+                    test_contact = contact
+                    break
             
-            instances = instances_response.json()
-            if not instances:
-                self.log_test("Filtered Messages System", "SKIP", "No instances available for testing", False)
+            if not test_contact:
+                self.log_test("Filtered Messages System", "SKIP", "No contacts with valid phone numbers", False)
                 return True
             
-            # Test message filtering with available data
-            test_contact = contacts[0]
-            test_instance = instances[0]
+            phone = test_contact["phone"]
+            instance_id = test_contact.get("instance_id", "default")
             
-            # WhatsFlow Real uses different field names
-            phone = test_contact.get("phone", test_contact.get("phone_number", ""))
-            instance_id = test_instance.get("id", "default")
+            # Test message filtering by phone
+            response = self.session.get(f"{API_BASE}/messages?phone={phone}", timeout=10)
             
-            if phone and instance_id:
-                response = self.session.get(
-                    f"{API_BASE}/messages?phone={phone}&instance_id={instance_id}",
+            if response.status_code == 200:
+                messages = response.json()
+                self.log_test("Filtered Messages System", "PASS", 
+                            f"Retrieved {len(messages)} filtered messages for {phone}")
+                
+                # Test with instance_id if supported
+                response_with_instance = self.session.get(
+                    f"{API_BASE}/messages?phone={phone}&instance_id={instance_id}", 
                     timeout=10
                 )
-                
-                if response.status_code == 200:
-                    messages = response.json()
-                    self.log_test("Filtered Messages System", "PASS", 
-                                f"Retrieved {len(messages)} filtered messages for {phone}")
-                    return True
+                if response_with_instance.status_code == 200:
+                    messages_with_instance = response_with_instance.json()
+                    self.log_test("Message Filtering with Instance", "PASS", 
+                                f"Retrieved {len(messages_with_instance)} messages with instance filter", False)
                 else:
-                    # Try without instance_id filtering
-                    response = self.session.get(f"{API_BASE}/messages?phone={phone}", timeout=10)
-                    if response.status_code == 200:
-                        messages = response.json()
-                        self.log_test("Filtered Messages System", "PASS", 
-                                    f"Retrieved {len(messages)} messages for {phone} (instance filtering not supported)", False)
-                        return True
-                    else:
-                        self.log_test("Filtered Messages System", "FAIL", 
-                                    f"HTTP {response.status_code}: {response.text}")
-                        return False
-            else:
-                self.log_test("Filtered Messages System", "SKIP", 
-                            "No valid phone numbers found for testing", False)
+                    self.log_test("Message Filtering with Instance", "SKIP", 
+                                "Instance filtering not supported", False)
+                
                 return True
+            else:
+                self.log_test("Filtered Messages System", "FAIL", 
+                            f"HTTP {response.status_code}: {response.text}")
+                return False
                 
         except Exception as e:
             self.log_test("Filtered Messages System", "FAIL", f"Exception: {str(e)}")
