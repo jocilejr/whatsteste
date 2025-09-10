@@ -2494,17 +2494,29 @@ HTML_APP = '''<!DOCTYPE html>
                     `/api/chats?instance_id=${currentInstanceId}` : 
                     '/api/chats';
                 
+                console.log('📥 Carregando conversas da URL:', url);
+                
                 const response = await fetch(url);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
                 const conversations = await response.json();
                 
+                console.log('📊 Conversas carregadas:', conversations.length);
                 renderConversations(conversations);
                 
             } catch (error) {
                 console.error('❌ Erro ao carregar conversas:', error);
-                document.getElementById('conversationsList').innerHTML = `
+                
+                const container = document.getElementById('conversationsList');
+                container.innerHTML = `
                     <div class="empty-state">
                         <div class="empty-icon">❌</div>
-                        <div class="empty-title">Erro ao carregar</div>
+                        <div class="empty-title">Erro ao carregar conversas</div>
+                        <p>${error.message}</p>
+                        <button class="btn btn-primary" onclick="loadConversations()">🔄 Tentar Novamente</button>
                     </div>
                 `;
             }
