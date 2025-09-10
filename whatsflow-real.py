@@ -3423,7 +3423,7 @@ HTML_APP = '''<!DOCTYPE html>
                 `;
                 
                 // Request groups from Baileys with proper error handling
-                const response = await fetch(`http://localhost:3002/groups/${instanceId}`, {
+                const response = await fetch(`http://127.0.0.1:3002/groups/${instanceId}`, {
                     method: 'GET',
                     headers: {
                         'Accept': 'application/json',
