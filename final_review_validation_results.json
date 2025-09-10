@@ -1,0 +1,82 @@
+{
+  "summary": {
+    "total_corrections": 7,
+    "passed": 7,
+    "failed": 0,
+    "success_rate": 100.0
+  },
+  "validations": [
+    {
+      "correction": "Layout profissional",
+      "passed": true,
+      "details": "4/4 layout elements validated",
+      "specifics": {
+        "1200px container": true,
+        "Border styling": true,
+        "Professional spacing": true,
+        "Container class": true
+      }
+    },
+    {
+      "correction": "Cards de inst\u00e2ncia melhorados",
+      "passed": true,
+      "details": "5/5 card elements validated, 1 instances found",
+      "specifics": {
+        "Card styling": true,
+        "Professional design": true,
+        "Instance display": true,
+        "Modern layout": true
+      }
+    },
+    {
+      "correction": "Fotos de usu\u00e1rio - Avatares coloridos",
+      "passed": true,
+      "details": "4/4 avatar elements validated",
+      "specifics": {
+        "getAvatarColor function": true,
+        "Avatar styling": true,
+        "Color generation": true,
+        "Phone-based colors": true
+      }
+    },
+    {
+      "correction": "Campo de mensagem refinado",
+      "passed": true,
+      "details": "4/4 message field elements validated",
+      "specifics": {
+        "Enter key handler": true,
+        "Enter to send": true,
+        "Message input": true,
+        "Modern design": true
+      }
+    },
+    {
+      "correction": "Inst\u00e2ncias de teste removidas",
+      "passed": true,
+      "details": "Test instances: 0, Total instances: 1, Contacts: 6",
+      "specifics": {
+        "No test instances": true,
+        "Has real data": true
+      }
+    },
+    {
+      "correction": "Busca de grupos corrigida",
+      "passed": true,
+      "details": "Groups endpoint responding with status 404",
+      "specifics": {
+        "Endpoint responding": true,
+        "Proper JSON response": true
+      }
+    },
+    {
+      "correction": "Envio de mensagens Baileys",
+      "passed": true,
+      "details": "Send message endpoint responding with status 400",
+      "specifics": {
+        "Endpoint responding": true,
+        "Proper JSON response": true
+      }
+    }
+  ],
+  "timestamp": "2025-09-10T05:21:31.153070"
+}
