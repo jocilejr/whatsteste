@@ -1,0 +1,104 @@
+{
+  "summary": {
+    "total_tests": 12,
+    "passed": 12,
+    "failed": 0,
+    "success_rate": 100.0,
+    "critical_issues_count": 0,
+    "minor_issues_count": 0
+  },
+  "original_problems_status": {
+    "baileys_connection": true,
+    "groups_filtering": true,
+    "layout_backend_support": true
+  },
+  "test_results": [
+    {
+      "test": "WhatsFlow Real Service",
+      "status": "PASS",
+      "details": "Service responding on http://localhost:8889",
+      "timestamp": "2025-09-10T13:32:53.683715",
+      "is_critical": true
+    },
+    {
+      "test": "Baileys Service Service",
+      "status": "PASS",
+      "details": "Service responding on http://localhost:3002",
+      "timestamp": "2025-09-10T13:32:53.687949",
+      "is_critical": true
+    },
+    {
+      "test": "Frontend Service",
+      "status": "PASS",
+      "details": "Service responding on http://localhost:3000",
+      "timestamp": "2025-09-10T13:32:53.692397",
+      "is_critical": true
+    },
+    {
+      "test": "Baileys Health Check",
+      "status": "PASS",
+      "details": "Status: running, Uptime: 185.947776625s",
+      "timestamp": "2025-09-10T13:32:53.694908",
+      "is_critical": true
+    },
+    {
+      "test": "Baileys Groups Endpoint",
+      "status": "PASS",
+      "details": "Proper error handling for unconnected instance: Inst\u00e2ncia test_instance_123 n\u00e3o est\u00e1 conectada",
+      "timestamp": "2025-09-10T13:32:53.697448",
+      "is_critical": true
+    },
+    {
+      "test": "Baileys Send Endpoint",
+      "status": "PASS",
+      "details": "Error handling working, message: Inst\u00e2ncia n\u00e3o conectada",
+      "timestamp": "2025-09-10T13:32:53.709698",
+      "is_critical": true
+    },
+    {
+      "test": "Stats API",
+      "status": "PASS",
+      "details": "Retrieved data with 3 fields",
+      "timestamp": "2025-09-10T13:32:53.712468",
+      "is_critical": true
+    },
+    {
+      "test": "Instances API",
+      "status": "PASS",
+      "details": "Retrieved 3 items",
+      "timestamp": "2025-09-10T13:32:53.715162",
+      "is_critical": true
+    },
+    {
+      "test": "Contacts API",
+      "status": "PASS",
+      "details": "Retrieved 6 items",
+      "timestamp": "2025-09-10T13:32:53.717701",
+      "is_critical": true
+    },
+    {
+      "test": "CORS Configuration",
+      "status": "PASS",
+      "details": "CORS headers present: http://localhost:8889",
+      "timestamp": "2025-09-10T13:32:53.719980",
+      "is_critical": true
+    },
+    {
+      "test": "Frontend -> WhatsFlow",
+      "status": "PASS",
+      "details": "Integration working - no CORS errors",
+      "timestamp": "2025-09-10T13:32:53.722357",
+      "is_critical": true
+    },
+    {
+      "test": "Frontend -> Baileys",
+      "status": "PASS",
+      "details": "Integration working - no CORS errors",
+      "timestamp": "2025-09-10T13:32:53.724465",
+      "is_critical": true
+    }
+  ],
+  "critical_issues": [],
+  "minor_issues": [],
+  "timestamp": "2025-09-10T13:32:53.724705"
+}
