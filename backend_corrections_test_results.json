@@ -1,0 +1,104 @@
+{
+  "summary": {
+    "total_tests": 10,
+    "passed": 6,
+    "failed": 4,
+    "critical_issues": 3,
+    "minor_issues": 1,
+    "success_rate": 60.0
+  },
+  "passed_tests": [
+    "Baileys Service Connectivity",
+    "WhatsFlow Server Connectivity",
+    "WhatsFlow Instances Endpoint",
+    "Message System Integration",
+    "Layout Corrections",
+    "Database Connectivity"
+  ],
+  "failed_tests": [
+    "Baileys Groups Endpoint",
+    "Baileys Send Message Endpoint",
+    "Backend Server Connectivity",
+    "Groups Functionality"
+  ],
+  "critical_issues": [
+    "Baileys Groups Endpoint: Groups endpoint returned status 400: {\"error\":\"Inst\u00e2ncia n\u00e3o conectada\",\"instanceId\":\"test_instance_001\"}",
+    "Baileys Send Message Endpoint: Send endpoint returned status 400: {\"error\":\"Inst\u00e2ncia n\u00e3o conectada\",\"instanceId\":\"test_instance_001\"}",
+    "Backend Server Connectivity: Backend server not accessible: HTTPConnectionPool(host='localhost', port=8001): Max retries exceeded with url: /api/ (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0xfcebd22906d0>: Failed to establish a new connection: [Errno 111] Connection refused'))"
+  ],
+  "minor_issues": [
+    "Groups Functionality: Groups endpoints not implemented in backend yet"
+  ],
+  "detailed_results": [
+    {
+      "test": "Baileys Service Connectivity",
+      "status": "PASS",
+      "details": "Baileys service responding on port 3002: {}",
+      "timestamp": "2025-09-10T04:51:59.005263",
+      "is_critical": true
+    },
+    {
+      "test": "Baileys Groups Endpoint",
+      "status": "FAIL",
+      "details": "Groups endpoint returned status 400: {\"error\":\"Inst\u00e2ncia n\u00e3o conectada\",\"instanceId\":\"test_instance_001\"}",
+      "timestamp": "2025-09-10T04:51:59.008452",
+      "is_critical": true
+    },
+    {
+      "test": "Baileys Send Message Endpoint",
+      "status": "FAIL",
+      "details": "Send endpoint returned status 400: {\"error\":\"Inst\u00e2ncia n\u00e3o conectada\",\"instanceId\":\"test_instance_001\"}",
+      "timestamp": "2025-09-10T04:51:59.020884",
+      "is_critical": true
+    },
+    {
+      "test": "WhatsFlow Server Connectivity",
+      "status": "PASS",
+      "details": "WhatsFlow Real server responding on port 8889",
+      "timestamp": "2025-09-10T04:51:59.023612",
+      "is_critical": true
+    },
+    {
+      "test": "Backend Server Connectivity",
+      "status": "FAIL",
+      "details": "Backend server not accessible: HTTPConnectionPool(host='localhost', port=8001): Max retries exceeded with url: /api/ (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0xfcebd22906d0>: Failed to establish a new connection: [Errno 111] Connection refused'))",
+      "timestamp": "2025-09-10T04:51:59.024923",
+      "is_critical": true
+    },
+    {
+      "test": "WhatsFlow Instances Endpoint",
+      "status": "PASS",
+      "details": "Retrieved 28 instances, 28 valid for selector",
+      "timestamp": "2025-09-10T04:51:59.027806",
+      "is_critical": true
+    },
+    {
+      "test": "Groups Functionality",
+      "status": "SKIP",
+      "details": "Groups endpoints not implemented in backend yet",
+      "timestamp": "2025-09-10T04:51:59.030642",
+      "is_critical": false
+    },
+    {
+      "test": "Message System Integration",
+      "status": "PASS",
+      "details": "Message endpoint working: 8",
+      "timestamp": "2025-09-10T04:51:59.032887",
+      "is_critical": true
+    },
+    {
+      "test": "Layout Corrections",
+      "status": "PASS",
+      "details": "Frontend accessible, layout appears modified",
+      "timestamp": "2025-09-10T04:51:59.052376",
+      "is_critical": true
+    },
+    {
+      "test": "Database Connectivity",
+      "status": "PASS",
+      "details": "Database accessible with 6 tables: ['instances', 'webhooks', 'chats', 'contacts', 'messages', 'flows']",
+      "timestamp": "2025-09-10T04:51:59.056266",
+      "is_critical": true
+    }
+  ]
+}
