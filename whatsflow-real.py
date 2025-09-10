@@ -52,9 +52,9 @@ HTML_APP = '''<!DOCTYPE html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WhatsFlow Real - Conexão Verdadeira</title>
+    <title>WhatsFlow Real - Sistema Profissional</title>
     <style>
-        /* Professional WhatsFlow Design - Improved */
+        /* Professional WhatsFlow Design - Ultra Modern */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
         :root {
@@ -68,6 +68,93 @@ HTML_APP = '''<!DOCTYPE html>
             --text-secondary: #667781;
             --border: #e9edef;
             --shadow: 0 1px 3px rgba(11,20,26,.13);
+            --shadow-lg: 0 2px 10px rgba(11,20,26,.2);
+            --gradient-primary: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+            --gradient-success: linear-gradient(135deg, var(--primary-light) 0%, var(--primary) 100%);
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+            min-height: 100vh;
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+        
+        .container { 
+            max-width: 1400px; 
+            margin: 0 auto; 
+            padding: 1.5rem; 
+        }
+        
+        /* Header Design Moderno */
+        .header { 
+            text-align: center; 
+            color: white; 
+            margin-bottom: 2rem;
+            padding: 1.5rem 0;
+        }
+        .header h1 { 
+            font-size: 2.5rem; 
+            font-weight: 800;
+            margin-bottom: 0.5rem; 
+            background: linear-gradient(45deg, #ffffff, var(--primary-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .header p { 
+            font-size: 1.1rem; 
+            opacity: 0.9; 
+            font-weight: 300;
+        }
+        .subtitle { 
+            background: rgba(37, 211, 102, 0.2); 
+            border: 1px solid rgba(37, 211, 102, 0.3);
+            padding: 0.5rem 1rem; 
+            border-radius: 2rem; 
+            display: inline-block; 
+            margin-top: 0.5rem; 
+            font-size: 0.85rem;
+            backdrop-filter: blur(10px);
+        }
+        
+        /* Navigation Ultra Moderna */
+        .nav { 
+            display: flex; 
+            gap: 0.25rem; 
+            margin-bottom: 1.5rem; 
+            flex-wrap: wrap; 
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 0.75rem;
+            border-radius: 1rem;
+            backdrop-filter: blur(10px);
+        }
+        .nav-btn { 
+            background: rgba(255, 255, 255, 0.1); 
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 0.6rem 1.2rem; 
+            border-radius: 0.6rem; 
+            cursor: pointer; 
+            font-weight: 500; 
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            color: white;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .nav-btn:hover { 
+            background: rgba(255, 255, 255, 0.2); 
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+        .nav-btn.active { 
+            background: var(--primary-light); 
+            color: white;
+            box-shadow: var(--shadow-lg);
+        }
             --shadow-lg: 0 2px 10px rgba(11,20,26,.2);
         }
         
