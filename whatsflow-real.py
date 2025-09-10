@@ -646,28 +646,57 @@ HTML_APP = '''<!DOCTYPE html>
             text-align: right;
         }
         
+        /* Message input improvements */
         .message-input-area {
+            display: none;
             padding: 1rem 1.5rem;
             border-top: 1px solid var(--border);
-            background: var(--bg-secondary);
-            display: none;
+            background: white;
+            gap: 12px;
+            align-items: flex-end;
         }
         
         .message-input-area.active {
             display: flex;
-            gap: 0.75rem;
-            align-items: flex-end;
         }
         
         .message-input {
             flex: 1;
-            padding: 0.75rem 1rem;
-            border: 2px solid var(--border);
-            border-radius: 1.5rem;
-            font-size: 0.9rem;
+            min-height: 42px;
+            max-height: 120px;
+            padding: 12px 16px;
+            border: 2px solid #e1e5e9;
+            border-radius: 24px;
             resize: none;
-            max-height: 100px;
             font-family: inherit;
+            font-size: 0.95rem;
+            line-height: 1.4;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+        
+        .message-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 211, 102, 0.1);
+        }
+        
+        .message-input::placeholder {
+            color: #8e9297;
+        }
+        
+        /* Send button improvements */
+        .message-input-area .btn-success {
+            min-width: 90px;
+            height: 42px;
+            border-radius: 21px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+        
+        .message-input-area .btn-success:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);
         }
         
         .message-input:focus {
