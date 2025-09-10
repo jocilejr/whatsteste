@@ -1,7 +1,13 @@
 #!/usr/bin/env python3
 """
-Backend Test Suite for WhatsFlow Real
-Testing all API endpoints running on port 8889
+Backend Test Suite for WhatsFlow Real - Enhanced Testing
+Testing all API endpoints running on port 8889 with focus on:
+- Clean design implementation
+- Message system functionality  
+- Contact names (pushName) with fallback
+- WebSocket functionality
+- Database operations with real names
+- Logs verification
 """
 
 import requests
@@ -9,10 +15,14 @@ import json
 import time
 import uuid
 from datetime import datetime
+import sqlite3
+import os
+import subprocess
 
 # Configuration
 BASE_URL = "http://localhost:8889"
 API_BASE = f"{BASE_URL}/api"
+DB_FILE = "/app/whatsflow.db"
 
 class WhatsFlowRealTester:
     def __init__(self):
