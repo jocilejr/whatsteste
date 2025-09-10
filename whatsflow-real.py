@@ -4729,7 +4729,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                 # Fallback usando urllib se requests não estiver disponível
                 import urllib.request
                 import urllib.error
-                
+
                 try:
                     data = json.dumps({}).encode('utf-8')
                     req = urllib.request.Request(
@@ -4739,7 +4739,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                     )
 
                     req.get_method = lambda: 'POST'
-                    
+
                     with urllib.request.urlopen(req, timeout=5) as response:
                         if response.status == 200:
                             self.send_json_response({"success": True, "message": "Conexão iniciada"})
@@ -4936,7 +4936,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                 # Fallback usando urllib se requests não estiver disponível
                 import urllib.request
                 import urllib.error
-                
+
                 try:
                     data = json.dumps({}).encode('utf-8')
                     req = urllib.request.Request(
@@ -4946,7 +4946,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                     )
 
                     req.get_method = lambda: 'POST'
-                    
+
                     with urllib.request.urlopen(req, timeout=5) as response:
                         if response.status == 200:
                             self.send_json_response({"success": True, "message": f"Conexão da instância {instance_id} iniciada"})
