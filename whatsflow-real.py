@@ -3738,40 +3738,123 @@ def init_db():
     """)
 
     cursor.execute("""
-        CREATE TABLE IF NOT EXISTS campaigns (
-            id TEXT PRIMARY KEY,
-            name TEXT NOT NULL,
-            description TEXT,
-            recurrence_type TEXT,
-            send_time TEXT,
-            instance_id TEXT,
-            created_at TEXT,
-            updated_at TEXT
-        )
-    """)
-
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS campaign_groups (
-            campaign_id TEXT NOT NULL,
-            group_id TEXT NOT NULL,
-            PRIMARY KEY (campaign_id, group_id),
-            FOREIGN KEY (campaign_id) REFERENCES campaigns (id) ON DELETE CASCADE
-        )
-    """)
-
-    cursor.execute("""
+codex/add-periodic-background-task-for-campaign-messages
         CREATE TABLE IF NOT EXISTS campaign_messages (
             id TEXT PRIMARY KEY,
-            campaign_id TEXT NOT NULL,
-            message_text TEXT,
-            attachment TEXT,
-            FOREIGN KEY (campaign_id) REFERENCES campaigns (id) ON DELETE CASCADE
+            phone TEXT NOT NULL,
+            message TEXT NOT NULL,
+            instance_id TEXT DEFAULT 'default',
+            send_time TEXT NOT NULL,
+            weekdays TEXT,
+            last_sent_at TEXT
+
         )
     """)
     
     conn.commit()
     conn.close()
     print("✅ Banco de dados inicializado com suporte WebSocket")
+
+def send_via_baileys(phone: str, message: str, instance_id: str = "default") -> bool:
+    """Send a WhatsApp message using the local Baileys service."""
+    to = phone if phone.endswith("@s.whatsapp.net") or phone.endswith("@c.us") else f"{phone}@s.whatsapp.net"
+    data = {"to": to, "message": message, "type": "text"}
+    success = False
+    try:
+        import requests  # type: ignore
+        try:
+            response = requests.post(f"http://127.0.0.1:3002/send/{instance_id}", json=data, timeout=10)
+            success = response.status_code == 200
+        except requests.exceptions.RequestException:
+            return False
+    except ImportError:
+        import urllib.request
+        req_data = json.dumps(data).encode("utf-8")
+        req = urllib.request.Request(
+            f"http://127.0.0.1:3002/send/{instance_id}",
+            data=req_data,
+            headers={"Content-Type": "application/json"},
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=10) as response:
+                success = response.status == 200
+        except Exception:
+            return False
+
+    if success:
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        message_id = str(uuid.uuid4())
+        phone_clean = to.replace("@s.whatsapp.net", "").replace("@c.us", "")
+        cursor.execute(
+            """
+            INSERT INTO messages (id, contact_name, phone, message, direction, instance_id, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                message_id,
+                f"Para {phone_clean[-4:]}",
+                phone_clean,
+                message,
+                "outgoing",
+                instance_id,
+                datetime.now(timezone.utc).isoformat(),
+            ),
+        )
+        conn.commit()
+        conn.close()
+    return success
+
+
+class CampaignScheduler:
+    """Background scheduler for sending campaign messages."""
+
+    def __init__(self, interval: int = 60):
+        self.interval = interval
+
+    def run(self):
+        while True:
+            try:
+                self.check_campaigns()
+            except Exception as e:
+                logger.error(f"Erro no agendador: {e}")
+            time.sleep(self.interval)
+
+    def check_campaigns(self):
+        now = datetime.now()
+        current_time = now.strftime("%H:%M")
+        weekday = now.weekday()  # Monday = 0
+
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT id, phone, message, instance_id, weekdays, last_sent_at
+            FROM campaign_messages
+            WHERE send_time = ?
+            """,
+            (current_time,),
+        )
+        rows = cursor.fetchall()
+        for msg_id, phone, message, instance_id, weekdays, last_sent_at in rows:
+            if weekdays:
+                days = [int(d) for d in weekdays.split(',') if d.strip()]
+                if weekday not in days:
+                    continue
+            if last_sent_at:
+                try:
+                    last = datetime.fromisoformat(last_sent_at)
+                    if last.date() == now.date():
+                        continue
+                except Exception:
+                    pass
+            if send_via_baileys(phone, message, instance_id or 'default'):
+                cursor.execute(
+                    "UPDATE campaign_messages SET last_sent_at = ? WHERE id = ?",
+                    (now.isoformat(), msg_id),
+                )
+        conn.commit()
+        conn.close()
 
 # WebSocket Server Functions
 if WEBSOCKETS_AVAILABLE:
@@ -5914,6 +5997,12 @@ def main():
     baileys_thread = threading.Thread(target=baileys_manager.start_baileys)
     baileys_thread.daemon = True
     baileys_thread.start()
+
+    # Start campaign scheduler
+    scheduler = CampaignScheduler()
+    scheduler_thread = threading.Thread(target=scheduler.run)
+    scheduler_thread.daemon = True
+    scheduler_thread.start()
     
     print("✅ WhatsFlow Professional configurado!")
     print(f"🌐 Interface: http://localhost:{PORT}")
