@@ -75,48 +75,37 @@ HTML_APP = '''<!DOCTYPE html>
         
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+            background: #f8fafc;
             min-height: 100vh;
             color: var(--text-primary);
             line-height: 1.6;
+            margin: 0;
+            padding: 0;
         }
         
         .container { 
             max-width: 1400px; 
             margin: 0 auto; 
-            padding: 1.5rem; 
+            padding: 1rem; 
         }
         
-        /* Header Design Moderno */
+        /* Header Clean Design */
         .header { 
             text-align: center; 
-            color: white; 
-            margin-bottom: 2rem;
-            padding: 1.5rem 0;
+            margin-bottom: 1.5rem;
+            padding: 1rem 0;
         }
         .header h1 { 
-            font-size: 2.5rem; 
-            font-weight: 800;
-            margin-bottom: 0.5rem; 
-            background: linear-gradient(45deg, #ffffff, var(--primary-light));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            font-size: 1.5rem; 
+            font-weight: 700;
+            margin-bottom: 0.25rem; 
+            color: var(--text-primary);
         }
         .header p { 
-            font-size: 1.1rem; 
-            opacity: 0.9; 
-            font-weight: 300;
-        }
-        .subtitle { 
-            background: rgba(37, 211, 102, 0.2); 
-            border: 1px solid rgba(37, 211, 102, 0.3);
-            padding: 0.5rem 1rem; 
-            border-radius: 2rem; 
-            display: inline-block; 
-            margin-top: 0.5rem; 
-            font-size: 0.85rem;
-            backdrop-filter: blur(10px);
+            font-size: 0.9rem; 
+            color: var(--text-secondary);
+            font-weight: 400;
+            margin: 0;
         }
         
         /* Navigation Ultra Moderna */
