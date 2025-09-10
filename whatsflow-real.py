@@ -467,67 +467,76 @@ HTML_APP = '''<!DOCTYPE html>
         
         /* Message Input Area - Professional Design */
         .message-input-area {
-            background: #f0f2f5;
-            padding: 16px 20px;
+            background: linear-gradient(135deg, #ffffff 0%, #f8fffe 100%);
+            padding: 20px 24px;
             display: none;
             position: relative;
             z-index: 1;
+            border-top: 1px solid #e3f2f0;
+            box-shadow: 0 -2px 12px rgba(18, 140, 126, 0.08);
         }
         
         .message-input-area.active {
             display: flex;
-            gap: 12px;
+            gap: 16px;
             align-items: flex-end;
         }
         
         .message-input {
             flex: 1;
-            min-height: 44px;
+            min-height: 48px;
             max-height: 120px;
-            padding: 12px 16px;
-            border: none;
-            border-radius: 24px;
-            background: white;
+            padding: 14px 20px;
+            border: 2px solid transparent;
+            border-radius: 28px;
+            background: #ffffff;
             font-family: inherit;
             font-size: 0.95rem;
-            line-height: 1.4;
+            line-height: 1.5;
             resize: none;
             outline: none;
-            box-shadow: 0 1px 2px rgba(11,20,26,.1);
-            transition: all 0.2s ease;
+            box-shadow: 0 2px 12px rgba(16, 24, 40, 0.08);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-weight: 400;
         }
         
         .message-input:focus {
-            box-shadow: 0 2px 8px rgba(11,20,26,.15);
+            border-color: #128c7e;
+            box-shadow: 0 4px 20px rgba(18, 140, 126, 0.15), 0 2px 12px rgba(16, 24, 40, 0.08);
+            transform: translateY(-1px);
         }
         
         .message-input::placeholder {
-            color: #8696a0;
+            color: #6c737f;
+            font-weight: 400;
         }
         
         .message-input-area .btn-success {
-            min-width: 44px;
-            height: 44px;
+            min-width: 52px;
+            height: 52px;
             border-radius: 50%;
-            background: #00a884;
+            background: linear-gradient(135deg, #128c7e 0%, #00a884 100%);
             border: none;
             color: white;
             font-weight: 600;
-            font-size: 0.9rem;
-            transition: all 0.2s ease;
+            font-size: 1rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
+            box-shadow: 0 4px 16px rgba(18, 140, 126, 0.25);
         }
         
         .message-input-area .btn-success:hover {
-            background: #008f6c;
-            transform: scale(1.05);
+            background: linear-gradient(135deg, #0f7269 0%, #008f6c 100%);
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 0 6px 24px rgba(18, 140, 126, 0.35);
         }
         
         .message-input-area .btn-success:active {
-            transform: scale(0.95);
+            transform: translateY(-1px) scale(1.02);
+            box-shadow: 0 4px 16px rgba(18, 140, 126, 0.25);
         }
         
         /* Header Clean Design */
