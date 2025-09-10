@@ -3509,6 +3509,17 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
         elif self.path.startswith('/api/messages/send/'):
             instance_id = self.path.split('/')[-1]
             self.handle_send_message(instance_id)
+        elif self.path == '/api/flows':
+            self.handle_create_flow()
+        elif self.path == '/api/webhooks/send':
+            self.handle_send_webhook()
+        else:
+            self.send_error(404, "Not Found")
+    
+    def do_PUT(self):
+        if self.path.startswith('/api/flows/'):
+            flow_id = self.path.split('/')[-1]
+            self.handle_update_flow(flow_id)
         else:
             self.send_error(404, "Not Found")
     
@@ -3516,6 +3527,9 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
         if self.path.startswith('/api/instances/'):
             instance_id = self.path.split('/')[-1]
             self.handle_delete_instance(instance_id)
+        elif self.path.startswith('/api/flows/'):
+            flow_id = self.path.split('/')[-1]
+            self.handle_delete_flow(flow_id)
         else:
             self.send_error(404, "Not Found")
     
