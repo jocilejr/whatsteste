@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 import uuid
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 import httpx
 import asyncio
 
@@ -29,11 +30,14 @@ api_router = APIRouter(prefix="/api")
 # Base URL for Baileys service (configurable via env)
 BAILEYS_SERVICE_URL = os.getenv("BAILEYS_SERVICE_URL", "http://127.0.0.1:3002")
 
+# Brazil timezone for scheduling and display
+BR_TZ = ZoneInfo("America/Sao_Paulo")
+
 # Define Models
 class StatusCheck(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     client_name: str
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(BR_TZ).astimezone(timezone.utc))
 
 class StatusCheckCreate(BaseModel):
     client_name: str
@@ -44,7 +48,7 @@ class Contact(BaseModel):
     name: str
     device_id: str = "whatsapp_1"  # Identificador do dispositivo
     device_name: str = "WhatsApp 1"  # Nome amigável do dispositivo
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(BR_TZ).astimezone(timezone.utc))
     last_message_at: Optional[datetime] = None
     tags: List[str] = []
     is_active: bool = True
@@ -57,7 +61,7 @@ class Message(BaseModel):
     device_name: str = "WhatsApp 1"  # Nome amigável do dispositivo
     message: str
     direction: str  # 'incoming' or 'outgoing'
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(BR_TZ).astimezone(timezone.utc))
     message_id: Optional[str] = None
     delivered: bool = False
     read: bool = False
@@ -97,7 +101,7 @@ class Webhook(BaseModel):
     name: str
     url: str
     description: Optional[str] = ""
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(BR_TZ).astimezone(timezone.utc))
     active: bool = True
 
 class WebhookCreate(BaseModel):
@@ -119,7 +123,7 @@ class WhatsAppInstance(BaseModel):
     user: Optional[Dict[str, Any]] = None
     contacts_count: int = 0
     messages_today: int = 0
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(BR_TZ).astimezone(timezone.utc))
     last_connected_at: Optional[datetime] = None
 
 class WhatsAppInstanceCreate(BaseModel):
@@ -142,7 +146,7 @@ async def get_or_create_contact(phone_number: str, name: str = None, device_id: 
             name=name or f"Contact {phone_number[-4:]}",
             device_id=device_id,
             device_name=device_name,
-            last_message_at=datetime.now(timezone.utc)
+            last_message_at=datetime.now(BR_TZ).astimezone(timezone.utc)
         )
         result = await contacts_collection.insert_one(contact_data.dict())
         contact_data.id = str(result.inserted_id)
@@ -151,7 +155,7 @@ async def get_or_create_contact(phone_number: str, name: str = None, device_id: 
         # Update last message time
         await contacts_collection.update_one(
             {"phone_number": phone_number, "device_id": device_id},
-            {"$set": {"last_message_at": datetime.now(timezone.utc)}}
+            {"$set": {"last_message_at": datetime.now(BR_TZ).astimezone(timezone.utc)}}
         )
         contact['id'] = str(contact.get('_id', contact.get('id')))
     
@@ -211,7 +215,7 @@ async def get_whatsapp_instances():
             instance['contacts_count'] = contacts_count
             
             # Count messages today for this device
-            today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+            today = datetime.now(BR_TZ).replace(hour=0, minute=0, second=0, microsecond=0).astimezone(timezone.utc)
             messages_today = await db.messages.count_documents({
                 "device_id": instance.get('device_id'),
                 "timestamp": {"$gte": today}
@@ -282,7 +286,7 @@ async def disconnect_whatsapp_instance(instance_id: str):
             {"$set": {
                 "connected": False,
                 "user": None,
-                "last_connected_at": datetime.now(timezone.utc)
+                "last_connected_at": datetime.now(BR_TZ).astimezone(timezone.utc)
             }}
         )
         
@@ -459,7 +463,7 @@ async def get_contact_messages(contact_id: str):
 async def get_dashboard_stats():
     """Get dashboard statistics"""
     try:
-        today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+        today = datetime.now(BR_TZ).replace(hour=0, minute=0, second=0, microsecond=0).astimezone(timezone.utc)
         
         # Count new contacts today
         new_contacts_today = await db.contacts.count_documents({
@@ -536,7 +540,7 @@ async def trigger_webhook(webhook_trigger: WebhookTrigger, background_tasks: Bac
             "webhook_id": webhook_trigger.webhook_id,
             "webhook_url": webhook_trigger.webhook_url,
             "data": webhook_trigger.data,
-            "triggered_at": datetime.now(timezone.utc),
+            "triggered_at": datetime.now(BR_TZ).astimezone(timezone.utc),
             "status": "triggered"
         }
         await db.webhook_logs.insert_one(webhook_log)
@@ -563,7 +567,7 @@ async def trigger_macro(macro: MacroTrigger, background_tasks: BackgroundTasks):
             "device_id": contact.get("device_id", "whatsapp_1"),
             "device_name": contact.get("device_name", "WhatsApp 1"),
             "jid": f"{contact['phone_number']}@s.whatsapp.net",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(BR_TZ).astimezone(timezone.utc).isoformat(),
             "macro_name": macro.macro_name,
             "tags": contact.get("tags", [])
         }
@@ -581,7 +585,7 @@ async def trigger_macro(macro: MacroTrigger, background_tasks: BackgroundTasks):
             "macro_name": macro.macro_name,
             "webhook_url": macro.webhook_url,
             "data": webhook_data,
-            "triggered_at": datetime.now(timezone.utc),
+            "triggered_at": datetime.now(BR_TZ).astimezone(timezone.utc),
             "status": "triggered"
         }
         await db.macro_logs.insert_one(macro_log)
