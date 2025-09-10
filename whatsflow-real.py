@@ -2995,24 +2995,55 @@ HTML_APP = '''<!DOCTYPE html>
                     </div>
                 `;
                 
-                // Request groups from Baileys
-                const response = await fetch(`http://localhost:3002/groups/${instanceId}`);
+                // Request groups from Baileys with proper error handling
+                const response = await fetch(`http://localhost:3002/groups/${instanceId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    timeout: 10000
+                });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    let errorMessage = 'Erro ao carregar grupos';
+                    
+                    try {
+                        const errorData = JSON.parse(errorText);
+                        errorMessage = errorData.error || errorMessage;
+                    } catch (e) {
+                        // Use default error message
+                    }
+                    
+                    throw new Error(errorMessage);
+                }
+                
                 const result = await response.json();
                 
-                if (response.ok && result.success) {
-                    renderGroups(result.groups || []);
-                    populateScheduleGroupSelect(result.groups || []);
+                if (result.success && result.groups) {
+                    renderGroups(result.groups);
+                    populateScheduleGroupSelect(result.groups);
                 } else {
-                    throw new Error(result.error || 'Erro ao carregar grupos');
+                    throw new Error(result.error || 'Nenhum grupo encontrado para esta instância');
                 }
                 
             } catch (error) {
                 console.error('❌ Erro ao carregar grupos:', error);
+                
+                let errorMessage = error.message;
+                if (errorMessage.includes('não conectada')) {
+                    errorMessage = 'Esta instância não está conectada ao WhatsApp. Conecte primeiro na aba Instâncias.';
+                } else if (errorMessage.includes('não encontrada')) {
+                    errorMessage = 'Instância não encontrada. Verifique se ela foi criada corretamente.';
+                }
+                
                 document.getElementById('groups-container').innerHTML = `
                     <div class="empty-state">
                         <div class="empty-icon">❌</div>
                         <div class="empty-title">Erro ao carregar grupos</div>
-                        <p>${error.message}</p>
+                        <p>${errorMessage}</p>
+                        <button class="btn btn-primary" onclick="loadGroupsFromInstance()">🔄 Tentar Novamente</button>
                     </div>
                 `;
             }
