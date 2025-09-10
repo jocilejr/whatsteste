@@ -2385,6 +2385,7 @@ HTML_APP = '''<!DOCTYPE html>
         
         function clearCurrentChat() {
             currentChat = null;
+            stopMessagesAutoRefresh(); // Stop auto-refresh when clearing chat
             document.getElementById('chatHeader').classList.remove('active');
             document.getElementById('messageInputArea').classList.remove('active');
             document.getElementById('messagesContainer').innerHTML = `
