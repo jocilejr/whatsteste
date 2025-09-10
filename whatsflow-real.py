@@ -813,16 +813,29 @@ HTML_APP = '''<!DOCTYPE html>
         
         .search-box {
             width: 100%;
-            padding: 0.75rem;
-            border: 2px solid var(--border);
-            border-radius: 0.5rem;
-            font-size: 0.9rem;
-            background: var(--bg-primary);
+            padding: 14px 20px 14px 48px;
+            border: 2px solid transparent;
+            border-radius: 28px;
+            font-size: 0.95rem;
+            background: #ffffff;
+            color: #1c2025;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 2px 8px rgba(16, 24, 40, 0.08);
+            font-weight: 400;
+            letter-spacing: 0.01em;
+            position: relative;
+        }
+        
+        .search-box::placeholder {
+            color: #6c737f;
+            font-weight: 400;
         }
         
         .search-box:focus {
             outline: none;
-            border-color: var(--primary);
+            border-color: #128c7e;
+            box-shadow: 0 4px 16px rgba(18, 140, 126, 0.15), 0 2px 8px rgba(16, 24, 40, 0.08);
+            transform: translateY(-1px);
         }
         
         .conversations-list {
