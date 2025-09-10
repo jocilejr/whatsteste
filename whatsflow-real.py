@@ -2659,6 +2659,16 @@ HTML_APP = '''<!DOCTYPE html>
             try {
                 console.log('📤 Enviando mensagem para:', currentChat.phone, 'via instância:', currentChat.instanceId);
                 
+                // First check if Baileys service is available
+                const healthResponse = await fetch('http://localhost:3002/health', {
+                    method: 'GET',
+                    timeout: 5000
+                });
+                
+                if (!healthResponse.ok) {
+                    throw new Error('Serviço Baileys não está disponível');
+                }
+                
                 // Use Baileys service to send message with corrected URL and proper error handling
                 const response = await fetch(`http://localhost:3002/send/${currentChat.instanceId}`, {
                     method: 'POST',
@@ -2670,15 +2680,25 @@ HTML_APP = '''<!DOCTYPE html>
                         to: currentChat.phone,
                         message: message,
                         type: 'text'
-                    }),
-                    timeout: 15000
+                    })
                 });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    let errorData;
+                    try {
+                        errorData = JSON.parse(errorText);
+                    } catch (e) {
+                        throw new Error(`HTTP ${response.status}: ${errorText}`);
+                    }
+                    throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+                }
                 
                 const result = await response.json();
                 
                 console.log('📤 Resposta do envio:', result);
                 
-                if (response.ok && result.success) {
+                if (result.success) {
                     messageInput.value = '';
                     
                     // Add message to UI immediately for better UX
@@ -2705,26 +2725,19 @@ HTML_APP = '''<!DOCTYPE html>
                     setTimeout(() => loadConversations(), 1000);
                     
                 } else {
-                    let errorMessage = result.error || 'Erro desconhecido ao enviar mensagem';
-                    
-                    if (errorMessage.includes('não conectada')) {
-                        errorMessage = 'A instância não está conectada ao WhatsApp. Conecte primeiro na aba Instâncias.';
-                    } else if (errorMessage.includes('não encontrada')) {
-                        errorMessage = 'Instância não encontrada. Verifique se ela foi criada corretamente.';
-                    }
-                    
-                    console.error('❌ Erro ao enviar mensagem:', errorMessage);
-                    alert(`❌ Erro ao enviar mensagem: ${errorMessage}`);
+                    throw new Error(result.error || 'Erro desconhecido ao enviar mensagem');
                 }
                 
             } catch (error) {
                 console.error('❌ Erro ao enviar mensagem:', error);
                 
-                let errorMessage = 'Erro de conexão com o serviço Baileys. Verifique se o serviço está rodando.';
+                let errorMessage = error.message;
                 
-                if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                if (errorMessage.includes('fetch')) {
                     errorMessage = 'Não foi possível conectar ao serviço Baileys. Verifique se está rodando na porta 3002.';
-                } else if (error.message.includes('timeout')) {
+                } else if (errorMessage.includes('não conectada') || errorMessage.includes('não encontrada')) {
+                    errorMessage = 'A instância não está conectada ao WhatsApp. Conecte primeiro na aba Instâncias.';
+                } else if (errorMessage.includes('timeout')) {
                     errorMessage = 'Timeout ao enviar mensagem. Tente novamente.';
                 }
                 
