@@ -1363,90 +1363,44 @@ HTML_APP = '''<!DOCTYPE html>
                 </div>
             </div>
         </div>
-            <div class="card">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <h2>📱 Instâncias WhatsApp</h2>
-                    <button class="btn btn-primary" onclick="showCreateModal()">➕ Nova Instância</button>
-                </div>
-                <div id="instances-container" class="instances-grid">
-                    <div style="text-align: center; padding: 40px;">Carregando...</div>
-                </div>
-            </div>
-        </div>
         
         <!-- Contacts Section -->
         <div id="contacts" class="section">
             <div class="card">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
                     <h2>👥 Central de Contatos</h2>
                     <button class="btn btn-primary" onclick="loadContacts()">🔄 Atualizar</button>
                 </div>
                 <div id="contacts-container">
                     <div class="loading">
-                        <div class="loading-spinner">🔄</div>
-                        <p>Carregando contatos...</p>
+                        <div style="text-align: center; padding: 2rem;">Carregando contatos...</div>
                     </div>
                 </div>
             </div>
         </div>
         
-        <!-- Messages Section -->
-        <div id="messages" class="section">
+        <!-- Flows Section - Nova funcionalidade -->
+        <div id="flows" class="section">
             <div class="card">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <h2>💬 Central de Mensagens</h2>
-                    <button class="btn btn-primary" onclick="loadMessages()">🔄 Atualizar</button>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <h2>🎯 Fluxos de Automação</h2>
+                    <button class="btn btn-primary" onclick="createNewFlow()">
+                        ➕ Criar Novo Fluxo
+                    </button>
                 </div>
-                
-                <div style="display: grid; grid-template-columns: 300px 1fr; gap: 20px; height: 500px;">
-                    <!-- Chat List -->
-                    <div style="border-right: 1px solid #eee; padding-right: 15px;">
-                        <h3>Conversas Ativas</h3>
-                        <div id="chat-list" style="height: 450px; overflow-y: auto;">
-                            <div class="loading">
-                                <div class="loading-spinner">🔄</div>
-                                <p>Carregando conversas...</p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Chat Window -->
-                    <div id="chat-window" style="display: flex; flex-direction: column;">
-                        <div id="chat-header" style="padding: 10px; border-bottom: 1px solid #eee; display: none;">
-                            <h4 id="chat-contact-name">Selecione uma conversa</h4>
-                            <p id="chat-contact-phone" style="color: #666; margin: 0;"></p>
-                        </div>
-                        
-                        <div id="messages-container" style="flex: 1; padding: 15px; overflow-y: auto; background: #f9f9f9;">
-                            <div style="text-align: center; color: #666; margin-top: 100px;">
-                                <p>📱 Selecione uma conversa para ver as mensagens</p>
-                            </div>
-                        </div>
-                        
-                        <div id="message-input-area" style="padding: 15px; border-top: 1px solid #eee; display: none;">
-                            <div style="display: flex; gap: 10px;">
-                                <input type="text" id="message-input" placeholder="Digite sua mensagem..." 
-                                       style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 5px;"
-                                       onkeypress="if(event.key==='Enter') sendMessage()">
-                                <button class="btn btn-primary" onclick="sendMessage()">📤 Enviar</button>
-                                <button class="btn btn-secondary" onclick="sendWebhook()" title="Enviar Webhook">
-                                    🔗 Webhook
-                                </button>
-                            </div>
-                        </div>
+                <div id="flows-container">
+                    <div class="empty-state">
+                        <div class="empty-icon">🎯</div>
+                        <div class="empty-title">Nenhum fluxo criado ainda</div>
+                        <p>Crie fluxos de automação drag-and-drop para otimizar seu atendimento</p>
+                        <br>
+                        <button class="btn btn-primary" onclick="createNewFlow()">
+                            🚀 Criar Primeiro Fluxo
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
-        
-        <div id="info" class="section">
-            <div class="card">
-                <h2>ℹ️ WhatsFlow Real</h2>
-                <p><strong>🐍 Backend:</strong> Python puro (servidor HTTP)</p>
-                <p><strong>📱 WhatsApp:</strong> Baileys (Node.js) - conexão real</p>
-                <p><strong>🗄️ Banco:</strong> SQLite local</p>
-                <p><strong>🌐 Interface:</strong> HTML + CSS + JS</p>
-                <p><strong>🔧 Requisitos:</strong> Python 3 + Node.js</p>
                 
                 <h3 style="margin: 20px 0 10px 0;">🔗 Como funciona:</h3>
                 <p>1. <strong>Python</strong> roda a interface web e banco de dados</p>
