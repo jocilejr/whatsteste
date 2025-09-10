@@ -3778,27 +3778,26 @@ if WEBSOCKETS_AVAILABLE:
         for client in disconnected_clients:
             websocket_clients.discard(client)
 
+    async def _websocket_server():
+        async with websockets.serve(
+            websocket_handler,
+            "0.0.0.0",
+            WEBSOCKET_PORT,
+            ping_interval=30,
+            ping_timeout=10,
+        ):
+            logger.info(f"🔌 WebSocket server iniciado na porta {WEBSOCKET_PORT}")
+            await asyncio.Future()  # run forever
+
     def start_websocket_server():
         """Start WebSocket server in a separate thread"""
+
         def run_websocket():
             try:
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-                
-                start_server = websockets.serve(
-                    websocket_handler, 
-                    "localhost", 
-                    WEBSOCKET_PORT,
-                    ping_interval=30,
-                    ping_timeout=10
-                )
-                
-                logger.info(f"🔌 WebSocket server iniciado na porta {WEBSOCKET_PORT}")
-                loop.run_until_complete(start_server)
-                loop.run_forever()
+                asyncio.run(_websocket_server())
             except Exception as e:
                 logger.error(f"❌ Erro no WebSocket server: {e}")
-        
+
         websocket_thread = threading.Thread(target=run_websocket, daemon=True)
         websocket_thread.start()
         return websocket_thread
@@ -4733,7 +4732,6 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                 
                 try:
                     data = json.dumps({}).encode('utf-8')
- codex/add-error-handling-for-fetch-requests-tdpmgk
                     req = urllib.request.Request(
                         'http://127.0.0.1:3002/connect',
                         data=data,
@@ -4941,7 +4939,6 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                 
                 try:
                     data = json.dumps({}).encode('utf-8')
- codex/add-error-handling-for-fetch-requests-tdpmgk
                     req = urllib.request.Request(
                         f'http://127.0.0.1:3002/connect/{instance_id}',
                         data=data,
@@ -4982,7 +4979,6 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                 # Fallback usando urllib
                 import urllib.request
                 data = json.dumps({}).encode('utf-8')
-codex/add-error-handling-for-fetch-requests-tdpmgk
                 req = urllib.request.Request(
                     f'http://127.0.0.1:3002/disconnect/{instance_id}',
                     data=data,
@@ -5069,7 +5065,6 @@ codex/add-error-handling-for-fetch-requests-tdpmgk
             
             try:
                 import requests
-codex/add-error-handling-for-fetch-requests-tdpmgk
                 try:
                     response = requests.post(
                         f'http://127.0.0.1:3002/send/{instance_id}',
