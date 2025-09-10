@@ -9,6 +9,7 @@ This test focuses on the specific corrections mentioned in the review request:
 4. Layout improvements
 """
 
+import os
 import requests
 import json
 import time
@@ -17,7 +18,7 @@ from datetime import datetime
 # Configuration
 WHATSFLOW_URL = "http://localhost:8889"
 BACKEND_URL = "http://localhost:8001"
-BAILEYS_URL = "http://localhost:3002"
+BAILEYS_URL = os.getenv("BAILEYS_URL", "http://localhost:3002")
 FRONTEND_URL = "http://localhost:3000"
 
 WHATSFLOW_API = f"{WHATSFLOW_URL}/api"

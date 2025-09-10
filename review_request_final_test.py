@@ -34,7 +34,7 @@ import os
 
 # Configuration
 WHATSFLOW_URL = "http://localhost:8889"
-BAILEYS_URL = "http://localhost:3002"
+BAILEYS_URL = os.getenv("BAILEYS_URL", "http://localhost:3002")
 FRONTEND_URL = "http://localhost:3000"
 
 class ReviewRequestFinalTester:

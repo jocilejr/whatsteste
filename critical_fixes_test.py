@@ -13,6 +13,7 @@ SERVICES TO TEST:
 - Baileys Node.js (porta 3002) - PID 14067
 """
 
+import os
 import requests
 import json
 import time
@@ -21,7 +22,7 @@ from datetime import datetime
 class CriticalFixesTester:
     def __init__(self):
         self.whatsflow_url = "http://localhost:8889"
-        self.baileys_url = "http://localhost:3002"
+        self.baileys_url = os.getenv("BAILEYS_URL", "http://localhost:3002")
         self.session = requests.Session()
         self.test_results = []
         
