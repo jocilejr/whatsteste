@@ -2768,6 +2768,245 @@ HTML_APP = '''<!DOCTYPE html>
             if (qrPollingInterval) clearInterval(qrPollingInterval);
             if (statusPollingInterval) clearInterval(statusPollingInterval);
         });
+        
+        // Groups Management Functions
+        async function loadInstancesForGroups() {
+            try {
+                const response = await fetch('/api/instances');
+                const instances = await response.json();
+                
+                const select = document.getElementById('groupInstanceSelect');
+                select.innerHTML = '<option value="">Selecione uma instância</option>';
+                
+                instances.forEach(instance => {
+                    if (instance.connected) { // Only show connected instances
+                        const option = document.createElement('option');
+                        option.value = instance.id;
+                        option.textContent = `${instance.name} (Conectado)`;
+                        select.appendChild(option);
+                    }
+                });
+                
+                console.log('✅ Instâncias para grupos carregadas');
+                
+            } catch (error) {
+                console.error('❌ Erro ao carregar instâncias para grupos:', error);
+            }
+        }
+        
+        async function loadGroupsFromInstance() {
+            const select = document.getElementById('groupInstanceSelect');
+            const instanceId = select.value;
+            
+            if (!instanceId) {
+                document.getElementById('groups-container').innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">👥</div>
+                        <div class="empty-title">Nenhum grupo encontrado</div>
+                        <p>Selecione uma instância conectada para carregar os grupos do WhatsApp</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            try {
+                // Show loading
+                document.getElementById('groups-container').innerHTML = `
+                    <div class="loading">
+                        <div style="text-align: center; padding: 2rem;">🔄 Carregando grupos...</div>
+                    </div>
+                `;
+                
+                // Request groups from Baileys
+                const response = await fetch(`http://localhost:3002/groups/${instanceId}`);
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    renderGroups(result.groups || []);
+                    populateScheduleGroupSelect(result.groups || []);
+                } else {
+                    throw new Error(result.error || 'Erro ao carregar grupos');
+                }
+                
+            } catch (error) {
+                console.error('❌ Erro ao carregar grupos:', error);
+                document.getElementById('groups-container').innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">❌</div>
+                        <div class="empty-title">Erro ao carregar grupos</div>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+        
+        function renderGroups(groups) {
+            const container = document.getElementById('groups-container');
+            
+            if (!groups || groups.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">👥</div>
+                        <div class="empty-title">Nenhum grupo encontrado</div>
+                        <p>Esta instância não possui grupos ou não conseguiu carregá-los</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = groups.map(group => `
+                <div class="group-card" data-group-id="${group.id}">
+                    <div class="group-info">
+                        <div class="group-avatar">
+                            ${group.name ? group.name.charAt(0).toUpperCase() : '👥'}
+                        </div>
+                        <div class="group-details">
+                            <h4>${group.name || 'Grupo sem nome'}</h4>
+                            <p>${group.participants?.length || 0} participantes</p>
+                            <small>ID: ${group.id.split('@')[0]}</small>
+                        </div>
+                    </div>
+                    <div class="group-actions">
+                        <button class="btn btn-sm btn-primary" onclick="sendToGroup('${group.id}', '${group.name}')">
+                            📤 Enviar Mensagem
+                        </button>
+                        <button class="btn btn-sm btn-secondary" onclick="viewGroupInfo('${group.id}')">
+                            ℹ️ Info
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function populateScheduleGroupSelect(groups) {
+            const select = document.getElementById('scheduleGroupSelect');
+            select.innerHTML = '<option value="">Selecione um grupo</option>';
+            
+            groups.forEach(group => {
+                const option = document.createElement('option');
+                option.value = group.id;
+                option.textContent = group.name || `Grupo ${group.id.split('@')[0]}`;
+                select.appendChild(option);
+            });
+        }
+        
+        async function sendToGroup(groupId, groupName) {
+            const message = prompt(`💬 Enviar mensagem para o grupo "${groupName}":`, '');
+            if (!message || !message.trim()) return;
+            
+            const instanceId = document.getElementById('groupInstanceSelect').value;
+            if (!instanceId) {
+                alert('❌ Selecione uma instância primeiro');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`http://localhost:3002/send/${instanceId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        to: groupId,
+                        message: message.trim(),
+                        type: 'text'
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    alert('✅ Mensagem enviada para o grupo com sucesso!');
+                } else {
+                    throw new Error(result.error || 'Erro ao enviar mensagem');
+                }
+                
+            } catch (error) {
+                console.error('❌ Erro ao enviar mensagem para grupo:', error);
+                alert(`❌ Erro ao enviar mensagem: ${error.message}`);
+            }
+        }
+        
+        function viewGroupInfo(groupId) {
+            // Placeholder for group info modal
+            alert(`ℹ️ Informações do grupo:\nID: ${groupId}\n\n(Funcionalidade em desenvolvimento)`);
+        }
+        
+        function searchGroups() {
+            const searchTerm = document.getElementById('searchGroups').value.toLowerCase();
+            const groupCards = document.querySelectorAll('.group-card');
+            
+            groupCards.forEach(card => {
+                const groupName = card.querySelector('h4').textContent.toLowerCase();
+                const groupId = card.querySelector('small').textContent.toLowerCase();
+                
+                if (groupName.includes(searchTerm) || groupId.includes(searchTerm)) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+        
+        async function scheduleMessage() {
+            const groupId = document.getElementById('scheduleGroupSelect').value;
+            const dateTime = document.getElementById('scheduleDateTime').value;
+            const message = document.getElementById('scheduleMessage').value.trim();
+            
+            if (!groupId || !dateTime || !message) {
+                alert('❌ Preencha todos os campos para agendar uma mensagem');
+                return;
+            }
+            
+            const instanceId = document.getElementById('groupInstanceSelect').value;
+            if (!instanceId) {
+                alert('❌ Selecione uma instância primeiro');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/messages/schedule', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        instanceId: instanceId,
+                        groupId: groupId,
+                        message: message,
+                        scheduledFor: dateTime,
+                        type: 'group'
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    alert('✅ Mensagem agendada com sucesso!');
+                    // Clear form
+                    document.getElementById('scheduleGroupSelect').value = '';
+                    document.getElementById('scheduleDateTime').value = '';
+                    document.getElementById('scheduleMessage').value = '';
+                    loadScheduledMessages();
+                } else {
+                    throw new Error(result.error || 'Erro ao agendar mensagem');
+                }
+                
+            } catch (error) {
+                console.error('❌ Erro ao agendar mensagem:', error);
+                alert(`❌ Erro ao agendar mensagem: ${error.message}`);
+            }
+        }
+        
+        async function loadScheduledMessages() {
+            try {
+                const response = await fetch('/api/messages/scheduled');
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    renderScheduledMessages(result.messages || []);
+                }
+                
+            } catch (error) {
+                console.error('❌ Erro ao carregar mensagens agendadas:', error);
+            }
+        }
     </script>
 </body>
 </html>'''
