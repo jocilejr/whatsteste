@@ -3048,7 +3048,7 @@ HTML_APP = '''<!DOCTYPE html>
                 console.log('📤 Enviando mensagem para:', currentChat.phone, 'via instância:', currentChat.instanceId);
                 
                 // First check if Baileys service is available
-                const healthResponse = await fetch('http://localhost:3002/health', {
+                const healthResponse = await fetch('http://127.0.0.1:3002/health', {
                     method: 'GET',
                     timeout: 5000
                 });
