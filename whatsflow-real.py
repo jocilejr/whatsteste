@@ -360,13 +360,14 @@ HTML_APP = '''<!DOCTYPE html>
             margin-left: 8px;
         }
         
-        /* Chat Panel - Professional WhatsApp Design */
+        /* Chat Panel - Ultra Elegant WhatsApp Design */
         .chat-panel {
             flex: 1;
             display: flex;
             flex-direction: column;
-            background: #efeae2;
+            background: linear-gradient(135deg, #f0f4f1 0%, #e8f0ed 100%);
             position: relative;
+            overflow: hidden;
         }
         
         .chat-panel::before {
@@ -376,8 +377,11 @@ HTML_APP = '''<!DOCTYPE html>
             left: 0;
             right: 0;
             bottom: 0;
-            background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><defs><pattern id="pattern" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="10" cy="10" r="0.5" fill="%23d1d7db" opacity="0.3"/></pattern></defs><rect width="100" height="100" fill="url(%23pattern)"/></svg>');
-            opacity: 0.4;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(18, 140, 126, 0.03) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(18, 140, 126, 0.02) 0%, transparent 50%),
+                radial-gradient(circle at 40% 80%, rgba(18, 140, 126, 0.02) 0%, transparent 50%),
+                linear-gradient(135deg, transparent 0%, rgba(255, 255, 255, 0.1) 100%);
             pointer-events: none;
         }
         
