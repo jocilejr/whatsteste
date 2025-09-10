@@ -4303,6 +4303,92 @@ app.post('/send/:instanceId', async (req, res) => {
     }
 });
 
+// Groups endpoint with robust error handling  
+app.get('/groups/:instanceId', async (req, res) => {
+    const { instanceId } = req.params;
+    
+    try {
+        const instance = instances.get(instanceId);
+        if (!instance || !instance.connected || !instance.sock) {
+            return res.status(400).json({ 
+                success: false,
+                error: `Instância ${instanceId} não está conectada`,
+                instanceId: instanceId,
+                groups: []
+            });
+        }
+        
+        console.log(`📥 Buscando grupos para instância: ${instanceId}`);
+        
+        // Multiple methods to get groups
+        let groups = [];
+        
+        try {
+            // Method 1: Get group metadata
+            const groupIds = await instance.sock.groupFetchAllParticipating();
+            console.log(`📊 Encontrados ${Object.keys(groupIds).length} grupos via groupFetchAllParticipating`);
+            
+            for (const [groupId, groupData] of Object.entries(groupIds)) {
+                groups.push({
+                    id: groupId,
+                    name: groupData.subject || 'Grupo sem nome',
+                    description: groupData.desc || '',
+                    participants: groupData.participants ? groupData.participants.length : 0,
+                    admin: groupData.participants ? 
+                           groupData.participants.some(p => p.admin && p.id === instance.user?.id) : false,
+                    created: groupData.creation || null
+                });
+            }
+        } catch (error) {
+            console.log(`⚠️ Método 1 falhou: ${error.message}`);
+            
+            try {
+                // Method 2: Get chats and filter groups
+                const chats = await instance.sock.getChats();
+                const groupChats = chats.filter(chat => chat.id.endsWith('@g.us'));
+                console.log(`📊 Encontrados ${groupChats.length} grupos via getChats`);
+                
+                groups = groupChats.map(chat => ({
+                    id: chat.id,
+                    name: chat.name || chat.subject || 'Grupo sem nome',
+                    description: chat.description || '',
+                    participants: chat.participantsCount || 0,
+                    admin: false, // Cannot determine admin status from chat
+                    created: chat.timestamp || null,
+                    lastMessage: chat.lastMessage ? {
+                        text: chat.lastMessage.message || '',
+                        timestamp: chat.lastMessage.timestamp
+                    } : null
+                }));
+            } catch (error2) {
+                console.log(`⚠️ Método 2 falhou: ${error2.message}`);
+                
+                // Method 3: Simple fallback - return empty with proper structure
+                groups = [];
+            }
+        }
+        
+        console.log(`✅ Retornando ${groups.length} grupos para instância ${instanceId}`);
+        
+        res.json({
+            success: true,
+            instanceId: instanceId,
+            groups: groups,
+            count: groups.length,
+            timestamp: new Date().toISOString()
+        });
+        
+    } catch (error) {
+        console.error(`❌ Erro ao buscar grupos para instância ${instanceId}:`, error);
+        res.status(500).json({
+            success: false,
+            error: `Erro interno ao buscar grupos: ${error.message}`,
+            instanceId: instanceId,
+            groups: []
+        });
+    }
+});
+
 // Health check endpoint
 app.get('/health', (req, res) => {
     const connectedInstances = Array.from(instances.values()).filter(i => i.connected).length;
