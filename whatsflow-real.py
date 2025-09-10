@@ -192,31 +192,39 @@ HTML_APP = '''<!DOCTYPE html>
         }
         
         .search-bar {
-            padding: 16px;
-            background: white;
-            border-bottom: 1px solid #e9edef;
+            padding: 20px 16px;
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            border-bottom: 1px solid #e3e8ed;
+            position: relative;
+            box-shadow: 0 1px 3px rgba(16, 24, 40, 0.05);
         }
         
         .search-input {
             width: 100%;
-            padding: 12px 16px 12px 44px;
-            border: none;
-            border-radius: 24px;
-            background: #f0f2f5;
-            font-size: 0.9rem;
-            color: #111b21;
-            transition: all 0.2s ease;
+            padding: 14px 20px 14px 48px;
+            border: 2px solid transparent;
+            border-radius: 28px;
+            background: #ffffff;
+            font-size: 0.95rem;
+            color: #1c2025;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
+            box-shadow: 0 2px 8px rgba(16, 24, 40, 0.08);
+            font-weight: 400;
+            letter-spacing: 0.01em;
         }
         
         .search-input::placeholder {
-            color: #8696a0;
+            color: #6c737f;
+            font-weight: 400;
         }
         
         .search-input:focus {
             outline: none;
-            background: white;
-            box-shadow: 0 2px 8px rgba(11,20,26,.1);
+            background: #ffffff;
+            border-color: #128c7e;
+            box-shadow: 0 4px 16px rgba(18, 140, 126, 0.15), 0 2px 8px rgba(16, 24, 40, 0.08);
+            transform: translateY(-1px);
         }
         
         .search-bar::before {
@@ -225,9 +233,14 @@ HTML_APP = '''<!DOCTYPE html>
             left: 32px;
             top: 50%;
             transform: translateY(-50%);
-            font-size: 0.9rem;
-            color: #8696a0;
+            font-size: 1rem;
+            opacity: 0.7;
             pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        
+        .search-input:focus + .search-bar::before {
+            opacity: 1;
         }
         
         .conversations-list {
