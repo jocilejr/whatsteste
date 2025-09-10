@@ -2075,17 +2075,36 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             for chat in chats:
                 if chat.get('id') and not chat['id'].endswith('@g.us'):  # Skip groups for now
                     phone = chat['id'].replace('@s.whatsapp.net', '').replace('@c.us', '')
-                    contact_name = chat.get('name') or f"Contato {phone[-4:]}"
+                    
+                    # Use enhanced name if available, otherwise fallback to basic name
+                    contact_name = (chat.get('enhancedName') or 
+                                   chat.get('name') or 
+                                   chat.get('pushName') or 
+                                   chat.get('notify') or 
+                                   f"Contato {phone[-4:]}")
+                    
+                    # Get profile picture URL if available
+                    profile_pic_url = chat.get('profilePicUrl')
                     
                     # Check if contact exists
                     cursor.execute("SELECT id FROM contacts WHERE phone = ? AND instance_id = ?", (phone, instance_id))
-                    if not cursor.fetchone():
+                    existing_contact = cursor.fetchone()
+                    
+                    if not existing_contact:
                         contact_id = str(uuid.uuid4())
                         cursor.execute("""
-                            INSERT INTO contacts (id, name, phone, instance_id, created_at)
-                            VALUES (?, ?, ?, ?, ?)
-                        """, (contact_id, contact_name, phone, instance_id, datetime.now(timezone.utc).isoformat()))
+                            INSERT INTO contacts (id, name, phone, instance_id, avatar_url, created_at)
+                            VALUES (?, ?, ?, ?, ?, ?)
+                        """, (contact_id, contact_name, phone, instance_id, profile_pic_url, datetime.now(timezone.utc).isoformat()))
                         imported_contacts += 1
+                        print(f"📞 Novo contato: {contact_name} ({phone}) - Foto: {'✅' if profile_pic_url else '❌'}")
+                    else:
+                        # Update existing contact with better name and profile picture
+                        cursor.execute("""
+                            UPDATE contacts SET name = ?, avatar_url = ? 
+                            WHERE phone = ? AND instance_id = ?
+                        """, (contact_name, profile_pic_url, phone, instance_id))
+                        print(f"🔄 Contato atualizado: {contact_name} ({phone}) - Foto: {'✅' if profile_pic_url else '❌'}")
                     
                     # Create/update chat entry
                     last_message = None
