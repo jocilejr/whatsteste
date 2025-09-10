@@ -155,49 +155,146 @@ HTML_APP = '''<!DOCTYPE html>
             color: white;
             box-shadow: var(--shadow-lg);
         }
-            --shadow-lg: 0 2px 10px rgba(11,20,26,.2);
+        
+        /* Cards com design avançado */
+        .card { 
+            background: white; 
+            border-radius: 1rem; 
+            padding: 1.5rem; 
+            box-shadow: var(--shadow-lg);
+            margin-bottom: 1.5rem;
+            border: 1px solid var(--border);
         }
         
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
-            min-height: 100vh;
+        /* ===================== INSTÂNCIAS - DESIGN PROFISSIONAL ===================== */
+        .instances-section {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--border);
+        }
+        
+        .instances-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--bg-primary);
+        }
+        
+        .instances-header h2 {
             color: var(--text-primary);
-            line-height: 1.6;
+            font-size: 1.5rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
         
-        .container { 
-            max-width: 1400px; 
-            margin: 0 auto; 
-            padding: 2rem; 
+        .instances-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); 
+            gap: 1.25rem; 
         }
         
-        /* Header Design */
-        .header { 
-            text-align: center; 
-            color: white; 
-            margin-bottom: 3rem;
-            padding: 2rem 0;
+        .instance-card { 
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+            border: 2px solid var(--border); 
+            border-radius: 1rem; 
+            padding: 1.5rem; 
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
         }
-        .header h1 { 
-            font-size: 3rem; 
-            font-weight: 800;
-            margin-bottom: 1rem; 
-            background: linear-gradient(45deg, #ffffff, var(--primary-light));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+        
+        .instance-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--border);
+            transition: all 0.3s ease;
         }
-        .header p { 
-            font-size: 1.2rem; 
-            opacity: 0.9; 
-            font-weight: 300;
+        
+        .instance-card:hover { 
+            transform: translateY(-4px); 
+            box-shadow: 0 8px 25px rgba(11,20,26,.15);
+            border-color: var(--primary);
         }
-        .subtitle { 
-            background: rgba(37, 211, 102, 0.2); 
-            border: 1px solid rgba(37, 211, 102, 0.3);
-            padding: 0.75rem 1.5rem; 
-            border-radius: 2rem; 
+        
+        .instance-card:hover::before {
+            background: var(--primary);
+        }
+        
+        .instance-card.connected { 
+            border-color: var(--primary-light); 
+            background: linear-gradient(135deg, rgba(37, 211, 102, 0.03) 0%, #ffffff 100%);
+        }
+        
+        .instance-card.connected::before {
+            background: var(--primary-light);
+        }
+        
+        .instance-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+        
+        .instance-info h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+        }
+        
+        .instance-id {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            font-family: 'Monaco', monospace;
+        }
+        
+        .instance-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+            margin: 1rem 0;
+        }
+        
+        .stat-box {
+            text-align: center;
+            padding: 0.75rem;
+            background: var(--bg-primary);
+            border-radius: 0.5rem;
+            border: 1px solid var(--border);
+        }
+        
+        .stat-number {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 0.25rem;
+        }
+        
+        .stat-label {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+        }
+        
+        .instance-actions {
+            display: grid;
+            grid-template-columns: 1fr auto auto;
+            gap: 0.5rem;
+            align-items: center;
+        } 
             display: inline-block; 
             margin-top: 1rem; 
             font-size: 0.9rem;
