@@ -1473,15 +1473,29 @@ HTML_APP = '''<!DOCTYPE html>
         let statusPollingInterval = null;
 
         function showSection(name) {
+            // Hide all sections
             document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
             document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            
+            // Show selected section
             document.getElementById(name).classList.add('active');
             event.target.classList.add('active');
             
-            if (name === 'instances') loadInstances();
-            if (name === 'dashboard') loadStats();
-            if (name === 'contacts') loadContacts();
-            if (name === 'messages') loadMessages();
+            console.log('📄 Seção ativa:', name);
+            
+            // Load section-specific data
+            if (name === 'dashboard') {
+                loadStats();
+                checkConnectionStatus();
+            } else if (name === 'instances') {
+                loadInstances();
+            } else if (name === 'contacts') {
+                loadContacts();
+            } else if (name === 'messages') {
+                loadInstancesForSelect(); // Load instances for message selector
+            } else if (name === 'flows') {
+                loadFlows();
+            }
         }
 
         function showCreateModal() {
