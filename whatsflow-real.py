@@ -4706,7 +4706,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             # Start Baileys connection
             try:
                 import requests
-                response = requests.post('http://localhost:3002/connect', timeout=5)
+                response = requests.post('http://127.0.0.1:3002/connect', timeout=5)
                 
                 if response.status_code == 200:
                     self.send_json_response({"success": True, "message": "Conexão iniciada"})
@@ -4719,7 +4719,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                 
                 try:
                     data = json.dumps({}).encode('utf-8')
-                    req = urllib.request.Request('http://localhost:3002/connect', data=data, 
+                    req = urllib.request.Request('http://127.0.0.1:3002/connect', data=data, 
                                                headers={'Content-Type': 'application/json'})
                     req.get_method = lambda: 'POST'
                     
@@ -4738,7 +4738,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
         try:
             try:
                 import requests
-                response = requests.get('http://localhost:3002/status', timeout=5)
+                response = requests.get('http://127.0.0.1:3002/status', timeout=5)
                 
                 if response.status_code == 200:
                     data = response.json()
@@ -4748,7 +4748,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             except ImportError:
                 # Fallback usando urllib
                 try:
-                    with urllib.request.urlopen('http://localhost:3002/status', timeout=5) as response:
+                    with urllib.request.urlopen('http://127.0.0.1:3002/status', timeout=5) as response:
                         if response.status == 200:
                             data = json.loads(response.read().decode('utf-8'))
                             self.send_json_response(data)
@@ -4764,7 +4764,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
         try:
             try:
                 import requests
-                response = requests.get('http://localhost:3002/qr', timeout=5)
+                response = requests.get('http://127.0.0.1:3002/qr', timeout=5)
                 
                 if response.status_code == 200:
                     data = response.json()
@@ -4774,7 +4774,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             except ImportError:
                 # Fallback usando urllib
                 try:
-                    with urllib.request.urlopen('http://localhost:3002/qr', timeout=5) as response:
+                    with urllib.request.urlopen('http://127.0.0.1:3002/qr', timeout=5) as response:
                         if response.status == 200:
                             data = json.loads(response.read().decode('utf-8'))
                             self.send_json_response(data)
@@ -4909,7 +4909,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             # Start Baileys connection for specific instance
             try:
                 import requests
-                response = requests.post(f'http://localhost:3002/connect/{instance_id}', timeout=5)
+                response = requests.post(f'http://127.0.0.1:3002/connect/{instance_id}', timeout=5)
                 
                 if response.status_code == 200:
                     self.send_json_response({"success": True, "message": f"Conexão da instância {instance_id} iniciada"})
@@ -4922,7 +4922,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                 
                 try:
                     data = json.dumps({}).encode('utf-8')
-                    req = urllib.request.Request(f'http://localhost:3002/connect/{instance_id}', data=data, 
+                    req = urllib.request.Request(f'http://127.0.0.1:3002/connect/{instance_id}', data=data, 
                                                headers={'Content-Type': 'application/json'})
                     req.get_method = lambda: 'POST'
                     
@@ -4941,7 +4941,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
         try:
             try:
                 import requests
-                response = requests.post(f'http://localhost:3002/disconnect/{instance_id}', timeout=5)
+                response = requests.post(f'http://127.0.0.1:3002/disconnect/{instance_id}', timeout=5)
                 
                 if response.status_code == 200:
                     # Update database
@@ -4958,7 +4958,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                 # Fallback usando urllib
                 import urllib.request
                 data = json.dumps({}).encode('utf-8')
-                req = urllib.request.Request(f'http://localhost:3002/disconnect/{instance_id}', data=data,
+                req = urllib.request.Request(f'http://127.0.0.1:3002/disconnect/{instance_id}', data=data,
                                            headers={'Content-Type': 'application/json'})
                 req.get_method = lambda: 'POST'
                 
@@ -4980,7 +4980,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
         try:
             try:
                 import requests
-                response = requests.get(f'http://localhost:3002/status/{instance_id}', timeout=5)
+                response = requests.get(f'http://127.0.0.1:3002/status/{instance_id}', timeout=5)
                 
                 if response.status_code == 200:
                     data = response.json()
@@ -4990,7 +4990,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             except ImportError:
                 # Fallback usando urllib
                 try:
-                    with urllib.request.urlopen(f'http://localhost:3002/status/{instance_id}', timeout=5) as response:
+                    with urllib.request.urlopen(f'http://127.0.0.1:3002/status/{instance_id}', timeout=5) as response:
                         if response.status == 200:
                             data = json.loads(response.read().decode('utf-8'))
                             self.send_json_response(data)
@@ -5006,7 +5006,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
         try:
             try:
                 import requests
-                response = requests.get(f'http://localhost:3002/qr/{instance_id}', timeout=5)
+                response = requests.get(f'http://127.0.0.1:3002/qr/{instance_id}', timeout=5)
                 
                 if response.status_code == 200:
                     data = response.json()
@@ -5016,7 +5016,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             except ImportError:
                 # Fallback usando urllib
                 try:
-                    with urllib.request.urlopen(f'http://localhost:3002/qr/{instance_id}', timeout=5) as response:
+                    with urllib.request.urlopen(f'http://127.0.0.1:3002/qr/{instance_id}', timeout=5) as response:
                         if response.status == 200:
                             data = json.loads(response.read().decode('utf-8'))
                             self.send_json_response(data)
@@ -5040,7 +5040,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             
             try:
                 import requests
-                response = requests.post(f'http://localhost:3002/send/{instance_id}', 
+                response = requests.post(f'http://127.0.0.1:3002/send/{instance_id}', 
                                        json=data, timeout=10)
                 
                 if response.status_code == 200:
@@ -5067,7 +5067,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                 # Fallback usando urllib
                 import urllib.request
                 req_data = json.dumps(data).encode('utf-8')
-                req = urllib.request.Request(f'http://localhost:3002/send/{instance_id}', 
+                req = urllib.request.Request(f'http://127.0.0.1:3002/send/{instance_id}', 
                                            data=req_data, 
                                            headers={'Content-Type': 'application/json'})
                 req.get_method = lambda: 'POST'
