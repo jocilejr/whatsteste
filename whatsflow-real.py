@@ -108,41 +108,42 @@ HTML_APP = '''<!DOCTYPE html>
             margin: 0;
         }
         
-        /* Navigation Ultra Moderna */
+        /* Navigation Clean */
         .nav { 
             display: flex; 
-            gap: 0.25rem; 
-            margin-bottom: 1.5rem; 
+            gap: 0.5rem; 
+            margin-bottom: 2rem; 
             flex-wrap: wrap; 
             justify-content: center;
-            background: rgba(255, 255, 255, 0.1);
-            padding: 0.75rem;
-            border-radius: 1rem;
-            backdrop-filter: blur(10px);
+            background: white;
+            padding: 1rem;
+            border-radius: 0.75rem;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
         }
         .nav-btn { 
-            background: rgba(255, 255, 255, 0.1); 
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            padding: 0.6rem 1.2rem; 
-            border-radius: 0.6rem; 
+            background: white; 
+            border: 1px solid var(--border);
+            padding: 0.75rem 1.25rem; 
+            border-radius: 0.5rem; 
             cursor: pointer; 
             font-weight: 500; 
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            color: white;
-            font-size: 0.85rem;
+            transition: all 0.2s ease;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
             display: flex;
             align-items: center;
             gap: 0.5rem;
         }
         .nav-btn:hover { 
-            background: rgba(255, 255, 255, 0.2); 
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-lg);
+            background: var(--bg-primary); 
+            color: var(--text-primary);
+            border-color: var(--primary);
         }
         .nav-btn.active { 
-            background: var(--primary-light); 
+            background: var(--primary); 
             color: white;
-            box-shadow: var(--shadow-lg);
+            border-color: var(--primary);
         }
         
         /* Cards com design avançado */
