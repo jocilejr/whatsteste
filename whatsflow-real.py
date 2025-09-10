@@ -3541,7 +3541,7 @@ HTML_APP = r'''<!DOCTYPE html>
             }
             
             try {
-                const response = await fetch(`/api/send/${instanceId}`, {
+                const response = await fetch(`/api/messages/send/${instanceId}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -3550,15 +3550,17 @@ HTML_APP = r'''<!DOCTYPE html>
                         type: 'text'
                     })
                 });
-                
+
                 const result = await response.json();
-                
-                if (response.ok && result.success) {
+
+                if (response.status === 503) {
+                    alert(`❌ ${result.error || 'Baileys service não disponível'}`);
+                } else if (response.ok && result.success) {
                     alert('✅ Mensagem enviada para o grupo com sucesso!');
                 } else {
                     throw new Error(result.error || 'Erro ao enviar mensagem');
                 }
-                
+
             } catch (error) {
                 console.error('❌ Erro ao enviar mensagem para grupo:', error);
                 if (error.message.includes('fetch') || error instanceof TypeError) {
