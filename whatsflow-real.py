@@ -1870,6 +1870,31 @@ HTML_APP = '''<!DOCTYPE html>
             
             // Load messages for this chat
             await loadChatMessages(phone, instanceId);
+            
+            // Start auto-refresh for this chat
+            startMessagesAutoRefresh();
+        }
+        
+        function startMessagesAutoRefresh() {
+            // Clear existing interval
+            if (messagesPollingInterval) {
+                clearInterval(messagesPollingInterval);
+            }
+            
+            // Start polling every 3 seconds
+            messagesPollingInterval = setInterval(() => {
+                if (currentChat) {
+                    loadChatMessages(currentChat.phone, currentChat.instanceId);
+                    loadConversations(); // Also refresh conversations list
+                }
+            }, 3000);
+        }
+        
+        function stopMessagesAutoRefresh() {
+            if (messagesPollingInterval) {
+                clearInterval(messagesPollingInterval);
+                messagesPollingInterval = null;
+            }
         }
         
         async function loadChatMessages(phone, instanceId) {
