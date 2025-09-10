@@ -3738,7 +3738,6 @@ def init_db():
     """)
 
     cursor.execute("""
-codex/add-periodic-background-task-for-campaign-messages
         CREATE TABLE IF NOT EXISTS campaign_messages (
             id TEXT PRIMARY KEY,
             phone TEXT NOT NULL,
@@ -3747,7 +3746,6 @@ codex/add-periodic-background-task-for-campaign-messages
             send_time TEXT NOT NULL,
             weekdays TEXT,
             last_sent_at TEXT
-
         )
     """)
     
