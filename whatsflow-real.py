@@ -1851,46 +1851,61 @@ HTML_APP = '''<!DOCTYPE html>
         async function openChat(phone, contactName, instanceId) {
             currentChat = { phone, contactName, instanceId };
             
-            // Update chat header
-            document.getElementById('chat-contact-name').textContent = contactName;
-            document.getElementById('chat-contact-phone').textContent = phone;
-            document.getElementById('chat-header').style.display = 'block';
-            document.getElementById('message-input-area').style.display = 'block';
+            // Update active conversation
+            document.querySelectorAll('.conversation-item').forEach(item => item.classList.remove('active'));
+            
+            // Update chat header with correct IDs
+            const displayName = getContactDisplayName(contactName, phone);
+            document.getElementById('chatContactName').textContent = displayName;
+            document.getElementById('chatContactPhone').textContent = formatPhoneNumber(phone);
+            document.getElementById('chatAvatar').textContent = getContactInitial(contactName, phone);
+            
+            // Show chat header and input area
+            document.getElementById('chatHeader').classList.add('active');
+            document.getElementById('messageInputArea').classList.add('active');
             
             // Load messages for this chat
+            await loadChatMessages(phone, instanceId);
+        }
+        
+        async function loadChatMessages(phone, instanceId) {
             try {
                 const response = await fetch(`/api/messages?phone=${phone}&instance_id=${instanceId}`);
                 const messages = await response.json();
                 
-                const messagesContainer = document.getElementById('messages-container');
+                const container = document.getElementById('messagesContainer');
+                
                 if (messages.length === 0) {
-                    messagesContainer.innerHTML = `
-                        <div style="text-align: center; color: #666; margin-top: 100px;">
-                            <p>💬 Nenhuma mensagem ainda</p>
+                    container.innerHTML = `
+                        <div class="empty-chat-state">
+                            <div class="empty-chat-icon">💭</div>
+                            <h3>Nenhuma mensagem ainda</h3>
                             <p>Comece uma conversa!</p>
                         </div>
                     `;
                 } else {
-                    messagesContainer.innerHTML = messages.map(msg => `
-                        <div class="message ${msg.direction}" style="margin-bottom: 15px; display: flex; ${msg.direction === 'outgoing' ? 'justify-content: flex-end' : 'justify-content: flex-start'};">
-                            <div class="message-bubble" style="max-width: 70%; padding: 10px 15px; border-radius: 15px; ${msg.direction === 'outgoing' ? 'background: #007bff; color: white; border-bottom-right-radius: 5px;' : 'background: white; border: 1px solid #ddd; border-bottom-left-radius: 5px;'}">
+                    container.innerHTML = messages.map(msg => `
+                        <div class="message-bubble ${msg.direction}">
+                            <div class="message-content ${msg.direction}">
                                 <div class="message-text">${msg.message}</div>
-                                <div class="message-time" style="font-size: 0.8em; margin-top: 5px; opacity: 0.7;">
-                                    ${new Date(msg.created_at).toLocaleTimeString()}
+                                <div class="message-time">
+                                    ${new Date(msg.created_at).toLocaleTimeString('pt-BR', { 
+                                        hour: '2-digit', 
+                                        minute: '2-digit' 
+                                    })}
                                 </div>
                             </div>
                         </div>
                     `).join('');
                     
-                    // Scroll to bottom
-                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                    container.scrollTop = container.scrollHeight;
                 }
                 
             } catch (error) {
-                console.error('Erro ao carregar mensagens:', error);
-                document.getElementById('messages-container').innerHTML = `
-                    <div style="text-align: center; color: red; margin-top: 100px;">
-                        <p>❌ Erro ao carregar mensagens</p>
+                console.error('❌ Erro ao carregar mensagens:', error);
+                document.getElementById('messagesContainer').innerHTML = `
+                    <div class="empty-chat-state">
+                        <div style="color: red;">❌ Erro ao carregar mensagens</div>
                     </div>
                 `;
             }
