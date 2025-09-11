@@ -51,11 +51,9 @@ WEBSOCKET_PORT = 8890
 # Path to React build for serving the frontend
 FRONTEND_BUILD_DIR = Path(__file__).resolve().parent / "frontend" / "build"
 # codex/redesign-grupos-tab-with-campaign-button-1n5c7l
- codex/refactor-conditional-logic-in-whatsflowrealhandler
 
 
 # Brazil timezone for scheduling
-BR_TZ = ZoneInfo("America/Sao_Paulo")
 
 
 
@@ -77,7 +75,6 @@ def compute_next_run(schedule_type: str, weekday: int, time_str: str) -> datetim
 # WebSocket clients management
 if WEBSOCKETS_AVAILABLE:
     websocket_clients: Set[websockets.WebSocketServerProtocol] = set()
- codex/refactor-conditional-logic-in-whatsflowrealhandler
 
 # codex/redesign-grupos-tab-with-campaign-button-1n5c7l
 # Configure logging
