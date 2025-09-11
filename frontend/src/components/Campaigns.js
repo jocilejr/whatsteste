@@ -269,6 +269,7 @@ function CampaignForm({ initialData, onSave, onCancel }) {
   );
 }
 
+ codex/redesign-groups-tab-with-campaign-cards
 // Modal for selecting groups
 function GroupModal({ campaign, onClose, onSaved }) {
   const [instances, setInstances] = useState([]);
@@ -385,10 +386,12 @@ function ScheduleModal({ campaign, onClose }) {
       setMessagesByDay(byDay);
     } catch (err) {
       console.error('Erro ao carregar agenda', err);
+
     }
   };
 
   useEffect(() => {
+ codex/redesign-groups-tab-with-campaign-cards
     loadMessages();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -435,6 +438,7 @@ function ScheduleModal({ campaign, onClose }) {
       <div className="modal-actions">
         <button type="button" className="card-btn" onClick={onClose}>Fechar</button>
         <button type="button" className="card-btn primary" onClick={add}>Adicionar</button>
+
       </div>
     </div>
   );
@@ -445,6 +449,7 @@ export default function Campaigns() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
+ codex/redesign-groups-tab-with-campaign-cards
   const [groupModal, setGroupModal] = useState(null);
   const [scheduleModal, setScheduleModal] = useState(null);
 
@@ -501,6 +506,7 @@ export default function Campaigns() {
         </div>
       )}
 
+ codex/redesign-groups-tab-with-campaign-cards
       {groupModal && (
         <div className="modal-overlay">
           <GroupModal
@@ -521,6 +527,7 @@ export default function Campaigns() {
       )}
 
       <div className="campaigns-grid">
+
         {campaigns.map(c => (
           <div key={c.id} className="campaign-card">
             <div className="campaign-info">
@@ -532,11 +539,13 @@ export default function Campaigns() {
                 </div>
               )}
             </div>
+ codex/redesign-groups-tab-with-campaign-cards
             <div className="card-actions">
               <button className="card-btn" onClick={() => setGroupModal(c)}><Users size={16}/> Selecionar grupos</button>
               <button className="card-btn" onClick={() => setScheduleModal(c)}><Calendar size={16}/> Agendar mensagens</button>
               <button className="card-btn" onClick={() => { setEditing(c); setShowForm(true); }}>Editar</button>
               <button className="card-btn" onClick={() => handleDelete(c.id)}>Excluir</button>
+
             </div>
           </div>
         ))}
