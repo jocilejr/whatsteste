@@ -50,7 +50,7 @@ WEBSOCKET_PORT = 8890
 
 # Path to React build for serving the frontend
 FRONTEND_BUILD_DIR = Path(__file__).resolve().parent / "frontend" / "build"
- codex/redesign-grupos-tab-with-campaign-button-1n5c7l
+# codex/redesign-grupos-tab-with-campaign-button-1n5c7l
 
 
 # Brazil timezone for scheduling
@@ -75,8 +75,7 @@ def compute_next_run(schedule_type: str, weekday: int, time_str: str) -> datetim
 # WebSocket clients management
 if WEBSOCKETS_AVAILABLE:
     websocket_clients: Set[websockets.WebSocketServerProtocol] = set()
-
- codex/redesign-grupos-tab-with-campaign-button-1n5c7l
+# codex/redesign-grupos-tab-with-campaign-button-1n5c7l
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -1027,7 +1026,7 @@ app.listen(PORT, '0.0.0.0', () => {
 
 # HTTP Handler with Baileys integration
 class WhatsFlowRealHandler(BaseHTTPRequestHandler):
- codex/redesign-grupos-tab-with-campaign-button-1n5c7l
+    # codex/redesign-grupos-tab-with-campaign-button-1n5c7l
     def serve_frontend(self, *, head: bool = False) -> None:
 
         path = self.path.split('?', 1)[0]
@@ -1045,7 +1044,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                 self.send_response(200)
                 self.send_header("Content-Type", mime_type or "application/octet-stream")
                 self.end_headers()
- codex/redesign-grupos-tab-with-campaign-button-1n5c7l
+                # codex/redesign-grupos-tab-with-campaign-button-1n5c7l
                 if not head:
                     self.wfile.write(f.read())
 
@@ -1075,17 +1074,22 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             self.handle_get_chats()
         elif self.path == '/api/flows':
             self.handle_get_flows()
-        elif self.path.startswith('/api/campaigns/') and self.path.endswith('/groups'):
-            campaign_id = self.path.split('/')[-2]
-            self.handle_get_campaign_groups(campaign_id)
-        elif self.path.startswith('/api/campaigns/') and self.path.endswith('/messages'):
-            campaign_id = self.path.split('/')[-2]
-            self.handle_get_campaign_messages(campaign_id)
-        elif self.path.startswith('/api/campaigns/'):
-            campaign_id = self.path.split('/')[-1]
-            self.handle_get_campaign(campaign_id)
-        elif self.path == '/api/campaigns':
-            self.handle_get_campaigns()
+        elif self.path.startswith('/api/campaigns'):
+            parts = self.path.strip('/').split('/')
+            if len(parts) == 2:
+                self.handle_get_campaigns()
+            elif len(parts) >= 3:
+                campaign_id = parts[2]
+                if len(parts) == 3:
+                    self.handle_get_campaign(campaign_id)
+                elif len(parts) == 4 and parts[3] == 'groups':
+                    self.handle_get_campaign_groups(campaign_id)
+                elif len(parts) == 4 and parts[3] == 'messages':
+                    self.handle_get_campaign_messages(campaign_id)
+                else:
+                    self.send_error(404, "Not Found")
+            else:
+                self.send_error(404, "Not Found")
         elif self.path.startswith('/api/groups/'):
             instance_id = self.path.split('/')[-1]
             self.handle_get_groups(instance_id)
@@ -1099,17 +1103,6 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             self.handle_whatsapp_qr(instance_id)
         elif self.path.startswith('/api/messages?'):
             self.handle_get_messages_filtered()
-        elif self.path.startswith('/api/groups/'):
-            instance_id = self.path.split('/')[-1]
-            self.handle_get_groups(instance_id)
-        elif self.path == '/api/campaigns':
-            self.handle_get_campaigns()
-        elif self.path.startswith('/api/campaigns/') and self.path.endswith('/groups'):
-            campaign_id = int(self.path.split('/')[-2])
-            self.handle_get_campaign_groups(campaign_id)
-        elif self.path.startswith('/api/campaigns/') and self.path.endswith('/messages'):
-            campaign_id = int(self.path.split('/')[-2])
-            self.handle_get_campaign_messages(campaign_id)
         elif self.path == '/api/webhooks':
             self.handle_get_webhooks()
         elif self.path == '/api/messages/scheduled':
