@@ -3973,7 +3973,10 @@ def calculate_next_run(
     if now.tzinfo is None:
         now = now.replace(tzinfo=tzinfo)
     if recurrence == "once":
-        return send_time
+        dt = datetime.fromisoformat(send_time)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=BR_TZ)
+        return dt.astimezone(timezone.utc).isoformat()
     hour, minute = map(int, send_time.split(":"))
     target = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
     if recurrence == "daily":
@@ -6237,6 +6240,15 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                 self.send_json_response({'error': 'Grupos inválidos'}, 400)
                 return
 
+            send_time = data.get('send_time')
+            if send_time:
+                try:
+                    dt = datetime.fromisoformat(send_time)
+                    if dt.tzinfo is None:
+                        dt = dt.replace(tzinfo=BR_TZ)
+                    send_time = dt.astimezone(timezone.utc).isoformat()
+                except ValueError:
+                    pass
             cursor.execute(
                 """
                 INSERT INTO campaigns (id, name, description, recurrence, send_time, weekday, timezone)
@@ -6247,9 +6259,11 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                     data['name'],
                     data.get('description'),
                     data.get('recurrence'),
+ codex/create-campaigns-database-and-rest-endpoints
                     data.get('send_time'),
                     data.get('weekday'),
                     data.get('timezone', 'America/Sao_Paulo'),
+
                 ),
             )
 
@@ -6294,8 +6308,16 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                 values.append(data['recurrence'])
 
             if 'send_time' in data:
+                st = data['send_time']
+                try:
+                    dt = datetime.fromisoformat(st)
+                    if dt.tzinfo is None:
+                        dt = dt.replace(tzinfo=BR_TZ)
+                    st = dt.astimezone(timezone.utc).isoformat()
+                except ValueError:
+                    pass
                 update_fields.append('send_time = ?')
-                values.append(data['send_time'])
+                values.append(st)
 
             if 'weekday' in data:
                 update_fields.append('weekday = ?')

@@ -164,15 +164,16 @@ export default function MessagesCenter() {
 
   const formatTime = (timestamp) => {
     const date = new Date(timestamp);
-    return date.toLocaleTimeString('pt-BR', { 
-      hour: '2-digit', 
-      minute: '2-digit' 
+    return date.toLocaleTimeString('pt-BR', {
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: 'America/Sao_Paulo'
     });
   };
 
   const formatDate = (timestamp) => {
-    const date = new Date(timestamp);
-    const today = new Date();
+    const date = new Date(new Date(timestamp).toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
+    const today = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
 
@@ -181,7 +182,7 @@ export default function MessagesCenter() {
     } else if (date.toDateString() === yesterday.toDateString()) {
       return 'Ontem';
     } else {
-      return date.toLocaleDateString('pt-BR');
+      return date.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
     }
   };
 

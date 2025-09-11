@@ -111,14 +111,14 @@ export default function FlowList({ onCreateFlow, onEditFlow }) {
                 <div className="stat">
                   <span className="stat-label">Criado:</span>
                   <span className="stat-value">
-                    {new Date(flow.created_at).toLocaleDateString('pt-BR')}
+                    {new Date(flow.created_at).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })}
                   </span>
                 </div>
                 <div className="stat">
                   <span className="stat-label">Último uso:</span>
                   <span className="stat-value">
                     {flow.last_used 
-                      ? new Date(flow.last_used).toLocaleDateString('pt-BR')
+                      ? new Date(flow.last_used).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })
                       : 'Nunca'
                     }
                   </span>
