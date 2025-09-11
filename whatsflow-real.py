@@ -3790,10 +3790,10 @@ def init_db():
         CREATE TABLE IF NOT EXISTS campaigns (
             id TEXT PRIMARY KEY,
             name TEXT NOT NULL,
-            description TEXT,
             recurrence TEXT,
             send_time TEXT,
-            weekday INTEGER
+            weekday INTEGER,
+            created_at TEXT
         )
     """)
 
@@ -3804,6 +3804,8 @@ def init_db():
             PRIMARY KEY (campaign_id, group_id)
         )
     """)
+
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_campaign_groups_campaign_id ON campaign_groups(campaign_id)")
 
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS scheduled_messages (
@@ -3818,7 +3820,6 @@ def init_db():
     """)
 
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_scheduled_next_run ON scheduled_messages(next_run)")
-    cursor.execute("CREATE INDEX IF NOT EXISTS idx_scheduled_campaign ON scheduled_messages(campaign_id)")
     
     conn.commit()
     conn.close()
