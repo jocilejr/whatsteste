@@ -50,11 +50,7 @@ WEBSOCKET_PORT = 8890
 
 # Path to React build for serving the frontend
 FRONTEND_BUILD_DIR = Path(__file__).resolve().parent / "frontend" / "build"
- codex/redesign-grupos-tab-with-campaign-button-1n5c7l
-
-
-# Brazil timezone for scheduling
-BR_TZ = ZoneInfo("America/Sao_Paulo")
+# codex/redesign-grupos-tab-with-campaign-button-1n5c7l
 
 
 def compute_next_run(schedule_type: str, weekday: int, time_str: str) -> datetime:
@@ -76,7 +72,7 @@ def compute_next_run(schedule_type: str, weekday: int, time_str: str) -> datetim
 if WEBSOCKETS_AVAILABLE:
     websocket_clients: Set[websockets.WebSocketServerProtocol] = set()
 
- codex/redesign-grupos-tab-with-campaign-button-1n5c7l
+# codex/redesign-grupos-tab-with-campaign-button-1n5c7l
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -1027,7 +1023,7 @@ app.listen(PORT, '0.0.0.0', () => {
 
 # HTTP Handler with Baileys integration
 class WhatsFlowRealHandler(BaseHTTPRequestHandler):
- codex/redesign-grupos-tab-with-campaign-button-1n5c7l
+    # codex/redesign-grupos-tab-with-campaign-button-1n5c7l
     def serve_frontend(self, *, head: bool = False) -> None:
 
         path = self.path.split('?', 1)[0]
@@ -1045,7 +1041,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                 self.send_response(200)
                 self.send_header("Content-Type", mime_type or "application/octet-stream")
                 self.end_headers()
- codex/redesign-grupos-tab-with-campaign-button-1n5c7l
+                # codex/redesign-grupos-tab-with-campaign-button-1n5c7l
                 if not head:
                     self.wfile.write(f.read())
 
