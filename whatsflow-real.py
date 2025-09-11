@@ -3786,28 +3786,60 @@ def init_db():
         )
     """)
 
-    cursor.execute("""
+    cursor.execute(
+        """
         CREATE TABLE IF NOT EXISTS campaigns (
             id TEXT PRIMARY KEY,
             name TEXT NOT NULL,
+            description TEXT,
             recurrence TEXT,
             send_time TEXT,
             weekday INTEGER,
+            timezone TEXT DEFAULT 'America/Sao_Paulo',
             created_at TEXT
         )
-    """)
+        """
+    )
 
-    cursor.execute("""
+    cursor.execute(
+        """
         CREATE TABLE IF NOT EXISTS campaign_groups (
             campaign_id TEXT NOT NULL,
             group_id TEXT NOT NULL,
             PRIMARY KEY (campaign_id, group_id)
         )
-    """)
+        """
+    )
 
-    cursor.execute("CREATE INDEX IF NOT EXISTS idx_campaign_groups_campaign_id ON campaign_groups(campaign_id)")
+    cursor.execute(
+        "CREATE INDEX IF NOT EXISTS idx_campaign_groups_campaign_id ON campaign_groups(campaign_id)"
+    )
 
-    cursor.execute("""
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS campaign_messages (
+            id TEXT PRIMARY KEY,
+            campaign_id TEXT NOT NULL,
+            content TEXT,
+            media_type TEXT DEFAULT 'text',
+            media_path TEXT,
+            recurrence TEXT NOT NULL,
+            send_time TEXT NOT NULL,
+            weekday INTEGER,
+            timezone TEXT DEFAULT 'America/Sao_Paulo',
+            next_run TEXT NOT NULL,
+            status TEXT DEFAULT 'pending'
+        )
+        """
+    )
+
+    cursor.execute(
+        "CREATE INDEX IF NOT EXISTS idx_campaign_messages_next_run ON campaign_messages(next_run)"
+    )
+
+    # Legacy scheduled_messages table for compatibility
+    cursor.execute(
+        """
         CREATE TABLE IF NOT EXISTS scheduled_messages (
             id TEXT PRIMARY KEY,
             campaign_id TEXT NOT NULL,
@@ -3817,9 +3849,12 @@ def init_db():
             next_run TEXT NOT NULL,
             status TEXT DEFAULT 'pending'
         )
-    """)
+        """
+    )
 
-    cursor.execute("CREATE INDEX IF NOT EXISTS idx_scheduled_next_run ON scheduled_messages(next_run)")
+    cursor.execute(
+        "CREATE INDEX IF NOT EXISTS idx_scheduled_next_run ON scheduled_messages(next_run)"
+    )
     
     conn.commit()
     conn.close()
@@ -3866,6 +3901,10 @@ def send_via_baileys(phone: str, message: str, instance_id: str = "default") -> 
 class BaileysUnavailable(Exception):
     pass
 
+def baileys_post(url: str, data: Dict[str, Any]):
+    import requests  # type: ignore
+    return requests.post(url, json=data, timeout=10)
+
 
 def baileys_send_message(instance_id: str, data: Dict[str, Any]) -> bool:
     """Send message via Baileys service, returning True on success.
@@ -3873,14 +3912,13 @@ def baileys_send_message(instance_id: str, data: Dict[str, Any]) -> bool:
     Raises BaileysUnavailable if the service cannot be reached.
     """
     try:
-        import requests  # type: ignore
         try:
-            response = requests.post(
-                f"{BAILEYS_URL}/send/{instance_id}", json=data, timeout=10
-            )
-        except requests.exceptions.RequestException as exc:
+            response = baileys_post(f"{BAILEYS_URL}/send/{instance_id}", data)
+        except Exception as exc:
             raise BaileysUnavailable() from exc
-        return response.status_code == 200
+        if hasattr(response, "status_code"):
+            return response.status_code == 200
+        return True
     except ImportError:
         import urllib.request
         import urllib.error
@@ -3922,11 +3960,18 @@ def send_scheduled_message(
         return False
 
 
-def calculate_next_run(recurrence: str, send_time: str, weekday: int | None = None, base_dt: datetime | None = None) -> str:
-    """Calculate next run datetime based on recurrence."""
-    now = base_dt or datetime.now(BR_TZ)
+def calculate_next_run(
+    recurrence: str,
+    send_time: str,
+    weekday: int | None = None,
+    tz: str = "America/Sao_Paulo",
+    base_dt: datetime | None = None,
+) -> str:
+    """Calculate next run datetime based on recurrence and timezone."""
+    tzinfo = ZoneInfo(tz)
+    now = base_dt or datetime.now(tzinfo)
     if now.tzinfo is None:
-        now = now.replace(tzinfo=BR_TZ)
+        now = now.replace(tzinfo=tzinfo)
     if recurrence == "once":
         return send_time
     hour, minute = map(int, send_time.split(":"))
@@ -3942,8 +3987,8 @@ def calculate_next_run(recurrence: str, send_time: str, weekday: int | None = No
     return target.astimezone(timezone.utc).isoformat()
 
 
-def process_scheduled_messages(now: datetime | None = None) -> None:
-    """Process due scheduled messages once."""
+def process_campaign_messages(now: datetime | None = None) -> None:
+    """Process due campaign messages once."""
     current = now or datetime.now(BR_TZ)
     if current.tzinfo is None:
         current = current.replace(tzinfo=BR_TZ)
@@ -3952,8 +3997,51 @@ def process_scheduled_messages(now: datetime | None = None) -> None:
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     cursor.execute(
+        "SELECT * FROM campaign_messages WHERE next_run <= ? AND status = 'pending'",
+        (current_utc.isoformat(),),
+    )
+    rows = cursor.fetchall()
+    for row in rows:
+        try:
+            cursor.execute(
+                "SELECT group_id FROM campaign_groups WHERE campaign_id = ?",
+                (row["campaign_id"],),
+            )
+            groups = [g[0] for g in cursor.fetchall()]
+            for group_id in groups:
+                ok = send_scheduled_message(
+                    group_id, row["content"], row["media_type"], row["media_path"]
+                )
+                if not ok:
+                    logger.error(
+                        f"Falha ao enviar mensagem agendada {row['id']} para grupo {group_id}"
+                    )
+            if row["recurrence"] == "once":
+                cursor.execute(
+                    "UPDATE campaign_messages SET status = 'sent' WHERE id = ?",
+                    (row["id"],),
+                )
+            else:
+                next_run = calculate_next_run(
+                    row["recurrence"],
+                    row["send_time"],
+                    row["weekday"],
+                    row["timezone"],
+                    base_dt=current,
+                )
+                cursor.execute(
+                    "UPDATE campaign_messages SET next_run = ? WHERE id = ?",
+                    (next_run, row["id"]),
+                )
+        except Exception as e:
+            logger.error(
+                f"Erro ao processar mensagem agendada {row['id']}: {e}",
+            )
+    conn.commit()
+    # Process legacy scheduled_messages table for backward compatibility
+    cursor.execute(
         """
-        SELECT sm.*, c.recurrence, c.send_time, c.weekday
+        SELECT sm.*, c.recurrence, c.send_time, c.weekday, c.timezone
         FROM scheduled_messages sm
         JOIN campaigns c ON c.id = sm.campaign_id
         WHERE sm.next_run <= ? AND sm.status = 'pending'
@@ -3983,7 +4071,11 @@ def process_scheduled_messages(now: datetime | None = None) -> None:
                 )
             else:
                 next_run = calculate_next_run(
-                    row["recurrence"], row["send_time"], row["weekday"], base_dt=current
+                    row["recurrence"],
+                    row["send_time"],
+                    row["weekday"],
+                    row["timezone"],
+                    base_dt=current,
                 )
                 cursor.execute(
                     "UPDATE scheduled_messages SET next_run = ? WHERE id = ?",
@@ -3997,10 +4089,14 @@ def process_scheduled_messages(now: datetime | None = None) -> None:
     conn.close()
 
 
-async def scheduled_message_scheduler():
+# Backward compatibility alias
+process_scheduled_messages = process_campaign_messages
+
+
+async def campaign_message_scheduler():
     while True:
         try:
-            process_scheduled_messages()
+            process_campaign_messages()
         except Exception as e:
             logger.error(f"Erro no agendador de mensagens: {e}")
         await asyncio.sleep(60)
@@ -4802,6 +4898,9 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             self.handle_get_chats()
         elif self.path == '/api/flows':
             self.handle_get_flows()
+        elif self.path.startswith('/api/campaigns/') and self.path.endswith('/groups'):
+            campaign_id = self.path.split('/')[-2]
+            self.handle_get_campaign_groups(campaign_id)
         elif self.path.startswith('/api/campaigns/') and self.path.endswith('/messages'):
             campaign_id = self.path.split('/')[-2]
             self.handle_get_campaign_messages(campaign_id)
@@ -4862,6 +4961,9 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
         elif self.path.startswith('/api/messages/send/'):
             instance_id = self.path.split('/')[-1]
             self.handle_send_message(instance_id)
+        elif self.path.startswith('/api/campaigns/') and self.path.endswith('/groups'):
+            campaign_id = self.path.split('/')[-2]
+            self.handle_add_campaign_groups(campaign_id)
         elif self.path.startswith('/api/campaigns/') and self.path.endswith('/messages'):
             campaign_id = self.path.split('/')[-2]
             self.handle_schedule_campaign_message(campaign_id)
@@ -4898,7 +5000,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             self.handle_delete_campaign(campaign_id)
         elif self.path.startswith('/api/messages/scheduled/'):
             schedule_id = self.path.split('/')[-1]
-            self.handle_delete_scheduled_message(schedule_id)
+            self.handle_delete_campaign_message(schedule_id)
         else:
             self.send_error(404, "Not Found")
     
@@ -4983,7 +5085,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             conn = sqlite3.connect(DB_FILE)
             cursor = conn.cursor()
             cursor.execute(
-                "SELECT recurrence, send_time, weekday FROM campaigns WHERE id = ?",
+                "SELECT recurrence, send_time, weekday, timezone FROM campaigns WHERE id = ?",
                 (campaign_id,),
             )
             row = cursor.fetchone()
@@ -4991,8 +5093,10 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                 conn.close()
                 self.send_json_response({"error": "Campanha não encontrada"}, 404)
                 return
-            recurrence, send_time, weekday = row
-            next_run = calculate_next_run(recurrence or 'once', send_time or '00:00', weekday)
+            recurrence, send_time, weekday, timezone = row
+            next_run = calculate_next_run(
+                recurrence or 'once', send_time or '00:00', weekday, timezone
+            )
 
             schedule_id = str(uuid.uuid4())
             cursor.execute(
@@ -5029,10 +5133,11 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             cursor = conn.cursor()
             cursor.execute(
                 """
-                SELECT sm.id, sm.campaign_id, c.name as campaign_name, sm.content, sm.media_type, sm.media_path, sm.next_run, sm.status
-                FROM scheduled_messages sm
-                JOIN campaigns c ON c.id = sm.campaign_id
-                ORDER BY sm.next_run ASC
+                SELECT cm.id, cm.campaign_id, c.name as campaign_name, cm.content, cm.media_type, cm.media_path,
+                       cm.recurrence, cm.send_time, cm.weekday, cm.timezone, cm.next_run, cm.status
+                FROM campaign_messages cm
+                JOIN campaigns c ON c.id = cm.campaign_id
+                ORDER BY cm.next_run ASC
                 """,
             )
             messages = [dict(row) for row in cursor.fetchall()]
@@ -5055,7 +5160,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             cursor = conn.cursor()
 
             cursor.execute(
-                "SELECT recurrence, send_time, weekday FROM campaigns WHERE id = ?",
+                "SELECT recurrence, send_time, weekday, timezone FROM campaigns WHERE id = ?",
                 (campaign_id,),
             )
             row = cursor.fetchone()
@@ -5080,16 +5185,29 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                     self.send_json_response({'error': 'Grupos inválidos para esta campanha'}, 400)
                     return
 
-            recurrence, send_time, weekday = row
-            next_run = calculate_next_run(recurrence or 'once', send_time or '00:00', weekday)
+            recurrence, send_time, weekday, timezone = row
+            next_run = calculate_next_run(
+                recurrence or 'once', send_time or '00:00', weekday, timezone
+            )
 
             schedule_id = str(uuid.uuid4())
             cursor.execute(
                 """
-                INSERT INTO scheduled_messages (id, campaign_id, content, media_type, media_path, next_run, status)
-                VALUES (?, ?, ?, ?, ?, ?, 'pending')
+                INSERT INTO campaign_messages (id, campaign_id, content, media_type, media_path, recurrence, send_time, weekday, timezone, next_run, status)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')
                 """,
-                (schedule_id, campaign_id, content, media_type, media_path, next_run),
+                (
+                    schedule_id,
+                    campaign_id,
+                    content,
+                    media_type,
+                    media_path,
+                    recurrence,
+                    send_time,
+                    weekday,
+                    timezone,
+                    next_run,
+                ),
             )
 
             conn.commit()
@@ -5123,8 +5241,8 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
 
             cursor.execute(
                 """
-                SELECT id, content, media_type, media_path, next_run, status
-                FROM scheduled_messages
+                SELECT id, content, media_type, media_path, recurrence, send_time, weekday, timezone, next_run, status
+                FROM campaign_messages
                 WHERE campaign_id = ?
                 ORDER BY next_run ASC
                 """,
@@ -5136,11 +5254,11 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
         except Exception as e:
             self.send_json_response({'error': str(e)}, 500)
 
-    def handle_delete_scheduled_message(self, schedule_id: str):
+    def handle_delete_campaign_message(self, message_id: str):
         try:
             conn = sqlite3.connect(DB_FILE)
             cursor = conn.cursor()
-            cursor.execute("DELETE FROM scheduled_messages WHERE id = ?", (schedule_id,))
+            cursor.execute("DELETE FROM campaign_messages WHERE id = ?", (message_id,))
             conn.commit()
             conn.close()
             self.send_json_response({"success": True})
@@ -6033,7 +6151,9 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
         try:
             conn = sqlite3.connect(DB_FILE)
             cursor = conn.cursor()
-            cursor.execute("SELECT id, name, description, recurrence, send_time, weekday FROM campaigns")
+            cursor.execute(
+                "SELECT id, name, description, recurrence, send_time, weekday, timezone FROM campaigns"
+            )
             campaigns = []
             for row in cursor.fetchall():
                 campaign_id = row[0]
@@ -6049,6 +6169,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                     'recurrence': row[3],
                     'send_time': row[4],
                     'weekday': row[5],
+                    'timezone': row[6],
                     'groups': groups,
                 })
             conn.close()
@@ -6064,7 +6185,10 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             conn = sqlite3.connect(DB_FILE)
             cursor = conn.cursor()
 
-            cursor.execute("SELECT id, name, description, recurrence, send_time, weekday FROM campaigns WHERE id = ?", (campaign_id,))
+            cursor.execute(
+                "SELECT id, name, description, recurrence, send_time, weekday, timezone FROM campaigns WHERE id = ?",
+                (campaign_id,),
+            )
             row = cursor.fetchone()
             if not row:
                 conn.close()
@@ -6084,6 +6208,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                 'recurrence': row[3],
                 'send_time': row[4],
                 'weekday': row[5],
+                'timezone': row[6],
                 'groups': groups,
             }
 
@@ -6107,15 +6232,15 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             cursor = conn.cursor()
 
             groups = data.get('groups', [])
-            if not isinstance(groups, list) or not groups:
+            if not isinstance(groups, list):
                 conn.close()
-                self.send_json_response({'error': 'Grupos inválidos ou ausentes'}, 400)
+                self.send_json_response({'error': 'Grupos inválidos'}, 400)
                 return
 
             cursor.execute(
                 """
-                INSERT INTO campaigns (id, name, description, recurrence, send_time, weekday)
-                VALUES (?, ?, ?, ?, ?, ?)
+                INSERT INTO campaigns (id, name, description, recurrence, send_time, weekday, timezone)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     campaign_id,
@@ -6123,7 +6248,8 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                     data.get('description'),
                     data.get('recurrence'),
                     data.get('send_time'),
-                    data.get('weekday')
+                    data.get('weekday'),
+                    data.get('timezone', 'America/Sao_Paulo'),
                 ),
             )
 
@@ -6175,6 +6301,10 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                 update_fields.append('weekday = ?')
                 values.append(data['weekday'])
 
+            if 'timezone' in data:
+                update_fields.append('timezone = ?')
+                values.append(data['timezone'])
+
             values.append(campaign_id)
             cursor.execute(
                 f"UPDATE campaigns SET {', '.join(update_fields)} WHERE id = ?",
@@ -6188,9 +6318,9 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
 
             if 'groups' in data:
                 groups = data['groups']
-                if not isinstance(groups, list) or not groups:
+                if not isinstance(groups, list):
                     conn.close()
-                    self.send_json_response({'error': 'Grupos inválidos ou ausentes'}, 400)
+                    self.send_json_response({'error': 'Grupos inválidos'}, 400)
                     return
                 cursor.execute("DELETE FROM campaign_groups WHERE campaign_id = ?", (campaign_id,))
                 for group_id in groups:
@@ -6215,7 +6345,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             cursor = conn.cursor()
 
             cursor.execute("DELETE FROM campaign_groups WHERE campaign_id = ?", (campaign_id,))
-            cursor.execute("DELETE FROM scheduled_messages WHERE campaign_id = ?", (campaign_id,))
+            cursor.execute("DELETE FROM campaign_messages WHERE campaign_id = ?", (campaign_id,))
             cursor.execute("DELETE FROM campaigns WHERE id = ?", (campaign_id,))
 
             if cursor.rowcount > 0:
@@ -6228,6 +6358,46 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
 
         except Exception as e:
             print(f"❌ Erro ao excluir campanha: {e}")
+            self.send_json_response({'error': str(e)}, 500)
+
+    def handle_get_campaign_groups(self, campaign_id: str) -> None:
+        try:
+            conn = sqlite3.connect(DB_FILE)
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT group_id FROM campaign_groups WHERE campaign_id = ?",
+                (campaign_id,),
+            )
+            groups = [row[0] for row in cursor.fetchall()]
+            conn.close()
+            self.send_json_response({'campaign_id': campaign_id, 'groups': groups})
+        except Exception as e:
+            self.send_json_response({'error': str(e)}, 500)
+
+    def handle_add_campaign_groups(self, campaign_id: str) -> None:
+        try:
+            length = int(self.headers.get('Content-Length', 0))
+            data = json.loads(self.rfile.read(length).decode('utf-8')) if length else {}
+            groups = data.get('groups', [])
+            if not isinstance(groups, list) or not groups:
+                self.send_json_response({'error': 'Grupos inválidos'}, 400)
+                return
+            conn = sqlite3.connect(DB_FILE)
+            cursor = conn.cursor()
+            cursor.execute("SELECT id FROM campaigns WHERE id = ?", (campaign_id,))
+            if not cursor.fetchone():
+                conn.close()
+                self.send_json_response({'error': 'Campanha não encontrada'}, 404)
+                return
+            for gid in groups:
+                cursor.execute(
+                    "INSERT OR IGNORE INTO campaign_groups (campaign_id, group_id) VALUES (?, ?)",
+                    (campaign_id, gid),
+                )
+            conn.commit()
+            conn.close()
+            self.send_json_response({'success': True})
+        except Exception as e:
             self.send_json_response({'error': str(e)}, 500)
 
     def handle_send_webhook(self):
@@ -6326,7 +6496,7 @@ def main():
     # Launch campaign scheduler task after server starts
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-    loop.create_task(scheduled_message_scheduler())
+    loop.create_task(campaign_message_scheduler())
 
     print("✅ WhatsFlow Professional configurado!")
     print(f"🌐 Interface: http://localhost:{PORT}")
