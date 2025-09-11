@@ -15,15 +15,16 @@ export default function Groups() {
   const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
   const API = `${BACKEND_URL}/api`;
 
+  const fetchCampaigns = async () => {
+    try {
+      const res = await axios.get(`${API}/campaigns`);
+      setCampaigns(res.data.campaigns || []);
+    } catch (err) {
+      console.error('Failed to load campaigns', err);
+    }
+  };
+
   useEffect(() => {
-    const fetchCampaigns = async () => {
-      try {
-        const res = await axios.get(`${API}/campaigns`);
-        setCampaigns(res.data.campaigns || []);
-      } catch (err) {
-        console.error('Failed to load campaigns', err);
-      }
-    };
     fetchCampaigns();
   }, [API]);
 
@@ -31,9 +32,8 @@ export default function Groups() {
     e.preventDefault();
     if (!name.trim()) return;
     try {
-      const res = await axios.post(`${API}/campaigns`, { name: name.trim() });
-      const newCampaign = res.data;
-      setCampaigns([...campaigns, newCampaign]);
+      await axios.post(`${API}/campaigns`, { name: name.trim() });
+      await fetchCampaigns();
       setName('');
       setShowModal(false);
     } catch (err) {
