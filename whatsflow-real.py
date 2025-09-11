@@ -3888,12 +3888,14 @@ def send_scheduled_message(group_id: str, content: str, media_type: str, media_p
         try:
             with open(media_path, "rb") as f:
                 data[media_type] = base64.b64encode(f.read()).decode("utf-8")
-        except Exception:
+        except Exception as e:
+            logger.error(f"Erro ao carregar mídia '{media_path}': {e}")
             return False
     try:
         baileys_post(f"http://127.0.0.1:{BAILEYS_PORT}/send/{instance_id}", data)
         return True
-    except Exception:
+    except Exception as e:
+        logger.error(f"Erro ao enviar mensagem agendada para {group_id}: {e}")
         return False
 
 
@@ -3937,25 +3939,36 @@ def process_scheduled_messages(now: datetime | None = None) -> None:
     )
     rows = cursor.fetchall()
     for row in rows:
-        cursor.execute(
-            "SELECT group_id FROM campaign_groups WHERE campaign_id = ?",
-            (row["campaign_id"],),
-        )
-        groups = [g[0] for g in cursor.fetchall()]
-        for group_id in groups:
-            send_scheduled_message(group_id, row["content"], row["media_type"], row["media_path"])
-        if row["recurrence"] == "once":
+        try:
             cursor.execute(
-                "UPDATE scheduled_messages SET status = 'sent' WHERE id = ?",
-                (row["id"],),
+                "SELECT group_id FROM campaign_groups WHERE campaign_id = ?",
+                (row["campaign_id"],),
             )
-        else:
-            next_run = calculate_next_run(
-                row["recurrence"], row["send_time"], row["weekday"], base_dt=current
-            )
-            cursor.execute(
-                "UPDATE scheduled_messages SET next_run = ? WHERE id = ?",
-                (next_run, row["id"]),
+            groups = [g[0] for g in cursor.fetchall()]
+            for group_id in groups:
+                ok = send_scheduled_message(
+                    group_id, row["content"], row["media_type"], row["media_path"]
+                )
+                if not ok:
+                    logger.error(
+                        f"Falha ao enviar mensagem agendada {row['id']} para grupo {group_id}"
+                    )
+            if row["recurrence"] == "once":
+                cursor.execute(
+                    "UPDATE scheduled_messages SET status = 'sent' WHERE id = ?",
+                    (row["id"],),
+                )
+            else:
+                next_run = calculate_next_run(
+                    row["recurrence"], row["send_time"], row["weekday"], base_dt=current
+                )
+                cursor.execute(
+                    "UPDATE scheduled_messages SET next_run = ? WHERE id = ?",
+                    (next_run, row["id"]),
+                )
+        except Exception as e:
+            logger.error(
+                f"Erro ao processar mensagem agendada {row['id']}: {e}",
             )
     conn.commit()
     conn.close()
