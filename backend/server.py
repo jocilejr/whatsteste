@@ -130,6 +130,18 @@ class WhatsAppInstanceCreate(BaseModel):
     name: str
     device_name: Optional[str] = None
 
+
+class Campaign(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(BR_TZ).astimezone(timezone.utc)
+    )
+
+
+class CampaignCreate(BaseModel):
+    name: str
+
 # Database helpers
 async def get_or_create_contact(phone_number: str, name: str = None, device_id: str = "whatsapp_1", device_name: str = "WhatsApp 1") -> dict:
     contacts_collection = db.contacts
@@ -594,6 +606,32 @@ async def trigger_macro(macro: MacroTrigger, background_tasks: BackgroundTasks):
         
     except Exception as e:
         logging.error(f"Error triggering macro: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.post("/campaigns")
+async def create_campaign(campaign: CampaignCreate):
+    """Create a new campaign"""
+    try:
+        campaign_data = Campaign(name=campaign.name)
+        result = await db.campaigns.insert_one(campaign_data.dict())
+        campaign_data.id = str(result.inserted_id)
+        return campaign_data.dict()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/campaigns")
+async def get_campaigns():
+    """Return all campaigns"""
+    try:
+        campaigns = await db.campaigns.find().sort("created_at", -1).to_list(100)
+        for campaign in campaigns:
+            campaign["id"] = str(campaign.get("_id"))
+            if "_id" in campaign:
+                del campaign["_id"]
+        return {"campaigns": campaigns}
+    except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 # Original routes
