@@ -96,6 +96,15 @@ class ConnectionUpdate(BaseModel):
     connected: bool
     user: Optional[dict] = None
 
+class ConnectedEvent(BaseModel):
+    instanceId: str
+    user: Optional[Dict[str, Any]] = None
+    connectedAt: Optional[datetime] = None
+
+class DisconnectedEvent(BaseModel):
+    instanceId: str
+    reason: Optional[str] = None
+
 class Webhook(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     name: str
@@ -250,13 +259,18 @@ async def create_whatsapp_instance(instance_data: WhatsAppInstanceCreate):
 async def connect_whatsapp_instance(instance_id: str):
     """Start connection process for a WhatsApp instance"""
     try:
-        # Get instance from database
+        # Ensure instance exists
         instance = await db.whatsapp_instances.find_one({"id": instance_id})
         if not instance:
             raise HTTPException(status_code=404, detail="Instance not found")
-        
-        # For now, just return success - actual QR generation would happen through whatsapp-service
-        return {"success": True, "message": "Connection initiated"}
+
+        async with httpx.AsyncClient() as http_client:
+            response = await http_client.post(f"{BAILEYS_SERVICE_URL}/connect/{instance_id}")
+
+        if response.status_code != 200:
+            raise HTTPException(status_code=response.status_code, detail=response.text)
+
+        return response.json()
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -264,16 +278,13 @@ async def connect_whatsapp_instance(instance_id: str):
 async def get_instance_qr(instance_id: str):
     """Get QR code for specific instance"""
     try:
-        # Get instance from database
-        instance = await db.whatsapp_instances.find_one({"id": instance_id})
-        if not instance:
-            raise HTTPException(status_code=404, detail="Instance not found")
-        
-        # For demo purposes, return a fake QR code
-        # In production, this would communicate with whatsapp-service
-        qr_data = f"whatsapp-instance-{instance_id}-{datetime.now().timestamp()}"
-        
-        return {"qr": qr_data, "connected": False}
+        async with httpx.AsyncClient() as http_client:
+            response = await http_client.get(f"{BAILEYS_SERVICE_URL}/qr/{instance_id}")
+
+        if response.status_code != 200:
+            raise HTTPException(status_code=response.status_code, detail=response.text)
+
+        return response.json()
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -406,6 +417,39 @@ async def qr_update(qr_data: QRUpdate):
 async def connection_update(conn_data: ConnectionUpdate):
     """Receive connection status updates from WhatsApp service"""
     return {"status": "received"}
+
+@api_router.post("/whatsapp/connected")
+async def whatsapp_connected(event: ConnectedEvent):
+    """Update instance status when Baileys reports a successful connection"""
+    result = await db.whatsapp_instances.update_one(
+        {"id": event.instanceId},
+        {"$set": {
+            "connected": True,
+            "user": event.user,
+            "last_connected_at": datetime.now(BR_TZ).astimezone(timezone.utc)
+        }}
+    )
+
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Instance not found")
+
+    return {"success": True}
+
+@api_router.post("/whatsapp/disconnected")
+async def whatsapp_disconnected(event: DisconnectedEvent):
+    """Update instance status when Baileys reports a disconnection"""
+    result = await db.whatsapp_instances.update_one(
+        {"id": event.instanceId},
+        {"$set": {
+            "connected": False,
+            "user": None
+        }}
+    )
+
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Instance not found")
+
+    return {"success": True}
 
 # Messages and Contacts Routes
 @api_router.get("/contacts")
