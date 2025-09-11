@@ -432,12 +432,32 @@ app.post('/send/:instanceId', async (req, res) => {
         if (type === 'text') {
             await instance.sock.sendMessage(jid, { text: message });
         } else if (type === 'image' && req.body.imageData) {
-            // Handle image sending (base64)
             const buffer = Buffer.from(req.body.imageData, 'base64');
-            await instance.sock.sendMessage(jid, { 
+            await instance.sock.sendMessage(jid, {
                 image: buffer,
                 caption: message || ''
             });
+        } else if (type === 'audio' && req.body.audioData) {
+            const buffer = Buffer.from(req.body.audioData, 'base64');
+            await instance.sock.sendMessage(jid, {
+                audio: buffer,
+                mimetype: req.body.mimetype || 'audio/mpeg'
+            });
+        } else if (type === 'video' && req.body.videoData) {
+            const buffer = Buffer.from(req.body.videoData, 'base64');
+            await instance.sock.sendMessage(jid, {
+                video: buffer,
+                caption: message || ''
+            });
+        } else if (type === 'document' && req.body.documentData) {
+            const buffer = Buffer.from(req.body.documentData, 'base64');
+            await instance.sock.sendMessage(jid, {
+                document: buffer,
+                caption: message || '',
+                fileName: req.body.fileName || 'file'
+            });
+        } else {
+            return res.status(400).json({ error: 'Tipo de mensagem não suportado' });
         }
         
         console.log(`📤 Mensagem enviada da instância ${instanceId} para ${to}`);

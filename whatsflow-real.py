@@ -11,7 +11,7 @@ Acesso: http://localhost:8888
 import json
 import sqlite3
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import os
 import subprocess
 import sys
@@ -22,6 +22,8 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 import urllib.parse
 import logging
 from typing import Set, Dict, Any
+from zoneinfo import ZoneInfo
+import base64
 
 # Try to import websockets, fallback gracefully if not available
 try:
@@ -38,6 +40,25 @@ PORT = 8889
 BAILEYS_PORT = 3002
 WEBSOCKET_PORT = 8890
 
+# Brazil timezone for scheduling
+BR_TZ = ZoneInfo("America/Sao_Paulo")
+
+
+def compute_next_run(schedule_type: str, weekday: int, time_str: str) -> datetime:
+    """Compute next datetime for a campaign message based on schedule."""
+    now = datetime.now(BR_TZ)
+    hour, minute = map(int, time_str.split(":"))
+    scheduled = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
+    if schedule_type == "daily":
+        if scheduled <= now:
+            scheduled += timedelta(days=1)
+    elif schedule_type == "weekly":
+        days_ahead = (weekday - scheduled.weekday()) % 7
+        scheduled = scheduled + timedelta(days=days_ahead)
+        if scheduled <= now:
+            scheduled += timedelta(days=7)
+    return scheduled
+
 # WebSocket clients management
 if WEBSOCKETS_AVAILABLE:
     websocket_clients: Set[websockets.WebSocketServerProtocol] = set()
@@ -47,7 +68,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # HTML da aplicação (mesmo do Pure, mas com conexão real)
-HTML_APP = '''<!DOCTYPE html>
+HTML_APP = r'''<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
@@ -1122,10 +1143,21 @@ HTML_APP = '''<!DOCTYPE html>
             background: var(--bg-secondary);
             transition: all 0.3s ease;
         }
-        
+
         .group-card:hover {
             border-color: var(--primary);
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .campaign-card {
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+            background: var(--bg-secondary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
         
         .group-info {
@@ -1983,10 +2015,10 @@ HTML_APP = '''<!DOCTYPE html>
                 
                 <div class="groups-container">
                     <div class="groups-header">
-                        <input type="text" class="search-box" placeholder="🔍 Buscar grupos..." 
+                        <input type="text" class="search-box" placeholder="🔍 Buscar grupos..."
                                id="searchGroups" onkeyup="searchGroups()">
                     </div>
-                    
+
                     <div id="groups-container">
                         <div class="empty-state">
                             <div class="empty-icon">👥</div>
@@ -1995,8 +2027,14 @@ HTML_APP = '''<!DOCTYPE html>
                         </div>
                     </div>
                 </div>
-                
-                <!-- Schedule Messages Panel -->  
+
+                <div id="campaigns-section" style="margin-top:2rem;">
+                    <h3>📢 Campanhas</h3>
+                    <div id="campaigns-container" class="campaigns"></div>
+                    <button class="btn btn-primary" onclick="createCampaign()">+ Nova Campanha</button>
+                </div>
+
+                <!-- Schedule Messages Panel -->
                 <div class="schedule-panel" style="margin-top: 2rem;">
                     <h3>📅 Agendamento de Mensagens</h3>
                     <div class="schedule-form">
@@ -2153,6 +2191,7 @@ HTML_APP = '''<!DOCTYPE html>
                 }
             } else if (name === 'groups') {
                 loadInstancesForGroups();
+                loadCampaigns();
             } else if (name === 'flows') {
                 loadFlows();
             }
@@ -2700,8 +2739,12 @@ HTML_APP = '''<!DOCTYPE html>
                     alert(`❌ Erro ao enviar: ${error.error || 'Erro desconhecido'}`);
                 }
             } catch (error) {
-                alert('❌ Erro de conexão ao enviar mensagem');
                 console.error('Send error:', error);
+                let errorMessage = 'Erro de conexão ao enviar mensagem';
+                if (error.message.includes('fetch') || error instanceof TypeError) {
+                    errorMessage = 'Serviço Baileys indisponível na porta 3002';
+                }
+                alert(`❌ ${errorMessage}`);
             }
         }
 
@@ -3122,7 +3165,7 @@ HTML_APP = '''<!DOCTYPE html>
                 let errorMessage = error.message;
                 
                 if (errorMessage.includes('fetch')) {
-                    errorMessage = 'Não foi possível conectar ao serviço Baileys. Verifique se está rodando na porta 3002.';
+                    errorMessage = 'Serviço Baileys indisponível na porta 3002';
                 } else if (errorMessage.includes('não conectada') || errorMessage.includes('não encontrada')) {
                     errorMessage = 'A instância não está conectada ao WhatsApp. Conecte primeiro na aba Instâncias.';
                 } else if (errorMessage.includes('timeout')) {
@@ -3456,20 +3499,23 @@ HTML_APP = '''<!DOCTYPE html>
                 
             } catch (error) {
                 console.error('❌ Erro ao carregar grupos:', error);
-                
+
                 let errorMessage = error.message;
-                if (errorMessage.includes('não conectada')) {
+                if (error.message.includes('fetch') || error instanceof TypeError) {
+                    errorMessage = 'Serviço Baileys indisponível na porta 3002';
+                } else if (errorMessage.includes('não conectada')) {
                     errorMessage = 'Esta instância não está conectada ao WhatsApp. Conecte primeiro na aba Instâncias.';
                 } else if (errorMessage.includes('não encontrada')) {
                     errorMessage = 'Instância não encontrada. Verifique se ela foi criada corretamente.';
                 }
-                
+
                 document.getElementById('groups-container').innerHTML = `
                     <div class="empty-state">
                         <div class="empty-icon">❌</div>
                         <div class="empty-title">Erro ao carregar grupos</div>
                         <p>${errorMessage}</p>
-                        <button class="btn btn-primary" onclick="loadGroupsFromInstance()">🔄 Tentar Novamente</button>
+                        <button class="btn btn-primary" onclick="loadGroupsFromInstance()">🔄 Tentar Reconectar</button>
+                        <a href="https://docs.example.com/baileys" target="_blank" class="btn btn-link">📚 Ver documentação</a>
                     </div>
                 `;
             }
@@ -3556,7 +3602,11 @@ HTML_APP = '''<!DOCTYPE html>
                 
             } catch (error) {
                 console.error('❌ Erro ao enviar mensagem para grupo:', error);
-                alert(`❌ Erro ao enviar mensagem: ${error.message}`);
+                if (error.message.includes('fetch') || error instanceof TypeError) {
+                    alert('❌ Serviço Baileys indisponível na porta 3002');
+                } else {
+                    alert(`❌ Erro ao enviar mensagem: ${error.message}`);
+                }
             }
         }
         
@@ -3579,6 +3629,87 @@ HTML_APP = '''<!DOCTYPE html>
                     card.style.display = 'none';
                 }
             });
+        }
+
+        // Campaign functions
+        let campaigns = [];
+
+        async function loadCampaigns() {
+            try {
+                const resp = await fetch('/api/campaigns');
+                const data = await resp.json();
+                campaigns = data.campaigns || [];
+                renderCampaigns();
+            } catch (e) {
+                console.error('Erro ao carregar campanhas', e);
+            }
+        }
+
+        function renderCampaigns() {
+            const container = document.getElementById('campaigns-container');
+            if (!container) return;
+            if (!campaigns.length) {
+                container.innerHTML = '<div class="empty-state"><p>Nenhuma campanha</p></div>';
+                return;
+            }
+            container.innerHTML = campaigns.map(c => `
+                <div class="campaign-card">
+                    <div><strong>${c.name}</strong></div>
+                    <div>
+                        <button class="btn btn-sm" onclick="selectCampaignGroups(${c.id})">Selecionar grupos</button>
+                        <button class="btn btn-sm btn-success" onclick="scheduleCampaignMessage(${c.id})">Agendar mensagens</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function createCampaign() {
+            const name = prompt('Nome da campanha:');
+            if (!name) return;
+            const resp = await fetch('/api/campaigns', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name })
+            });
+            if (resp.ok) loadCampaigns();
+        }
+
+        async function selectCampaignGroups(id) {
+            const instanceId = prompt('ID da instância:');
+            if (!instanceId) return;
+            try {
+                const groupsResp = await fetch(`/api/groups/${instanceId}`);
+                const groupsData = await groupsResp.json();
+                const available = (groupsData.groups || []).map(g => g.id).join(',');
+                const groupIds = prompt('IDs de grupos separados por vírgula:', available);
+                if (groupIds === null) return;
+                const groups = groupIds.split(',').map(g => ({ instance_id: instanceId, group_id: g.trim() }));
+                await fetch(`/api/campaigns/${id}/groups`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ groups })
+                });
+                alert('Grupos salvos!');
+            } catch (e) {
+                alert('Erro ao selecionar grupos');
+            }
+        }
+
+        async function scheduleCampaignMessage(id) {
+            const type = prompt('Tipo (daily/weekly):', 'daily');
+            let weekday = null;
+            if (type === 'weekly') {
+                weekday = parseInt(prompt('Dia da semana (0=Segunda ... 6=Domingo):', '0'));
+            }
+            const time = prompt('Horário (HH:MM):', '09:00');
+            const msg = prompt('Mensagem:');
+            if (!time || !msg) return;
+            await fetch(`/api/campaigns/${id}/messages`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ schedule_type: type, weekday: weekday, send_time: time, message: msg })
+            });
+            alert('Mensagem agendada!');
         }
         
         async function scheduleMessage() {
@@ -3724,10 +3855,94 @@ def init_db():
             updated_at TEXT
         )
     """)
-    
+
+    # Campaign tables
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS campaigns (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            created_at TEXT
+        )
+    """)
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS campaign_groups (
+            campaign_id INTEGER,
+            instance_id TEXT,
+            group_id TEXT,
+            FOREIGN KEY(campaign_id) REFERENCES campaigns(id)
+        )
+    """)
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS campaign_messages (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            campaign_id INTEGER,
+            schedule_type TEXT,
+            weekday INTEGER,
+            send_time TEXT,
+            message TEXT,
+            media_type TEXT,
+            media_path TEXT,
+            next_run TEXT,
+            FOREIGN KEY(campaign_id) REFERENCES campaigns(id)
+        )
+    """)
+
     conn.commit()
     conn.close()
     print("✅ Banco de dados inicializado com suporte WebSocket")
+
+
+# Campaign scheduler
+def campaign_scheduler_loop():
+    while True:
+        try:
+            now = datetime.now(BR_TZ).isoformat()
+            conn = sqlite3.connect(DB_FILE)
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT id, campaign_id, message, media_type, media_path, schedule_type, weekday, send_time FROM campaign_messages WHERE next_run <= ?",
+                (now,)
+            )
+            rows = cursor.fetchall()
+            for row in rows:
+                msg_id, campaign_id, message, media_type, media_path, schedule_type, weekday, send_time = row
+                cursor.execute(
+                    "SELECT instance_id, group_id FROM campaign_groups WHERE campaign_id=?",
+                    (campaign_id,)
+                )
+                targets = cursor.fetchall()
+                for instance_id, group_id in targets:
+                    data = {"to": group_id, "message": message, "type": media_type or "text"}
+                    try:
+                        import requests
+                        requests.post(
+                            f"http://127.0.0.1:{BAILEYS_PORT}/send/{instance_id}",
+                            json=data,
+                            timeout=10,
+                        )
+                    except Exception:
+                        pass
+
+                # compute next run
+                next_dt = compute_next_run(schedule_type, weekday or 0, send_time)
+                cursor.execute(
+                    "UPDATE campaign_messages SET next_run=? WHERE id=?",
+                    (next_dt.isoformat(), msg_id),
+                )
+            conn.commit()
+            conn.close()
+        except Exception:
+            pass
+
+        time.sleep(60)
+
+
+def start_campaign_scheduler():
+    thread = threading.Thread(target=campaign_scheduler_loop, daemon=True)
+    thread.start()
+    return thread
 
 # WebSocket Server Functions
 if WEBSOCKETS_AVAILABLE:
@@ -4535,6 +4750,17 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             self.handle_whatsapp_qr(instance_id)
         elif self.path.startswith('/api/messages?'):
             self.handle_get_messages_filtered()
+        elif self.path.startswith('/api/groups/'):
+            instance_id = self.path.split('/')[-1]
+            self.handle_get_groups(instance_id)
+        elif self.path == '/api/campaigns':
+            self.handle_get_campaigns()
+        elif self.path.startswith('/api/campaigns/') and self.path.endswith('/groups'):
+            campaign_id = int(self.path.split('/')[-2])
+            self.handle_get_campaign_groups(campaign_id)
+        elif self.path.startswith('/api/campaigns/') and self.path.endswith('/messages'):
+            campaign_id = int(self.path.split('/')[-2])
+            self.handle_get_campaign_messages(campaign_id)
         elif self.path == '/api/webhooks':
             self.handle_get_webhooks()
         else:
@@ -4572,8 +4798,19 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
         elif self.path.startswith('/api/messages/send/'):
             instance_id = self.path.split('/')[-1]
             self.handle_send_message(instance_id)
+        elif self.path.startswith('/api/send/'):
+            instance_id = self.path.split('/')[-1]
+            self.handle_send_message(instance_id)
         elif self.path == '/api/flows':
             self.handle_create_flow()
+        elif self.path == '/api/campaigns':
+            self.handle_create_campaign()
+        elif self.path.startswith('/api/campaigns/') and self.path.endswith('/groups'):
+            campaign_id = int(self.path.split('/')[-2])
+            self.handle_set_campaign_groups(campaign_id)
+        elif self.path.startswith('/api/campaigns/') and self.path.endswith('/messages'):
+            campaign_id = int(self.path.split('/')[-2])
+            self.handle_add_campaign_message(campaign_id)
         elif self.path == '/api/webhooks/send':
             self.handle_send_webhook()
         else:
@@ -4719,8 +4956,11 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                 
                 try:
                     data = json.dumps({}).encode('utf-8')
-                    req = urllib.request.Request('http://127.0.0.1:3002/connect', data=data, 
-                                               headers={'Content-Type': 'application/json'})
+                    req = urllib.request.Request(
+                        'http://127.0.0.1:3002/connect',
+                        data=data,
+                        headers={'Content-Type': 'application/json'},
+                    )
                     req.get_method = lambda: 'POST'
                     
                     with urllib.request.urlopen(req, timeout=5) as response:
@@ -4922,8 +5162,11 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                 
                 try:
                     data = json.dumps({}).encode('utf-8')
-                    req = urllib.request.Request(f'http://127.0.0.1:3002/connect/{instance_id}', data=data, 
-                                               headers={'Content-Type': 'application/json'})
+                    req = urllib.request.Request(
+                        f'http://127.0.0.1:3002/connect/{instance_id}',
+                        data=data,
+                        headers={'Content-Type': 'application/json'},
+                    )
                     req.get_method = lambda: 'POST'
                     
                     with urllib.request.urlopen(req, timeout=5) as response:
@@ -4958,8 +5201,11 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                 # Fallback usando urllib
                 import urllib.request
                 data = json.dumps({}).encode('utf-8')
-                req = urllib.request.Request(f'http://127.0.0.1:3002/disconnect/{instance_id}', data=data,
-                                           headers={'Content-Type': 'application/json'})
+                req = urllib.request.Request(
+                    f'http://127.0.0.1:3002/disconnect/{instance_id}',
+                    data=data,
+                    headers={'Content-Type': 'application/json'},
+                )
                 req.get_method = lambda: 'POST'
                 
                 with urllib.request.urlopen(req, timeout=5) as response:
@@ -5040,8 +5286,14 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             
             try:
                 import requests
-                response = requests.post(f'http://127.0.0.1:3002/send/{instance_id}', 
-                                       json=data, timeout=10)
+                try:
+                    response = requests.post(
+                        f'http://127.0.0.1:3002/send/{instance_id}',
+                        json=data, timeout=10
+                    )
+                except requests.exceptions.RequestException as e:
+                    self.send_json_response({"error": "Serviço Baileys indisponível na porta 3002"}, 503)
+                    return
                 
                 if response.status_code == 200:
                     # Save message to database
@@ -5067,31 +5319,36 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                 # Fallback usando urllib
                 import urllib.request
                 req_data = json.dumps(data).encode('utf-8')
-                req = urllib.request.Request(f'http://127.0.0.1:3002/send/{instance_id}', 
-                                           data=req_data, 
-                                           headers={'Content-Type': 'application/json'})
+                req = urllib.request.Request(
+                    f'http://127.0.0.1:3002/send/{instance_id}',
+                    data=req_data,
+                    headers={'Content-Type': 'application/json'},
+                )
                 req.get_method = lambda: 'POST'
-                
-                with urllib.request.urlopen(req, timeout=10) as response:
-                    if response.status == 200:
-                        conn = sqlite3.connect(DB_FILE)
-                        cursor = conn.cursor()
-                        
-                        message_id = str(uuid.uuid4())
-                        phone = to.replace('@s.whatsapp.net', '').replace('@c.us', '')
-                        
-                        cursor.execute("""
-                            INSERT INTO messages (id, contact_name, phone, message, direction, instance_id, created_at)
-                            VALUES (?, ?, ?, ?, ?, ?, ?)
-                        """, (message_id, f"Para {phone[-4:]}", phone, message, 'outgoing', instance_id,
-                              datetime.now(timezone.utc).isoformat()))
-                        
-                        conn.commit()
-                        conn.close()
-                        
-                        self.send_json_response({"success": True, "instanceId": instance_id})
-                    else:
-                        self.send_json_response({"error": "Erro ao enviar mensagem"}, 500)
+                try:
+                    with urllib.request.urlopen(req, timeout=10) as response:
+                        if response.status == 200:
+                            conn = sqlite3.connect(DB_FILE)
+                            cursor = conn.cursor()
+
+                            message_id = str(uuid.uuid4())
+                            phone = to.replace('@s.whatsapp.net', '').replace('@c.us', '')
+
+                            cursor.execute("""
+                                INSERT INTO messages (id, contact_name, phone, message, direction, instance_id, created_at)
+                                VALUES (?, ?, ?, ?, ?, ?, ?)
+                            """, (message_id, f"Para {phone[-4:]}", phone, message, 'outgoing', instance_id,
+                                  datetime.now(timezone.utc).isoformat()))
+
+                            conn.commit()
+                            conn.close()
+
+                            self.send_json_response({"success": True, "instanceId": instance_id})
+                        else:
+                            self.send_json_response({"error": "Erro ao enviar mensagem"}, 500)
+                except Exception:
+                    self.send_json_response({"error": "Serviço Baileys indisponível na porta 3002"}, 503)
+                    return
                 
         except Exception as e:
             self.send_json_response({"error": str(e)}, 500)
@@ -5227,6 +5484,36 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             self.send_json_response(contacts)
         except Exception as e:
             self.send_json_response({"error": str(e)}, 500)
+
+    def handle_get_groups(self, instance_id):
+        try:
+            import requests
+            try:
+                response = requests.get(
+                    f"http://127.0.0.1:{BAILEYS_PORT}/groups/{instance_id}", timeout=5
+                )
+            except requests.exceptions.RequestException:
+                self.send_json_response({"error": "Serviço Baileys indisponível na porta 3002"}, 503)
+                return
+
+            if response.status_code == 200:
+                self.send_json_response({"success": True, "groups": response.json()})
+            else:
+                self.send_json_response({"success": False, "groups": []})
+        except ImportError:
+            # Fallback to urllib
+            import urllib.request
+            try:
+                with urllib.request.urlopen(
+                    f"http://127.0.0.1:{BAILEYS_PORT}/groups/{instance_id}", timeout=5
+                ) as resp:
+                    if resp.status == 200:
+                        groups = json.loads(resp.read().decode("utf-8"))
+                        self.send_json_response({"success": True, "groups": groups})
+                    else:
+                        self.send_json_response({"success": False, "groups": []})
+            except Exception:
+                self.send_json_response({"error": "Serviço Baileys indisponível na porta 3002"}, 503)
     
     def handle_get_chats(self):
         try:
@@ -5254,6 +5541,121 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             
         except Exception as e:
             print(f"❌ Erro ao buscar chats: {e}")
+            self.send_json_response({"error": str(e)}, 500)
+
+    # Campaign handlers
+    def handle_get_campaigns(self):
+        try:
+            conn = sqlite3.connect(DB_FILE)
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM campaigns ORDER BY id DESC")
+            campaigns = [dict(row) for row in cursor.fetchall()]
+            conn.close()
+            self.send_json_response({"campaigns": campaigns})
+        except Exception as e:
+            self.send_json_response({"error": str(e)}, 500)
+
+    def handle_create_campaign(self):
+        try:
+            content_length = int(self.headers.get('Content-Length', 0))
+            data = json.loads(self.rfile.read(content_length))
+            name = data.get('name', 'Campanha')
+            conn = sqlite3.connect(DB_FILE)
+            cursor = conn.cursor()
+            cursor.execute(
+                "INSERT INTO campaigns (name, created_at) VALUES (?, ?)",
+                (name, datetime.now(BR_TZ).isoformat()),
+            )
+            campaign_id = cursor.lastrowid
+            conn.commit()
+            conn.close()
+            self.send_json_response({"id": campaign_id, "name": name})
+        except Exception as e:
+            self.send_json_response({"error": str(e)}, 500)
+
+    def handle_set_campaign_groups(self, campaign_id):
+        try:
+            content_length = int(self.headers.get('Content-Length', 0))
+            data = json.loads(self.rfile.read(content_length))
+            groups = data.get('groups', [])
+
+            conn = sqlite3.connect(DB_FILE)
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM campaign_groups WHERE campaign_id=?", (campaign_id,))
+            for item in groups:
+                cursor.execute(
+                    "INSERT INTO campaign_groups (campaign_id, instance_id, group_id) VALUES (?, ?, ?)",
+                    (campaign_id, item.get('instance_id'), item.get('group_id')),
+                )
+            conn.commit()
+            conn.close()
+            self.send_json_response({"success": True})
+        except Exception as e:
+            self.send_json_response({"error": str(e)}, 500)
+
+    def handle_get_campaign_groups(self, campaign_id):
+        try:
+            conn = sqlite3.connect(DB_FILE)
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT instance_id, group_id FROM campaign_groups WHERE campaign_id=?",
+                (campaign_id,),
+            )
+            groups = [dict(instance_id=row[0], group_id=row[1]) for row in cursor.fetchall()]
+            conn.close()
+            self.send_json_response({"groups": groups})
+        except Exception as e:
+            self.send_json_response({"error": str(e)}, 500)
+
+    def handle_add_campaign_message(self, campaign_id):
+        try:
+            content_length = int(self.headers.get('Content-Length', 0))
+            data = json.loads(self.rfile.read(content_length))
+            schedule_type = data.get('schedule_type', 'daily')
+            weekday = data.get('weekday')
+            send_time = data.get('send_time')
+            message = data.get('message', '')
+            media_type = data.get('media_type')
+            media_data = data.get('media_data')
+            media_path = None
+            if media_type and media_data:
+                os.makedirs('uploads', exist_ok=True)
+                file_name = f"uploads/{uuid.uuid4().hex}"
+                with open(file_name, 'wb') as f:
+                    f.write(base64.b64decode(media_data))
+                media_path = file_name
+
+            next_run = compute_next_run(schedule_type, weekday or 0, send_time)
+
+            conn = sqlite3.connect(DB_FILE)
+            cursor = conn.cursor()
+            cursor.execute(
+                """
+                INSERT INTO campaign_messages (campaign_id, schedule_type, weekday, send_time, message, media_type, media_path, next_run)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (campaign_id, schedule_type, weekday, send_time, message, media_type, media_path, next_run.isoformat()),
+            )
+            conn.commit()
+            conn.close()
+            self.send_json_response({"success": True})
+        except Exception as e:
+            self.send_json_response({"error": str(e)}, 500)
+
+    def handle_get_campaign_messages(self, campaign_id):
+        try:
+            conn = sqlite3.connect(DB_FILE)
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT * FROM campaign_messages WHERE campaign_id=? ORDER BY id DESC",
+                (campaign_id,),
+            )
+            messages = [dict(row) for row in cursor.fetchall()]
+            conn.close()
+            self.send_json_response({"messages": messages})
+        except Exception as e:
             self.send_json_response({"error": str(e)}, 500)
 
     def handle_get_messages_filtered(self):
@@ -5598,6 +6000,9 @@ def main():
     baileys_thread = threading.Thread(target=baileys_manager.start_baileys)
     baileys_thread.daemon = True
     baileys_thread.start()
+
+    # Start campaign scheduler
+    start_campaign_scheduler()
     
     print("✅ WhatsFlow Professional configurado!")
     print(f"🌐 Interface: http://localhost:{PORT}")
