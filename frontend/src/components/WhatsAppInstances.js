@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+// Use backend from environment or fallback to current origin
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || window.location.origin;
 const API = `${BACKEND_URL}/api`;
 
 // QR Code Component
@@ -24,6 +25,7 @@ const QRCode = ({ value }) => {
 export default function WhatsAppInstances() {
   const [instances, setInstances] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
   const [selectedInstance, setSelectedInstance] = useState(null);
@@ -38,8 +40,10 @@ export default function WhatsAppInstances() {
     try {
       const response = await axios.get(`${API}/whatsapp/instances`);
       setInstances(response.data);
+      setError(null);
     } catch (error) {
       console.error('Erro ao buscar instâncias:', error);
+      setError('❌ Não foi possível carregar as instâncias. Verifique a conexão com o servidor.');
     } finally {
       setLoading(false);
     }
@@ -144,6 +148,10 @@ export default function WhatsAppInstances() {
 
   if (loading) {
     return <div className="loading">Carregando instâncias WhatsApp...</div>;
+  }
+
+  if (error) {
+    return <div className="error-message">{error}</div>;
   }
 
   return (
