@@ -7,12 +7,15 @@ export default function Groups() {
   const [name, setName] = useState('');
   const [selectedCampaign, setSelectedCampaign] = useState(null);
   const [showGroupModal, setShowGroupModal] = useState(false);
-  const [groupText, setGroupText] = useState('');
+  const [availableGroups, setAvailableGroups] = useState([]);
+  const [selectedGroupIds, setSelectedGroupIds] = useState([]);
   const [showMessageModal, setShowMessageModal] = useState(false);
   const [messageText, setMessageText] = useState('');
   const [sendTime, setSendTime] = useState('');
 
   const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+  const BAILEYS_URL = process.env.REACT_APP_BAILEYS_URL || 'http://localhost:3002';
+  const INSTANCE_ID = process.env.REACT_APP_WHATSAPP_INSTANCE_ID || 'default';
   const API = `${BACKEND_URL}/api`;
 
   useEffect(() => {
@@ -43,30 +46,43 @@ export default function Groups() {
 
   const openGroupModal = async (campaign) => {
     setSelectedCampaign(campaign);
+
     try {
       const res = await axios.get(`${API}/campaigns/${campaign.id}/groups`);
-      const groups = res.data.groups || [];
-      setGroupText(groups.map(g => g.group_id).join('\n'));
+      setSelectedGroupIds(res.data.groups || []);
     } catch (err) {
-      setGroupText('');
+      setSelectedGroupIds([]);
     }
+
+    try {
+      const res = await axios.get(`${BAILEYS_URL}/groups/${INSTANCE_ID}`);
+      setAvailableGroups(res.data.groups || []);
+    } catch (err) {
+      console.error('Failed to load groups from Baileys', err);
+      setAvailableGroups([]);
+    }
+
     setShowGroupModal(true);
+  };
+
+  const toggleGroup = (groupId) => {
+    setSelectedGroupIds(prev =>
+      prev.includes(groupId)
+        ? prev.filter(id => id !== groupId)
+        : [...prev, groupId]
+    );
   };
 
   const saveGroups = async (e) => {
     e.preventDefault();
     try {
-      const groups = groupText
-        .split(/\n|,/)
-        .map(g => g.trim())
-        .filter(Boolean)
-        .map(g => ({ group_id: g }));
-      await axios.post(`${API}/campaigns/${selectedCampaign.id}/groups`, { groups });
+      const groups = selectedGroupIds.map(id => ({ instance_id: INSTANCE_ID, group_id: id }));
+      await axios.patch(`${API}/campaigns/${selectedCampaign.id}/groups`, { groups });
       setCampaigns(campaigns.map(c =>
-        c.id === selectedCampaign.id ? { ...c, groups: groups.map(g => g.group_id) } : c
+        c.id === selectedCampaign.id ? { ...c, groups: selectedGroupIds } : c
       ));
       setShowGroupModal(false);
-      setGroupText('');
+      setSelectedGroupIds([]);
     } catch (err) {
       console.error('Failed to save groups', err);
     }
@@ -144,12 +160,19 @@ export default function Groups() {
             <h3>Selecionar grupos</h3>
             <form onSubmit={saveGroups} className="campaign-form">
               <div className="form-row">
-                <label>IDs dos grupos (um por linha)</label>
-                <textarea
-                  value={groupText}
-                  onChange={e => setGroupText(e.target.value)}
-                  rows={4}
-                />
+                <label>Grupos disponíveis</label>
+                <div className="group-list">
+                  {availableGroups.map(group => (
+                    <label key={group.id} className="group-item">
+                      <input
+                        type="checkbox"
+                        checked={selectedGroupIds.includes(group.id)}
+                        onChange={() => toggleGroup(group.id)}
+                      />
+                      {group.name || group.id}
+                    </label>
+                  ))}
+                </div>
               </div>
               <div className="modal-actions">
                 <button
