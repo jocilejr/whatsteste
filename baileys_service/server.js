@@ -420,40 +420,34 @@ app.post('/disconnect/:instanceId', (req, res) => {
 app.post('/send/:instanceId', async (req, res) => {
     const { instanceId } = req.params;
     const { to, message, type = 'text' } = req.body;
-    
+
     const instance = instances.get(instanceId);
     if (!instance || !instance.connected || !instance.sock) {
         return res.status(400).json({ error: 'Instância não conectada', instanceId: instanceId });
     }
-    
+
     try {
         const jid = to.includes('@') ? to : `${to}@s.whatsapp.net`;
 
         if (type === 'text') {
             await instance.sock.sendMessage(jid, { text: message });
-        } else {
-            const supportedTypes = ['image', 'audio', 'video', 'document'];
-
-            if (!supportedTypes.includes(type)) {
-                return res.status(400).json({ error: `Tipo de mídia '${type}' não suportado`, instanceId: instanceId });
-            }
-
-            const base64Data = req.body[type] || req.body[`${type}Data`];
-            if (!base64Data) {
+        } else if (['image', 'audio', 'video', 'document'].includes(type)) {
+            const media = req.body[type];
+            if (!media) {
                 return res.status(400).json({ error: `Campo '${type}' com dados base64 ausente`, instanceId: instanceId });
             }
 
-            const buffer = Buffer.from(base64Data, 'base64');
+            const buffer = Buffer.from(media, 'base64');
             const msgOptions = { [type]: buffer, caption: message || '' };
-
             if (type === 'document') {
                 if (req.body.fileName) msgOptions.fileName = req.body.fileName;
                 if (req.body.mimeType || req.body.mimetype) {
                     msgOptions.mimetype = req.body.mimeType || req.body.mimetype;
                 }
             }
-
             await instance.sock.sendMessage(jid, msgOptions);
+        } else {
+            return res.status(400).json({ error: `Tipo de mídia '${type}' não suportado`, instanceId: instanceId });
         }
 
         console.log(`📤 Mensagem enviada da instância ${instanceId} para ${to}`);
