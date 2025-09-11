@@ -3790,10 +3790,10 @@ def init_db():
         CREATE TABLE IF NOT EXISTS campaigns (
             id TEXT PRIMARY KEY,
             name TEXT NOT NULL,
-            description TEXT,
             recurrence TEXT,
             send_time TEXT,
-            weekday INTEGER
+            weekday INTEGER,
+            created_at TEXT
         )
     """)
 
@@ -3804,6 +3804,8 @@ def init_db():
             PRIMARY KEY (campaign_id, group_id)
         )
     """)
+
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_campaign_groups_campaign_id ON campaign_groups(campaign_id)")
 
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS scheduled_messages (
@@ -3818,7 +3820,6 @@ def init_db():
     """)
 
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_scheduled_next_run ON scheduled_messages(next_run)")
-    cursor.execute("CREATE INDEX IF NOT EXISTS idx_scheduled_campaign ON scheduled_messages(campaign_id)")
     
     conn.commit()
     conn.close()
@@ -3911,11 +3912,14 @@ def send_scheduled_message(
         try:
             with open(media_path, "rb") as f:
                 data[media_type] = base64.b64encode(f.read()).decode("utf-8")
-        except Exception:
+        except Exception as e:
+            logger.error(f"Erro ao carregar mídia '{media_path}': {e}")
             return False
     try:
+ codex/update-fetch-url-and-create-api-handler
         return baileys_send_message(instance_id, data)
     except BaileysUnavailable:
+
         return False
 
 
@@ -3959,25 +3963,36 @@ def process_scheduled_messages(now: datetime | None = None) -> None:
     )
     rows = cursor.fetchall()
     for row in rows:
-        cursor.execute(
-            "SELECT group_id FROM campaign_groups WHERE campaign_id = ?",
-            (row["campaign_id"],),
-        )
-        groups = [g[0] for g in cursor.fetchall()]
-        for group_id in groups:
-            send_scheduled_message(group_id, row["content"], row["media_type"], row["media_path"])
-        if row["recurrence"] == "once":
+        try:
             cursor.execute(
-                "UPDATE scheduled_messages SET status = 'sent' WHERE id = ?",
-                (row["id"],),
+                "SELECT group_id FROM campaign_groups WHERE campaign_id = ?",
+                (row["campaign_id"],),
             )
-        else:
-            next_run = calculate_next_run(
-                row["recurrence"], row["send_time"], row["weekday"], base_dt=current
-            )
-            cursor.execute(
-                "UPDATE scheduled_messages SET next_run = ? WHERE id = ?",
-                (next_run, row["id"]),
+            groups = [g[0] for g in cursor.fetchall()]
+            for group_id in groups:
+                ok = send_scheduled_message(
+                    group_id, row["content"], row["media_type"], row["media_path"]
+                )
+                if not ok:
+                    logger.error(
+                        f"Falha ao enviar mensagem agendada {row['id']} para grupo {group_id}"
+                    )
+            if row["recurrence"] == "once":
+                cursor.execute(
+                    "UPDATE scheduled_messages SET status = 'sent' WHERE id = ?",
+                    (row["id"],),
+                )
+            else:
+                next_run = calculate_next_run(
+                    row["recurrence"], row["send_time"], row["weekday"], base_dt=current
+                )
+                cursor.execute(
+                    "UPDATE scheduled_messages SET next_run = ? WHERE id = ?",
+                    (next_run, row["id"]),
+                )
+        except Exception as e:
+            logger.error(
+                f"Erro ao processar mensagem agendada {row['id']}: {e}",
             )
     conn.commit()
     conn.close()
@@ -4788,6 +4803,9 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             self.handle_get_chats()
         elif self.path == '/api/flows':
             self.handle_get_flows()
+        elif self.path.startswith('/api/campaigns/') and self.path.endswith('/messages'):
+            campaign_id = self.path.split('/')[-2]
+            self.handle_get_campaign_messages(campaign_id)
         elif self.path.startswith('/api/campaigns/'):
             campaign_id = self.path.split('/')[-1]
             self.handle_get_campaign(campaign_id)
@@ -4845,6 +4863,9 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
         elif self.path.startswith('/api/messages/send/'):
             instance_id = self.path.split('/')[-1]
             self.handle_send_message(instance_id)
+        elif self.path.startswith('/api/campaigns/') and self.path.endswith('/messages'):
+            campaign_id = self.path.split('/')[-2]
+            self.handle_schedule_campaign_message(campaign_id)
         elif self.path == '/api/messages/schedule':
             self.handle_schedule_message()
         elif self.path == '/api/flows':
@@ -5020,6 +5041,101 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             self.send_json_response(messages)
         except Exception as e:
             self.send_json_response({"error": str(e)}, 500)
+
+    def handle_schedule_campaign_message(self, campaign_id: str) -> None:
+        """Schedule a message for a specific campaign."""
+        try:
+            length = int(self.headers.get('Content-Length', 0))
+            data = json.loads(self.rfile.read(length).decode('utf-8')) if length else {}
+            content = data.get('content') or data.get('message', '')
+            media_type = data.get('media_type') or data.get('mediaType', 'text')
+            media_path = data.get('media_path')
+            groups = data.get('groups')
+
+            conn = sqlite3.connect(DB_FILE)
+            cursor = conn.cursor()
+
+            cursor.execute(
+                "SELECT recurrence, send_time, weekday FROM campaigns WHERE id = ?",
+                (campaign_id,),
+            )
+            row = cursor.fetchone()
+            if not row:
+                conn.close()
+                self.send_json_response({'error': 'Campanha não encontrada'}, 404)
+                return
+
+            cursor.execute(
+                "SELECT group_id FROM campaign_groups WHERE campaign_id = ?",
+                (campaign_id,),
+            )
+            allowed_groups = {g[0] for g in cursor.fetchall()}
+            if not allowed_groups:
+                conn.close()
+                self.send_json_response({'error': 'Nenhum grupo associado à campanha'}, 400)
+                return
+
+            if groups:
+                if not set(groups).issubset(allowed_groups):
+                    conn.close()
+                    self.send_json_response({'error': 'Grupos inválidos para esta campanha'}, 400)
+                    return
+
+            recurrence, send_time, weekday = row
+            next_run = calculate_next_run(recurrence or 'once', send_time or '00:00', weekday)
+
+            schedule_id = str(uuid.uuid4())
+            cursor.execute(
+                """
+                INSERT INTO scheduled_messages (id, campaign_id, content, media_type, media_path, next_run, status)
+                VALUES (?, ?, ?, ?, ?, ?, 'pending')
+                """,
+                (schedule_id, campaign_id, content, media_type, media_path, next_run),
+            )
+
+            conn.commit()
+            conn.close()
+            self.send_json_response({'success': True, 'id': schedule_id}, 201)
+        except Exception as e:
+            self.send_json_response({'error': str(e)}, 500)
+
+    def handle_get_campaign_messages(self, campaign_id: str) -> None:
+        """List scheduled messages for a campaign."""
+        try:
+            conn = sqlite3.connect(DB_FILE)
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+
+            cursor.execute("SELECT id FROM campaigns WHERE id = ?", (campaign_id,))
+            if not cursor.fetchone():
+                conn.close()
+                self.send_json_response({'error': 'Campanha não encontrada'}, 404)
+                return
+
+            cursor.execute(
+                "SELECT group_id FROM campaign_groups WHERE campaign_id = ?",
+                (campaign_id,),
+            )
+            groups = [g[0] for g in cursor.fetchall()]
+            if not groups:
+                conn.close()
+                self.send_json_response({'error': 'Nenhum grupo associado à campanha'}, 400)
+                return
+
+            cursor.execute(
+                """
+                SELECT id, content, media_type, media_path, next_run, status
+                FROM scheduled_messages
+                WHERE campaign_id = ?
+                ORDER BY next_run ASC
+                """,
+                (campaign_id,),
+            )
+            messages = [dict(row) for row in cursor.fetchall()]
+            conn.close()
+            self.send_json_response({'campaign_id': campaign_id, 'groups': groups, 'messages': messages})
+        except Exception as e:
+            self.send_json_response({'error': str(e)}, 500)
 
     def handle_delete_scheduled_message(self, schedule_id: str):
         try:
@@ -5991,6 +6107,12 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             conn = sqlite3.connect(DB_FILE)
             cursor = conn.cursor()
 
+            groups = data.get('groups', [])
+            if not isinstance(groups, list) or not groups:
+                conn.close()
+                self.send_json_response({'error': 'Grupos inválidos ou ausentes'}, 400)
+                return
+
             cursor.execute(
                 """
                 INSERT INTO campaigns (id, name, description, recurrence, send_time, weekday)
@@ -6006,7 +6128,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                 ),
             )
 
-            for group_id in data.get('groups', []):
+            for group_id in groups:
                 cursor.execute(
                     "INSERT OR IGNORE INTO campaign_groups (campaign_id, group_id) VALUES (?, ?)",
                     (campaign_id, group_id),
@@ -6066,8 +6188,13 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                 return
 
             if 'groups' in data:
+                groups = data['groups']
+                if not isinstance(groups, list) or not groups:
+                    conn.close()
+                    self.send_json_response({'error': 'Grupos inválidos ou ausentes'}, 400)
+                    return
                 cursor.execute("DELETE FROM campaign_groups WHERE campaign_id = ?", (campaign_id,))
-                for group_id in data['groups']:
+                for group_id in groups:
                     cursor.execute(
                         "INSERT OR IGNORE INTO campaign_groups (campaign_id, group_id) VALUES (?, ?)",
                         (campaign_id, group_id),
