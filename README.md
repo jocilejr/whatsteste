@@ -1,12 +1,28 @@
-# Here are your Instructions
+# WhatsFlow
+
+This project provides a WhatsApp automation platform with a React frontend and Python backend.
+
+## Installation
+
+Use the provided `install-whatsflow.sh` script to set up all services:
+
+```bash
+chmod +x install-whatsflow.sh
+./install-whatsflow.sh
+```
+
+The script installs dependencies for the backend, frontend and WhatsApp service and creates a `start-whatsflow.sh` helper.
+To start the system after installation run:
+
+```bash
+./start-whatsflow.sh
+```
 
 ## Environment Variables
 
 ### `BAILEYS_URL`
 
-The Baileys integration no longer relies on hard-coded URLs. All modules now read the
-Baileys service location from the `BAILEYS_URL` environment variable. If not provided,
-`http://localhost:3002` is used by default.
+The Baileys integration reads the WhatsApp service location from the `BAILEYS_URL` environment variable. If not provided, `http://localhost:3002` is used by default.
 
 Example usage:
 
