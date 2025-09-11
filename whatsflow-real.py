@@ -12,7 +12,6 @@ import json
 import sqlite3
 import uuid
 from datetime import datetime, timezone, timedelta
- codex/add-error-handling-for-fetch-requests-1k9r8k
 import os
 import subprocess
 import sys
@@ -23,7 +22,6 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 import urllib.parse
 import logging
 from typing import Set, Dict, Any
- codex/add-error-handling-for-fetch-requests-1k9r8k
 from zoneinfo import ZoneInfo
 
 import base64
@@ -2040,7 +2038,6 @@ HTML_APP = r'''<!DOCTYPE html>
                     <h2>📅 Agendamentos de Mensagens</h2>
                     <button class="btn btn-primary" onclick="openScheduleModal()">+ Agendar mensagem</button>
                 </div>
- codex/add-error-handling-for-fetch-requests-1k9r8k
                 
                 <div class="groups-container">
                     <div class="groups-header">
@@ -2318,7 +2315,6 @@ HTML_APP = r'''<!DOCTYPE html>
                     loadInstancesForSelect();
                 }
             } else if (name === 'groups') {
- codex/add-error-handling-for-fetch-requests-1k9r8k
                 loadInstancesForGroups();
                 loadCampaigns();
 
@@ -3583,7 +3579,6 @@ HTML_APP = r'''<!DOCTYPE html>
                 });
             } catch (error) {
                 console.error('❌ Erro ao carregar grupos:', error);
- codex/add-error-handling-for-fetch-requests-1k9r8k
 
                 let errorMessage = error.message;
                 if (error.message.includes('fetch') || error instanceof TypeError) {
@@ -3615,7 +3610,6 @@ HTML_APP = r'''<!DOCTYPE html>
         function closeScheduleModal() {
             document.getElementById('scheduleModal').style.display = 'none';
         }
- codex/add-error-handling-for-fetch-requests-1k9r8k
         
         async function sendToGroup(groupId, groupName) {
             const message = prompt(`💬 Enviar mensagem para o grupo "${groupName}":`, '');
@@ -4002,7 +3996,6 @@ def init_db():
         )
     """)
 
- codex/add-error-handling-for-fetch-requests-1k9r8k
     # Campaign tables
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS campaigns (
@@ -4041,7 +4034,6 @@ def init_db():
     conn.close()
     print("✅ Banco de dados inicializado com suporte WebSocket")
 
- codex/add-error-handling-for-fetch-requests-1k9r8k
 
 # Campaign scheduler
 def campaign_scheduler_loop():
@@ -4964,7 +4956,6 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
         elif self.path.startswith('/api/messages/send/'):
             instance_id = self.path.split('/')[-1]
             self.handle_send_message(instance_id)
- codex/add-error-handling-for-fetch-requests-1k9r8k
         elif self.path.startswith('/api/send/'):
             instance_id = self.path.split('/')[-1]
             self.handle_send_message(instance_id)
@@ -4973,7 +4964,6 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             self.handle_create_flow()
         elif self.path == '/api/campaigns':
             self.handle_create_campaign()
- codex/add-error-handling-for-fetch-requests-1k9r8k
         elif self.path.startswith('/api/campaigns/') and self.path.endswith('/groups'):
             campaign_id = int(self.path.split('/')[-2])
             self.handle_set_campaign_groups(campaign_id)
@@ -5337,7 +5327,6 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                         data=data,
                         headers={'Content-Type': 'application/json'},
                     )
- codex/add-error-handling-for-fetch-requests-1k9r8k
 
                     req.get_method = lambda: 'POST'
 
@@ -5545,7 +5534,6 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                         data=data,
                         headers={'Content-Type': 'application/json'},
                     )
- codex/add-error-handling-for-fetch-requests-1k9r8k
 
                     req.get_method = lambda: 'POST'
 
@@ -5586,7 +5574,6 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                     data=data,
                     headers={'Content-Type': 'application/json'},
                 )
- codex/add-error-handling-for-fetch-requests-1k9r8k
 
                 req.get_method = lambda: 'POST'
                 
@@ -5661,7 +5648,6 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             try:
                 import requests
                 try:
- codex/add-error-handling-for-fetch-requests-1k9r8k
                     response = requests.post(
                         f'http://127.0.0.1:3002/send/{instance_id}',
                         json=data, timeout=10
@@ -5678,7 +5664,6 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                     self.send_json_response({"error": "Erro ao obter grupos"}, response.status_code)
             except ImportError:
                 import urllib.request
- codex/add-error-handling-for-fetch-requests-1k9r8k
                 req_data = json.dumps(data).encode('utf-8')
                 req = urllib.request.Request(
                     f'http://127.0.0.1:3002/send/{instance_id}',
