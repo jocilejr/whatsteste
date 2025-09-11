@@ -268,11 +268,152 @@ function CampaignForm({ initialData, onSave, onCancel }) {
   );
 }
 
+function ScheduleModal({ campaignId, onClose }) {
+  const [type, setType] = useState('daily');
+  const [day, setDay] = useState('monday');
+  const [runAt, setRunAt] = useState(() => {
+    const now = new Date();
+    const br = now.toLocaleString('sv-SE', { timeZone: 'America/Sao_Paulo' });
+    return br.slice(0, 16);
+  });
+  const [text, setText] = useState('');
+  const [media, setMedia] = useState(null);
+  const [messages, setMessages] = useState([]);
+  const [activeTab, setActiveTab] = useState('monday');
+
+  const days = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
+
+  const fetchMessages = async () => {
+    try {
+      const res = await axios.get(`${API}/campaigns/${campaignId}/messages`);
+      setMessages(res.data || []);
+    } catch (err) {
+      console.error('Erro ao listar mensagens', err);
+    }
+  };
+
+  useEffect(() => {
+    if (campaignId) {
+      fetchMessages();
+    }
+  }, [campaignId]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const form = new FormData();
+    form.append('type', type);
+    if (type === 'weekly') form.append('day', day);
+    form.append('run_at', runAt);
+    form.append('text', text);
+    if (media) form.append('media', media);
+    try {
+      await axios.post(`${API}/campaigns/${campaignId}/messages`, form, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      setText('');
+      setMedia(null);
+      fetchMessages();
+    } catch (err) {
+      console.error('Erro ao salvar mensagem', err);
+      alert('Erro ao salvar mensagem');
+    }
+  };
+
+  const grouped = days.reduce((acc, d) => ({ ...acc, [d]: [] }), {});
+  messages.forEach(m => {
+    if (m.type === 'daily') {
+      days.forEach(d => grouped[d].push(m));
+    } else if (m.day && grouped[m.day]) {
+      grouped[m.day].push(m);
+    }
+  });
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal">
+        <div className="modal-header">
+          <h3>Agendar mensagens</h3>
+          <button className="close-modal" onClick={onClose}>✖</button>
+        </div>
+        <div className="modal-content">
+          <form onSubmit={handleSubmit} className="schedule-form">
+            <div className="form-row">
+              <label>Tipo</label>
+              <select value={type} onChange={e => setType(e.target.value)}>
+                <option value="daily">Diário</option>
+                <option value="weekly">Semanal</option>
+              </select>
+            </div>
+            {type === 'weekly' && (
+              <div className="form-row">
+                <label>Dia</label>
+                <select value={day} onChange={e => setDay(e.target.value)}>
+                  <option value="monday">Segunda</option>
+                  <option value="tuesday">Terça</option>
+                  <option value="wednesday">Quarta</option>
+                  <option value="thursday">Quinta</option>
+                  <option value="friday">Sexta</option>
+                  <option value="saturday">Sábado</option>
+                  <option value="sunday">Domingo</option>
+                </select>
+              </div>
+            )}
+            <div className="form-row">
+              <label>Horário de execução</label>
+              <input type="datetime-local" value={runAt} onChange={e => setRunAt(e.target.value)} />
+            </div>
+            <div className="form-row">
+              <label>Conteúdo</label>
+              <textarea value={text} onChange={e => setText(e.target.value)} />
+            </div>
+            <div className="form-row">
+              <label>Mídia</label>
+              <input type="file" accept="image/*,video/*,audio/*" onChange={e => setMedia(e.target.files[0])} />
+            </div>
+            <div className="form-actions">
+              <button type="submit">Salvar</button>
+            </div>
+          </form>
+
+          <div className="schedule-tabs">
+            <div className="tabs-header">
+              {days.map(d => (
+                <button
+                  key={d}
+                  className={activeTab === d ? 'active' : ''}
+                  onClick={() => setActiveTab(d)}
+                >
+                  {d}
+                </button>
+              ))}
+            </div>
+            <div className="tabs-content">
+              {grouped[activeTab].length === 0 ? (
+                <p>Nenhuma mensagem</p>
+              ) : (
+                grouped[activeTab].map((m, idx) => (
+                  <div key={idx} className="message-card">
+                    <strong>{m.run_at}</strong>
+                    <p>{m.text}</p>
+                    {m.media_url && <small>Mídia</small>}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Campaigns() {
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
+  const [showSchedule, setShowSchedule] = useState(false);
+  const [scheduleId, setScheduleId] = useState(null);
 
   const fetchCampaigns = async () => {
     try {
@@ -327,6 +468,13 @@ export default function Campaigns() {
         </div>
       )}
 
+      {showSchedule && (
+        <ScheduleModal
+          campaignId={scheduleId}
+          onClose={() => { setShowSchedule(false); setScheduleId(null); }}
+        />
+      )}
+
       <div className="campaigns-list">
         {campaigns.map(c => (
           <div key={c.id} className="campaign-card">
@@ -342,6 +490,7 @@ export default function Campaigns() {
             <div className="campaign-actions">
               <button onClick={() => { setEditing(c); setShowForm(true); }}>Editar</button>
               <button onClick={() => handleDelete(c.id)}>Excluir</button>
+              <button onClick={() => { setScheduleId(c.id); setShowSchedule(true); }}>Agendar mensagens</button>
             </div>
           </div>
         ))}
