@@ -3827,29 +3827,16 @@ def init_db():
 
 def send_via_baileys(phone: str, message: str, instance_id: str = "default") -> bool:
     """Send a WhatsApp message using the local Baileys service."""
-    to = phone if phone.endswith("@s.whatsapp.net") or phone.endswith("@c.us") else f"{phone}@s.whatsapp.net"
+    to = (
+        phone
+        if phone.endswith("@s.whatsapp.net") or phone.endswith("@c.us")
+        else f"{phone}@s.whatsapp.net"
+    )
     data = {"to": to, "message": message, "type": "text"}
-    success = False
     try:
-        import requests  # type: ignore
-        try:
-            response = requests.post(f"http://127.0.0.1:3002/send/{instance_id}", json=data, timeout=10)
-            success = response.status_code == 200
-        except requests.exceptions.RequestException:
-            return False
-    except ImportError:
-        import urllib.request
-        req_data = json.dumps(data).encode("utf-8")
-        req = urllib.request.Request(
-            f"http://127.0.0.1:3002/send/{instance_id}",
-            data=req_data,
-            headers={"Content-Type": "application/json"},
-        )
-        try:
-            with urllib.request.urlopen(req, timeout=10) as response:
-                success = response.status == 200
-        except Exception:
-            return False
+        success = baileys_send_message(instance_id, data)
+    except BaileysUnavailable:
+        return False
 
     if success:
         conn = sqlite3.connect(DB_FILE)
@@ -3876,13 +3863,50 @@ def send_via_baileys(phone: str, message: str, instance_id: str = "default") -> 
     return success
 
 
-def baileys_post(url: str, data: Dict[str, Any]) -> None:
-    import requests  # type: ignore
-    requests.post(url, json=data, timeout=10)
+class BaileysUnavailable(Exception):
+    pass
 
 
-def send_scheduled_message(group_id: str, content: str, media_type: str, media_path: str, instance_id: str = "default") -> bool:
-    """Send a scheduled message including optional media."""
+def baileys_send_message(instance_id: str, data: Dict[str, Any]) -> bool:
+    """Send message via Baileys service, returning True on success.
+
+    Raises BaileysUnavailable if the service cannot be reached.
+    """
+    try:
+        import requests  # type: ignore
+        try:
+            response = requests.post(
+                f"{BAILEYS_URL}/send/{instance_id}", json=data, timeout=10
+            )
+        except requests.exceptions.RequestException as exc:
+            raise BaileysUnavailable() from exc
+        return response.status_code == 200
+    except ImportError:
+        import urllib.request
+        import urllib.error
+
+        req_data = json.dumps(data).encode("utf-8")
+        req = urllib.request.Request(
+            f"{BAILEYS_URL}/send/{instance_id}",
+            data=req_data,
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=10) as resp:  # type: ignore
+                return resp.status == 200
+        except urllib.error.URLError as exc:  # type: ignore
+            raise BaileysUnavailable() from exc
+
+
+def send_scheduled_message(
+    group_id: str,
+    content: str,
+    media_type: str,
+    media_path: str,
+    instance_id: str = "default",
+) -> bool:
+    """Send a scheduled message including optional media via Baileys proxy."""
     data = {"to": group_id, "type": media_type or "text", "message": content or ""}
     if media_type and media_type != "text" and media_path:
         try:
@@ -3892,10 +3916,10 @@ def send_scheduled_message(group_id: str, content: str, media_type: str, media_p
             logger.error(f"Erro ao carregar mídia '{media_path}': {e}")
             return False
     try:
-        baileys_post(f"http://127.0.0.1:{BAILEYS_PORT}/send/{instance_id}", data)
-        return True
-    except Exception as e:
-        logger.error(f"Erro ao enviar mensagem agendada para {group_id}: {e}")
+ codex/update-fetch-url-and-create-api-handler
+        return baileys_send_message(instance_id, data)
+    except BaileysUnavailable:
+
         return False
 
 
@@ -5536,81 +5560,51 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
 
     def handle_send_message(self, instance_id):
         try:
-            content_length = int(self.headers.get('Content-Length', 0))
+            content_length = int(self.headers.get("Content-Length", 0))
             post_data = self.rfile.read(content_length)
-            data = json.loads(post_data.decode('utf-8'))
-            
-            to = data.get('to', '')
-            message = data.get('message', '')
-            message_type = data.get('type', 'text')
-            
+            data = json.loads(post_data.decode("utf-8"))
+
+            to = data.get("to", "")
+            message = data.get("message", "")
+
             try:
-                import requests
-                try:
-                    response = requests.post(
-                        f'http://127.0.0.1:3002/send/{instance_id}',
-                        json=data, timeout=10
-                    )
-                except requests.exceptions.RequestException as e:
-                    self.send_json_response({"error": "Serviço Baileys indisponível na porta 3002"}, 503)
-                    return
-                
-                if response.status_code == 200:
-                    # Save message to database
-                    conn = sqlite3.connect(DB_FILE)
-                    cursor = conn.cursor()
-                    
-                    message_id = str(uuid.uuid4())
-                    phone = to.replace('@s.whatsapp.net', '').replace('@c.us', '')
-                    
-                    cursor.execute("""
+                success = baileys_send_message(instance_id, data)
+            except BaileysUnavailable:
+                self.send_json_response(
+                    {"error": "Serviço Baileys indisponível na porta 3002"}, 503
+                )
+                return
+
+            if success:
+                conn = sqlite3.connect(DB_FILE)
+                cursor = conn.cursor()
+
+                message_id = str(uuid.uuid4())
+                phone = to.replace("@s.whatsapp.net", "").replace("@c.us", "")
+
+                cursor.execute(
+                    """
                         INSERT INTO messages (id, contact_name, phone, message, direction, instance_id, created_at)
                         VALUES (?, ?, ?, ?, ?, ?, ?)
-                    """, (message_id, f"Para {phone[-4:]}", phone, message, 'outgoing', instance_id, 
-                          datetime.now(BR_TZ).astimezone(timezone.utc).isoformat()))
-                    
-                    conn.commit()
-                    conn.close()
-                    
-                    self.send_json_response({"success": True, "instanceId": instance_id})
-                else:
-                    self.send_json_response({"error": "Erro ao enviar mensagem"}, 500)
-            except ImportError:
-                # Fallback usando urllib
-                import urllib.request
-                req_data = json.dumps(data).encode('utf-8')
-                req = urllib.request.Request(
-                    f'http://127.0.0.1:3002/send/{instance_id}',
-                    data=req_data,
-                    headers={'Content-Type': 'application/json'},
+                    """,
+                    (
+                        message_id,
+                        f"Para {phone[-4:]}",
+                        phone,
+                        message,
+                        "outgoing",
+                        instance_id,
+                        datetime.now(BR_TZ).astimezone(timezone.utc).isoformat(),
+                    ),
                 )
 
-                req.get_method = lambda: 'POST'
-                try:
-                    with urllib.request.urlopen(req, timeout=10) as response:
-                        if response.status == 200:
-                            conn = sqlite3.connect(DB_FILE)
-                            cursor = conn.cursor()
+                conn.commit()
+                conn.close()
 
-                            message_id = str(uuid.uuid4())
-                            phone = to.replace('@s.whatsapp.net', '').replace('@c.us', '')
+                self.send_json_response({"success": True, "instanceId": instance_id})
+            else:
+                self.send_json_response({"error": "Erro ao enviar mensagem"}, 500)
 
-                            cursor.execute("""
-                                INSERT INTO messages (id, contact_name, phone, message, direction, instance_id, created_at)
-                                VALUES (?, ?, ?, ?, ?, ?, ?)
-                            """, (message_id, f"Para {phone[-4:]}", phone, message, 'outgoing', instance_id,
-                                  datetime.now(BR_TZ).astimezone(timezone.utc).isoformat()))
-
-                            conn.commit()
-                            conn.close()
-
-                            self.send_json_response({"success": True, "instanceId": instance_id})
-                        else:
-                            self.send_json_response({"error": "Erro ao enviar mensagem"}, 500)
-                except Exception:
-                    self.send_json_response({"error": "Serviço Baileys indisponível na porta 3002"}, 503)
-                    return
-                
         except Exception as e:
             self.send_json_response({"error": str(e)}, 500)
     
