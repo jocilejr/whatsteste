@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { Users, Calendar } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -268,140 +269,176 @@ function CampaignForm({ initialData, onSave, onCancel }) {
   );
 }
 
-function ScheduleModal({ campaignId, onClose }) {
-  const [type, setType] = useState('daily');
-  const [day, setDay] = useState('monday');
-  const [runAt, setRunAt] = useState(() => {
-    const now = new Date();
-    const br = now.toLocaleString('sv-SE', { timeZone: 'America/Sao_Paulo' });
-    return br.slice(0, 16);
+ codex/redesign-groups-tab-with-campaign-cards
+// Modal for selecting groups
+function GroupModal({ campaign, onClose, onSaved }) {
+  const [instances, setInstances] = useState([]);
+  const [instanceId, setInstanceId] = useState('');
+  const [groups, setGroups] = useState([]);
+  const [selected, setSelected] = useState(campaign.groups || []);
+
+  useEffect(() => {
+    const loadInstances = async () => {
+      try {
+        const res = await axios.get(`${API}/whatsapp/instances`);
+        setInstances(res.data || []);
+      } catch (err) {
+        console.error('Erro ao buscar instâncias', err);
+      }
+    };
+    loadInstances();
+  }, []);
+
+  useEffect(() => {
+    if (!instanceId) return;
+    const loadGroups = async () => {
+      try {
+        const res = await axios.get(`${API}/groups/${instanceId}`);
+        setGroups(res.data || []);
+      } catch (err) {
+        console.error('Erro ao buscar grupos', err);
+      }
+    };
+    loadGroups();
+  }, [instanceId]);
+
+  const toggle = (id) => {
+    setSelected(prev =>
+      prev.includes(id) ? prev.filter(g => g !== id) : [...prev, id]
+    );
+  };
+
+  const save = async () => {
+    try {
+      await axios.put(`${API}/campaigns/${campaign.id}`, { groups: selected });
+      onSaved();
+    } catch (err) {
+      console.error('Erro ao salvar grupos', err);
+      alert('Erro ao salvar grupos');
+    }
+  };
+
+  return (
+    <div className="modal">
+      <h3>Selecionar grupos</h3>
+      <div className="form-row">
+        <label>Instância</label>
+        <select value={instanceId} onChange={e => setInstanceId(e.target.value)}>
+          <option value="">Selecione...</option>
+          {instances.map(inst => (
+            <option key={inst.id} value={inst.id}>{inst.name}</option>
+          ))}
+        </select>
+      </div>
+      {groups.length > 0 && (
+        <div className="form-row groups-list">
+          {groups.map(g => (
+            <label key={g.id} className="group-item">
+              <input
+                type="checkbox"
+                checked={selected.includes(g.id)}
+                onChange={() => toggle(g.id)}
+              />
+              {g.subject || g.name || g.id}
+            </label>
+          ))}
+        </div>
+      )}
+      <div className="modal-actions">
+        <button type="button" className="card-btn" onClick={onClose}>Cancelar</button>
+        <button type="button" className="card-btn primary" onClick={save}>Salvar</button>
+      </div>
+    </div>
+  );
+}
+
+// Modal for scheduling messages
+function ScheduleModal({ campaign, onClose }) {
+  const dayLabels = {
+    monday: 'Segunda',
+    tuesday: 'Terça',
+    wednesday: 'Quarta',
+    thursday: 'Quinta',
+    friday: 'Sexta',
+    saturday: 'Sábado',
+    sunday: 'Domingo'
+  };
+
+  const [messagesByDay, setMessagesByDay] = useState({
+    monday: [], tuesday: [], wednesday: [], thursday: [], friday: [], saturday: [], sunday: []
   });
   const [text, setText] = useState('');
-  const [media, setMedia] = useState(null);
-  const [messages, setMessages] = useState([]);
-  const [activeTab, setActiveTab] = useState('monday');
+  const [day, setDay] = useState('monday');
 
-  const days = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
-
-  const fetchMessages = async () => {
+  const loadMessages = async () => {
     try {
-      const res = await axios.get(`${API}/campaigns/${campaignId}/messages`);
-      setMessages(res.data || []);
+      const res = await axios.get(`${API}/campaigns/${campaign.id}/messages`);
+      const byDay = {
+        monday: [], tuesday: [], wednesday: [], thursday: [], friday: [], saturday: [], sunday: []
+      };
+      (res.data.messages || []).forEach(m => {
+        if (m.next_run) {
+          const d = new Date(m.next_run);
+          const key = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'][d.getDay()];
+          byDay[key].push(m);
+        }
+      });
+      setMessagesByDay(byDay);
     } catch (err) {
-      console.error('Erro ao listar mensagens', err);
+      console.error('Erro ao carregar agenda', err);
+
     }
   };
 
   useEffect(() => {
-    if (campaignId) {
-      fetchMessages();
-    }
-  }, [campaignId]);
+ codex/redesign-groups-tab-with-campaign-cards
+    loadMessages();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const form = new FormData();
-    form.append('type', type);
-    if (type === 'weekly') form.append('day', day);
-    form.append('run_at', runAt);
-    form.append('text', text);
-    if (media) form.append('media', media);
+  const add = async () => {
+    if (!text.trim()) return;
     try {
-      await axios.post(`${API}/campaigns/${campaignId}/messages`, form, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
+      await axios.post(`${API}/campaigns/${campaign.id}/messages`, { content: text, weekday: day });
       setText('');
-      setMedia(null);
-      fetchMessages();
+      await loadMessages();
     } catch (err) {
-      console.error('Erro ao salvar mensagem', err);
-      alert('Erro ao salvar mensagem');
+      console.error('Erro ao agendar mensagem', err);
+      alert('Erro ao agendar mensagem');
     }
   };
 
-  const grouped = days.reduce((acc, d) => ({ ...acc, [d]: [] }), {});
-  messages.forEach(m => {
-    if (m.type === 'daily') {
-      days.forEach(d => grouped[d].push(m));
-    } else if (m.day && grouped[m.day]) {
-      grouped[m.day].push(m);
-    }
-  });
-
   return (
-    <div className="modal-overlay">
-      <div className="modal">
-        <div className="modal-header">
-          <h3>Agendar mensagens</h3>
-          <button className="close-modal" onClick={onClose}>✖</button>
-        </div>
-        <div className="modal-content">
-          <form onSubmit={handleSubmit} className="schedule-form">
-            <div className="form-row">
-              <label>Tipo</label>
-              <select value={type} onChange={e => setType(e.target.value)}>
-                <option value="daily">Diário</option>
-                <option value="weekly">Semanal</option>
-              </select>
-            </div>
-            {type === 'weekly' && (
-              <div className="form-row">
-                <label>Dia</label>
-                <select value={day} onChange={e => setDay(e.target.value)}>
-                  <option value="monday">Segunda</option>
-                  <option value="tuesday">Terça</option>
-                  <option value="wednesday">Quarta</option>
-                  <option value="thursday">Quinta</option>
-                  <option value="friday">Sexta</option>
-                  <option value="saturday">Sábado</option>
-                  <option value="sunday">Domingo</option>
-                </select>
-              </div>
-            )}
-            <div className="form-row">
-              <label>Horário de execução</label>
-              <input type="datetime-local" value={runAt} onChange={e => setRunAt(e.target.value)} />
-            </div>
-            <div className="form-row">
-              <label>Conteúdo</label>
-              <textarea value={text} onChange={e => setText(e.target.value)} />
-            </div>
-            <div className="form-row">
-              <label>Mídia</label>
-              <input type="file" accept="image/*,video/*,audio/*" onChange={e => setMedia(e.target.files[0])} />
-            </div>
-            <div className="form-actions">
-              <button type="submit">Salvar</button>
-            </div>
-          </form>
-
-          <div className="schedule-tabs">
-            <div className="tabs-header">
-              {days.map(d => (
-                <button
-                  key={d}
-                  className={activeTab === d ? 'active' : ''}
-                  onClick={() => setActiveTab(d)}
-                >
-                  {d}
-                </button>
+    <div className="modal schedule-modal">
+      <h3>Agenda de mensagens</h3>
+      <div className="schedule-grid">
+        {Object.keys(dayLabels).map(k => (
+          <div key={k} className="schedule-day">
+            <h4>{dayLabels[k]}</h4>
+            <ul>
+              {messagesByDay[k].map(m => (
+                <li key={m.id}>{m.content}</li>
               ))}
-            </div>
-            <div className="tabs-content">
-              {grouped[activeTab].length === 0 ? (
-                <p>Nenhuma mensagem</p>
-              ) : (
-                grouped[activeTab].map((m, idx) => (
-                  <div key={idx} className="message-card">
-                    <strong>{m.run_at}</strong>
-                    <p>{m.text}</p>
-                    {m.media_url && <small>Mídia</small>}
-                  </div>
-                ))
-              )}
-            </div>
+            </ul>
           </div>
-        </div>
+        ))}
+      </div>
+      <div className="form-row">
+        <label>Dia</label>
+        <select value={day} onChange={e => setDay(e.target.value)}>
+          {Object.keys(dayLabels).map(k => (
+            <option key={k} value={k}>{dayLabels[k]}</option>
+          ))}
+        </select>
+      </div>
+      <div className="form-row">
+        <label>Mensagem</label>
+        <input value={text} onChange={e => setText(e.target.value)} />
+      </div>
+      <div className="modal-actions">
+        <button type="button" className="card-btn" onClick={onClose}>Fechar</button>
+        <button type="button" className="card-btn primary" onClick={add}>Adicionar</button>
+
       </div>
     </div>
   );
@@ -412,8 +449,9 @@ export default function Campaigns() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
-  const [showSchedule, setShowSchedule] = useState(false);
-  const [scheduleId, setScheduleId] = useState(null);
+ codex/redesign-groups-tab-with-campaign-cards
+  const [groupModal, setGroupModal] = useState(null);
+  const [scheduleModal, setScheduleModal] = useState(null);
 
   const fetchCampaigns = async () => {
     try {
@@ -468,14 +506,28 @@ export default function Campaigns() {
         </div>
       )}
 
-      {showSchedule && (
-        <ScheduleModal
-          campaignId={scheduleId}
-          onClose={() => { setShowSchedule(false); setScheduleId(null); }}
-        />
+ codex/redesign-groups-tab-with-campaign-cards
+      {groupModal && (
+        <div className="modal-overlay">
+          <GroupModal
+            campaign={groupModal}
+            onClose={() => setGroupModal(null)}
+            onSaved={() => { setGroupModal(null); fetchCampaigns(); }}
+          />
+        </div>
       )}
 
-      <div className="campaigns-list">
+      {scheduleModal && (
+        <div className="modal-overlay">
+          <ScheduleModal
+            campaign={scheduleModal}
+            onClose={() => setScheduleModal(null)}
+          />
+        </div>
+      )}
+
+      <div className="campaigns-grid">
+
         {campaigns.map(c => (
           <div key={c.id} className="campaign-card">
             <div className="campaign-info">
@@ -487,10 +539,13 @@ export default function Campaigns() {
                 </div>
               )}
             </div>
-            <div className="campaign-actions">
-              <button onClick={() => { setEditing(c); setShowForm(true); }}>Editar</button>
-              <button onClick={() => handleDelete(c.id)}>Excluir</button>
-              <button onClick={() => { setScheduleId(c.id); setShowSchedule(true); }}>Agendar mensagens</button>
+ codex/redesign-groups-tab-with-campaign-cards
+            <div className="card-actions">
+              <button className="card-btn" onClick={() => setGroupModal(c)}><Users size={16}/> Selecionar grupos</button>
+              <button className="card-btn" onClick={() => setScheduleModal(c)}><Calendar size={16}/> Agendar mensagens</button>
+              <button className="card-btn" onClick={() => { setEditing(c); setShowForm(true); }}>Editar</button>
+              <button className="card-btn" onClick={() => handleDelete(c.id)}>Excluir</button>
+
             </div>
           </div>
         ))}
