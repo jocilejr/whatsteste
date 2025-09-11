@@ -51,12 +51,6 @@ WEBSOCKET_PORT = 8890
 # Path to React build for serving the frontend
 FRONTEND_BUILD_DIR = Path(__file__).resolve().parent / "frontend" / "build"
 # codex/redesign-grupos-tab-with-campaign-button-1n5c7l
-
-
-# Brazil timezone for scheduling
-
-
-
 def compute_next_run(schedule_type: str, weekday: int, time_str: str) -> datetime:
     """Compute next datetime for a campaign message based on schedule."""
     now = datetime.now(BR_TZ)
