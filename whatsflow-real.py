@@ -1038,6 +1038,10 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             self.send_error(404, "Not Found")
             return
         if not file_path.exists():
+            # Only fallback to index.html for extensionless paths
+            if Path(path).suffix:
+                self.send_error(404, "Not Found")
+                return
             file_path = FRONTEND_BUILD_DIR / 'index.html'
         try:
             with open(file_path, 'rb') as f:
