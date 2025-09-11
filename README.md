@@ -2,6 +2,10 @@
 
 This project provides a WhatsApp automation platform with a React frontend and Python backend.
 
+## Groups Tab
+
+The **Grupos** tab contains a single **Criar campanha** button. After naming a campaign, a card appears listing **Selecionar grupos** and **Programar mensagens** options for that campaign.
+
 ## Installation
 
 Use the provided `install-whatsflow.sh` script to set up all services:
