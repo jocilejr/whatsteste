@@ -25,7 +25,6 @@ import logging
 from typing import Set, Dict, Any
 import asyncio
 import base64
-import cgi
 
 # Try to import websockets, fallback gracefully if not available
 try:
@@ -2104,7 +2103,49 @@ HTML_APP = r'''<!DOCTYPE html>
         <div id="campaigns" class="section">
             <div class="card">
                 <h2>📢 Campanhas</h2>
-                <p>Utilize a interface React para gerenciar campanhas.</p>
+                <form id="campaignForm" onsubmit="createCampaign(event)">
+                    <input type="text" id="campName" placeholder="Nome" class="form-input" required>
+                    <input type="text" id="campDesc" placeholder="Descrição" class="form-input" style="margin-top:10px">
+                    <div style="display:flex; gap:10px; margin-top:10px">
+                        <select id="campRecurrence" class="form-input">
+                            <option value="once">Uma vez</option>
+                            <option value="daily">Diária</option>
+                            <option value="weekly">Semanal</option>
+                        </select>
+                        <input type="time" id="campTime" class="form-input" required>
+                        <select id="campWeekday" class="form-input">
+                            <option value="">-</option>
+                            <option value="0">Dom</option>
+                            <option value="1">Seg</option>
+                            <option value="2">Ter</option>
+                            <option value="3">Qua</option>
+                            <option value="4">Qui</option>
+                            <option value="5">Sex</option>
+                            <option value="6">Sáb</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" style="margin-top:10px" type="submit">Criar campanha</button>
+                </form>
+                <div id="campaignList" style="margin-top:1rem"></div>
+            </div>
+            <div class="card" style="margin-top:1rem">
+                <h3>Agendar mensagem</h3>
+                <form id="scheduleForm" onsubmit="scheduleMessage(event)">
+                    <select id="scheduleCampaign" class="form-input" required></select>
+                    <select id="scheduleGroups" class="form-input" multiple style="margin-top:10px"></select>
+                    <textarea id="scheduleContent" class="form-input" placeholder="Mensagem" style="margin-top:10px"></textarea>
+                    <div style="display:flex; gap:10px; margin-top:10px">
+                        <select id="scheduleMediaType" class="form-input">
+                            <option value="text">Texto</option>
+                            <option value="image">Imagem</option>
+                            <option value="audio">Áudio</option>
+                            <option value="video">Vídeo</option>
+                        </select>
+                        <input type="text" id="scheduleMediaPath" class="form-input" placeholder="Caminho mídia">
+                    </div>
+                    <button class="btn btn-primary" style="margin-top:10px" type="submit">Agendar</button>
+                </form>
+                <div id="scheduledList" style="margin-top:1rem"></div>
             </div>
         </div>
     </div>
@@ -3569,8 +3610,98 @@ HTML_APP = r'''<!DOCTYPE html>
             loadScheduledMessages();
         }
 
+        async function loadCampaigns() {
+            try {
+                const res = await fetch('/api/campaigns');
+                const campaigns = await res.json();
+                const list = document.getElementById('campaignList');
+                const sel = document.getElementById('scheduleCampaign');
+                list.innerHTML = '';
+                sel.innerHTML = '';
+                campaigns.forEach(c => {
+                    const div = document.createElement('div');
+                    div.textContent = c.name;
+                    list.appendChild(div);
+                    const opt = document.createElement('option');
+                    opt.value = c.id;
+                    opt.textContent = c.name;
+                    sel.appendChild(opt);
+                });
+            } catch (err) {
+                console.error('Erro ao carregar campanhas', err);
+            }
+        }
+
+        async function createCampaign(ev) {
+            ev.preventDefault();
+            const payload = {
+                name: document.getElementById('campName').value,
+                description: document.getElementById('campDesc').value,
+                recurrence: document.getElementById('campRecurrence').value,
+                send_time: document.getElementById('campTime').value,
+                weekday: document.getElementById('campWeekday').value || null
+            };
+            await fetch('/api/campaigns', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            loadCampaigns();
+            document.getElementById('campaignForm').reset();
+        }
+
+        async function loadGroupsForSchedule() {
+            try {
+                const res = await fetch('/api/groups/default');
+                const groups = await res.json();
+                const sel = document.getElementById('scheduleGroups');
+                sel.innerHTML = '';
+                groups.forEach(g => {
+                    const opt = document.createElement('option');
+                    opt.value = g.id || g.groupId || g;
+                    opt.textContent = g.name || g.subject || g.id || g;
+                    sel.appendChild(opt);
+                });
+            } catch (err) {
+                console.error('Erro ao carregar grupos', err);
+            }
+        }
+
+        async function scheduleMessage(ev) {
+            ev.preventDefault();
+            const campaign = document.getElementById('scheduleCampaign').value;
+            const groups = Array.from(document.getElementById('scheduleGroups').selectedOptions).map(o => o.value);
+            const payload = {
+                campaign_id: campaign,
+                groups: groups,
+                content: document.getElementById('scheduleContent').value,
+                media_type: document.getElementById('scheduleMediaType').value,
+                media_path: document.getElementById('scheduleMediaPath').value
+            };
+            await fetch('/api/messages/schedule', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            loadScheduledList();
+            document.getElementById('scheduleForm').reset();
+        }
+
+        async function loadScheduledList() {
+            const res = await fetch('/api/messages/scheduled');
+            const data = await res.json();
+            const container = document.getElementById('scheduledList');
+            container.innerHTML = '';
+            data.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'scheduled-card';
+                div.innerHTML = `<strong>${item.campaign_name}</strong> - ${item.next_run} <button class="btn btn-sm btn-danger" onclick="deleteScheduled('${item.id}')">❌</button>`;
+                container.appendChild(div);
+            });
+        }
+
+        async function deleteScheduled(id) {
+            await fetch('/api/messages/scheduled/' + id, { method: 'DELETE' });
+            loadScheduledList();
+        }
+
         document.getElementById('previewWeekday').value = new Date().getDay();
         loadScheduledMessages();
+        loadCampaigns();
+        loadGroupsForSchedule();
+        loadScheduledList();
     </script>
 </body>
 </html>'''
@@ -3660,12 +3791,9 @@ def init_db():
             id TEXT PRIMARY KEY,
             name TEXT NOT NULL,
             description TEXT,
-            recurrence_type TEXT NOT NULL,
-            send_time TEXT NOT NULL,
-            instance_id TEXT,
-            created_at TEXT,
-            updated_at TEXT,
-            last_sent_at TEXT
+            recurrence TEXT,
+            send_time TEXT,
+            weekday INTEGER
         )
     """)
 
@@ -3678,31 +3806,19 @@ def init_db():
     """)
 
     cursor.execute("""
-        CREATE TABLE IF NOT EXISTS campaign_messages (
-            id TEXT PRIMARY KEY,
-            campaign_id TEXT NOT NULL,
-            message_text TEXT NOT NULL,
-            attachment TEXT
-        )
-    """)
-
-    cursor.execute("""
         CREATE TABLE IF NOT EXISTS scheduled_messages (
             id TEXT PRIMARY KEY,
-            instance_id TEXT NOT NULL,
-            group_id TEXT NOT NULL,
+            campaign_id TEXT NOT NULL,
             content TEXT,
             media_type TEXT DEFAULT 'text',
             media_path TEXT,
-            recurrence TEXT NOT NULL,
-            weekday INTEGER,
-            send_time TEXT,
-            next_run TEXT NOT NULL
+            next_run TEXT NOT NULL,
+            status TEXT DEFAULT 'pending'
         )
     """)
 
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_scheduled_next_run ON scheduled_messages(next_run)")
-    cursor.execute("CREATE INDEX IF NOT EXISTS idx_scheduled_instance ON scheduled_messages(instance_id)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_scheduled_campaign ON scheduled_messages(campaign_id)")
     
     conn.commit()
     conn.close()
@@ -3764,7 +3880,7 @@ def baileys_post(url: str, data: Dict[str, Any]) -> None:
     requests.post(url, json=data, timeout=10)
 
 
-def send_scheduled_message(instance_id: str, group_id: str, content: str, media_type: str, media_path: str) -> bool:
+def send_scheduled_message(group_id: str, content: str, media_type: str, media_path: str, instance_id: str = "default") -> bool:
     """Send a scheduled message including optional media."""
     data = {"to": group_id, "type": media_type or "text", "message": content or ""}
     if media_type and media_type != "text" and media_path:
@@ -3810,27 +3926,36 @@ def process_scheduled_messages(now: datetime | None = None) -> None:
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     cursor.execute(
-        "SELECT * FROM scheduled_messages WHERE next_run <= ?",
+        """
+        SELECT sm.*, c.recurrence, c.send_time, c.weekday
+        FROM scheduled_messages sm
+        JOIN campaigns c ON c.id = sm.campaign_id
+        WHERE sm.next_run <= ? AND sm.status = 'pending'
+        """,
         (current_utc.isoformat(),),
     )
     rows = cursor.fetchall()
     for row in rows:
-        sent = send_scheduled_message(
-            row["instance_id"],
-            row["group_id"],
-            row["content"],
-            row["media_type"],
-            row["media_path"],
+        cursor.execute(
+            "SELECT group_id FROM campaign_groups WHERE campaign_id = ?",
+            (row["campaign_id"],),
         )
-        if sent:
-            if row["recurrence"] == "once":
-                cursor.execute("DELETE FROM scheduled_messages WHERE id = ?", (row["id"],))
-            else:
-                next_run = calculate_next_run(row["recurrence"], row["send_time"], row["weekday"], base_dt=current)
-                cursor.execute(
-                    "UPDATE scheduled_messages SET next_run = ? WHERE id = ?",
-                    (next_run, row["id"]),
-                )
+        groups = [g[0] for g in cursor.fetchall()]
+        for group_id in groups:
+            send_scheduled_message(group_id, row["content"], row["media_type"], row["media_path"])
+        if row["recurrence"] == "once":
+            cursor.execute(
+                "UPDATE scheduled_messages SET status = 'sent' WHERE id = ?",
+                (row["id"],),
+            )
+        else:
+            next_run = calculate_next_run(
+                row["recurrence"], row["send_time"], row["weekday"], base_dt=current
+            )
+            cursor.execute(
+                "UPDATE scheduled_messages SET next_run = ? WHERE id = ?",
+                (next_run, row["id"]),
+            )
     conn.commit()
     conn.close()
 
@@ -3841,50 +3966,6 @@ async def scheduled_message_scheduler():
             process_scheduled_messages()
         except Exception as e:
             logger.error(f"Erro no agendador de mensagens: {e}")
-        await asyncio.sleep(60)
-
-
-async def campaign_scheduler():
-    """Periodically check and send scheduled campaign messages."""
-    while True:
-        try:
-            now = datetime.now(BR_TZ)
-            current_time = now.strftime("%H:%M")
-            weekday = now.weekday()  # Monday = 0
-
-            conn = sqlite3.connect(DB_FILE)
-            cursor = conn.cursor()
-            cursor.execute(
-                """
-                SELECT id, contact_phone, message, instance_id, weekdays, last_sent_at
-                FROM campaign_messages
-                WHERE send_time = ?
-                """,
-                (current_time,),
-            )
-            rows = cursor.fetchall()
-            for msg_id, contact_phone, message, instance_id, weekdays, last_sent_at in rows:
-                if weekdays:
-                    days = [int(d) for d in weekdays.split(',') if d.strip()]
-                    if weekday not in days:
-                        continue
-                if last_sent_at:
-                    try:
-                        last = datetime.fromisoformat(last_sent_at)
-                        if last.date() == now.date():
-                            continue
-                    except Exception:
-                        pass
-                if send_via_baileys(contact_phone, message, instance_id or 'default'):
-                    cursor.execute(
-                        "UPDATE campaign_messages SET last_sent_at = ? WHERE id = ?",
-                        (now.astimezone(timezone.utc).isoformat(), msg_id),
-                    )
-            conn.commit()
-            conn.close()
-        except Exception as e:
-            logger.error(f"Erro no agendador: {e}")
-
         await asyncio.sleep(60)
 
 
@@ -4844,69 +4925,54 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
 
     def handle_schedule_message(self):
         try:
-            content_type = self.headers.get('Content-Type', '')
-            if 'multipart/form-data' in content_type:
-                form = cgi.FieldStorage(fp=self.rfile, headers=self.headers,
-                                       environ={'REQUEST_METHOD': 'POST', 'CONTENT_TYPE': content_type})
-                instance_id = form.getvalue('instance_id', 'default')
-                group_id = form.getvalue('group_id', '')
-                content = form.getvalue('content', '')
-                media_type = form.getvalue('media_type', 'text')
-                recurrence = form.getvalue('recurrence', 'once')
-                weekday = form.getvalue('weekday')
-                send_time = form.getvalue('send_time', '')
-                media_path = None
-                if 'media' in form and getattr(form['media'], 'file', None):
-                    uploads_dir = os.path.join(os.getcwd(), 'uploads')
-                    os.makedirs(uploads_dir, exist_ok=True)
-                    filename = f"{uuid.uuid4()}_{form['media'].filename}" if form['media'].filename else str(uuid.uuid4())
-                    media_path = os.path.join(uploads_dir, filename)
-                    with open(media_path, 'wb') as f:
-                        f.write(form['media'].file.read())
-            else:
-                length = int(self.headers.get('Content-Length', 0))
-                data = json.loads(self.rfile.read(length).decode('utf-8')) if length else {}
-                instance_id = data.get('instanceId') or data.get('instance_id') or 'default'
-                group_id = data.get('groupId') or data.get('group_id', '')
-                content = data.get('content') or data.get('message', '')
-                media_type = data.get('mediaType') or data.get('media_type', 'text')
-                recurrence = data.get('recurrence', 'once')
-                weekday = data.get('weekday')
-                send_time = data.get('sendTime') or data.get('send_time') or data.get('scheduledFor', '')
-                media_path = data.get('media_path')
+            length = int(self.headers.get('Content-Length', 0))
+            data = json.loads(self.rfile.read(length).decode('utf-8')) if length else {}
+            campaign_id = data.get('campaign_id') or data.get('campaignId')
+            content = data.get('content') or data.get('message', '')
+            media_type = data.get('media_type') or data.get('mediaType', 'text')
+            media_path = data.get('media_path')
+            groups = data.get('groups', [])
 
-            if not group_id or not send_time:
+            if not campaign_id:
                 self.send_json_response({"error": "Dados inválidos"}, 400)
                 return
 
-            if recurrence == 'once' and len(send_time) > 5:
-                next_run = send_time
-                send_time_val = send_time[11:16]
-            else:
-                next_run = calculate_next_run(recurrence, send_time, int(weekday) if weekday else None)
-                send_time_val = send_time
-
-            schedule_id = str(uuid.uuid4())
             conn = sqlite3.connect(DB_FILE)
             cursor = conn.cursor()
             cursor.execute(
+                "SELECT recurrence, send_time, weekday FROM campaigns WHERE id = ?",
+                (campaign_id,),
+            )
+            row = cursor.fetchone()
+            if not row:
+                conn.close()
+                self.send_json_response({"error": "Campanha não encontrada"}, 404)
+                return
+            recurrence, send_time, weekday = row
+            next_run = calculate_next_run(recurrence or 'once', send_time or '00:00', weekday)
+
+            schedule_id = str(uuid.uuid4())
+            cursor.execute(
                 """
-                INSERT INTO scheduled_messages (id, instance_id, group_id, content, media_type, media_path, recurrence, weekday, send_time, next_run)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO scheduled_messages (id, campaign_id, content, media_type, media_path, next_run, status)
+                VALUES (?, ?, ?, ?, ?, ?, 'pending')
                 """,
                 (
                     schedule_id,
-                    instance_id,
-                    group_id,
+                    campaign_id,
                     content,
                     media_type,
                     media_path,
-                    recurrence,
-                    int(weekday) if weekday else None,
-                    send_time_val,
                     next_run,
                 ),
             )
+
+            for gid in groups:
+                cursor.execute(
+                    "INSERT OR IGNORE INTO campaign_groups (campaign_id, group_id) VALUES (?, ?)",
+                    (campaign_id, gid),
+                )
+
             conn.commit()
             conn.close()
             self.send_json_response({"success": True, "id": schedule_id})
@@ -4918,7 +4984,14 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             conn = sqlite3.connect(DB_FILE)
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
-            cursor.execute("SELECT * FROM scheduled_messages ORDER BY next_run ASC")
+            cursor.execute(
+                """
+                SELECT sm.id, sm.campaign_id, c.name as campaign_name, sm.content, sm.media_type, sm.media_path, sm.next_run, sm.status
+                FROM scheduled_messages sm
+                JOIN campaigns c ON c.id = sm.campaign_id
+                ORDER BY sm.next_run ASC
+                """,
+            )
             messages = [dict(row) for row in cursor.fetchall()]
             conn.close()
             self.send_json_response(messages)
@@ -5852,48 +5925,24 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
         try:
             conn = sqlite3.connect(DB_FILE)
             cursor = conn.cursor()
-
-            cursor.execute("""
-                SELECT * FROM campaigns
-                ORDER BY created_at DESC
-            """)
-
+            cursor.execute("SELECT id, name, description, recurrence, send_time, weekday FROM campaigns")
             campaigns = []
             for row in cursor.fetchall():
                 campaign_id = row[0]
-
                 cursor.execute(
                     "SELECT group_id FROM campaign_groups WHERE campaign_id = ?",
-                    (campaign_id,)
+                    (campaign_id,),
                 )
                 groups = [g[0] for g in cursor.fetchall()]
-
-                cursor.execute(
-                    "SELECT id, message_text, attachment FROM campaign_messages WHERE campaign_id = ?",
-                    (campaign_id,)
-                )
-                messages = []
-                for m in cursor.fetchall():
-                    messages.append({
-                        'id': m[0],
-                        'text': m[1],
-                        'attachment': m[2]
-                    })
-
                 campaigns.append({
                     'id': campaign_id,
                     'name': row[1],
                     'description': row[2],
-                    'recurrence_type': row[3],
+                    'recurrence': row[3],
                     'send_time': row[4],
-                    'instance_id': row[5],
-                    'created_at': row[6],
-                    'updated_at': row[7],
-                    'last_sent_at': row[8],
+                    'weekday': row[5],
                     'groups': groups,
-                    'messages': messages
                 })
-
             conn.close()
             self.send_json_response(campaigns)
 
@@ -5907,7 +5956,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             conn = sqlite3.connect(DB_FILE)
             cursor = conn.cursor()
 
-            cursor.execute("SELECT * FROM campaigns WHERE id = ?", (campaign_id,))
+            cursor.execute("SELECT id, name, description, recurrence, send_time, weekday FROM campaigns WHERE id = ?", (campaign_id,))
             row = cursor.fetchone()
             if not row:
                 conn.close()
@@ -5920,30 +5969,14 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             )
             groups = [g[0] for g in cursor.fetchall()]
 
-            cursor.execute(
-                "SELECT id, message_text, attachment FROM campaign_messages WHERE campaign_id = ?",
-                (campaign_id,),
-            )
-            messages = []
-            for m in cursor.fetchall():
-                messages.append({
-                    'id': m[0],
-                    'text': m[1],
-                    'attachment': m[2]
-                })
-
             campaign = {
                 'id': row[0],
                 'name': row[1],
                 'description': row[2],
-                'recurrence_type': row[3],
+                'recurrence': row[3],
                 'send_time': row[4],
-                'instance_id': row[5],
-                'created_at': row[6],
-                'updated_at': row[7],
-                'last_sent_at': row[8],
+                'weekday': row[5],
                 'groups': groups,
-                'messages': messages
             }
 
             conn.close()
@@ -5965,43 +5998,31 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             conn = sqlite3.connect(DB_FILE)
             cursor = conn.cursor()
 
-            cursor.execute("""
-                INSERT INTO campaigns (id, name, description, recurrence_type, send_time, instance_id, created_at, updated_at, last_sent_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                campaign_id,
-                data['name'],
-                data.get('description', ''),
-                data.get('recurrence_type'),
-                data.get('send_time'),
-                data.get('instance_id'),
-                datetime.now(BR_TZ).astimezone(timezone.utc).isoformat(),
-                datetime.now(BR_TZ).astimezone(timezone.utc).isoformat(),
-                None
-            ))
+            cursor.execute(
+                """
+                INSERT INTO campaigns (id, name, description, recurrence, send_time, weekday)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    campaign_id,
+                    data['name'],
+                    data.get('description'),
+                    data.get('recurrence'),
+                    data.get('send_time'),
+                    data.get('weekday')
+                ),
+            )
 
             for group_id in data.get('groups', []):
                 cursor.execute(
                     "INSERT OR IGNORE INTO campaign_groups (campaign_id, group_id) VALUES (?, ?)",
-                    (campaign_id, group_id)
-                )
-
-            for msg in data.get('messages', []):
-                message_id = str(uuid.uuid4())
-                cursor.execute(
-                    "INSERT INTO campaign_messages (id, campaign_id, message_text, attachment) VALUES (?, ?, ?, ?)",
-                    (message_id, campaign_id, msg.get('text'), msg.get('attachment'))
+                    (campaign_id, group_id),
                 )
 
             conn.commit()
             conn.close()
 
-            print(f"✅ Campanha '{data['name']}' criada com ID: {campaign_id}")
-            self.send_json_response({
-                'success': True,
-                'campaign_id': campaign_id,
-                'message': f'Campanha "{data["name"]}" criada com sucesso'
-            })
+            self.send_json_response({'success': True, 'campaign_id': campaign_id})
 
         except Exception as e:
             print(f"❌ Erro ao criar campanha: {e}")
@@ -6028,27 +6049,23 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                 update_fields.append('description = ?')
                 values.append(data['description'])
 
-            if 'recurrence_type' in data:
-                update_fields.append('recurrence_type = ?')
-                values.append(data['recurrence_type'])
+            if 'recurrence' in data:
+                update_fields.append('recurrence = ?')
+                values.append(data['recurrence'])
 
             if 'send_time' in data:
                 update_fields.append('send_time = ?')
                 values.append(data['send_time'])
 
-            if 'instance_id' in data:
-                update_fields.append('instance_id = ?')
-                values.append(data['instance_id'])
+            if 'weekday' in data:
+                update_fields.append('weekday = ?')
+                values.append(data['weekday'])
 
-            update_fields.append('updated_at = ?')
-            values.append(datetime.now(BR_TZ).astimezone(timezone.utc).isoformat())
             values.append(campaign_id)
-
-            cursor.execute(f"""
-                UPDATE campaigns
-                SET {', '.join(update_fields)}
-                WHERE id = ?
-            """, values)
+            cursor.execute(
+                f"UPDATE campaigns SET {', '.join(update_fields)} WHERE id = ?",
+                values,
+            )
 
             if cursor.rowcount == 0:
                 conn.close()
@@ -6060,23 +6077,13 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                 for group_id in data['groups']:
                     cursor.execute(
                         "INSERT OR IGNORE INTO campaign_groups (campaign_id, group_id) VALUES (?, ?)",
-                        (campaign_id, group_id)
-                    )
-
-            if 'messages' in data:
-                cursor.execute("DELETE FROM campaign_messages WHERE campaign_id = ?", (campaign_id,))
-                for msg in data['messages']:
-                    message_id = msg.get('id', str(uuid.uuid4()))
-                    cursor.execute(
-                        "INSERT INTO campaign_messages (id, campaign_id, message_text, attachment) VALUES (?, ?, ?, ?)",
-                        (message_id, campaign_id, msg.get('text'), msg.get('attachment'))
+                        (campaign_id, group_id),
                     )
 
             conn.commit()
             conn.close()
 
-            print(f"✅ Campanha {campaign_id} atualizada")
-            self.send_json_response({'success': True, 'message': 'Campanha atualizada com sucesso'})
+            self.send_json_response({'success': True})
 
         except Exception as e:
             print(f"❌ Erro ao atualizar campanha: {e}")
@@ -6089,14 +6096,13 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             cursor = conn.cursor()
 
             cursor.execute("DELETE FROM campaign_groups WHERE campaign_id = ?", (campaign_id,))
-            cursor.execute("DELETE FROM campaign_messages WHERE campaign_id = ?", (campaign_id,))
+            cursor.execute("DELETE FROM scheduled_messages WHERE campaign_id = ?", (campaign_id,))
             cursor.execute("DELETE FROM campaigns WHERE id = ?", (campaign_id,))
 
             if cursor.rowcount > 0:
                 conn.commit()
                 conn.close()
-                print(f"✅ Campanha {campaign_id} excluída")
-                self.send_json_response({'success': True, 'message': 'Campanha excluída com sucesso'})
+                self.send_json_response({'success': True})
             else:
                 conn.close()
                 self.send_json_response({'error': 'Campanha não encontrada'}, 404)
@@ -6201,7 +6207,6 @@ def main():
     # Launch campaign scheduler task after server starts
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-    loop.create_task(campaign_scheduler())
     loop.create_task(scheduled_message_scheduler())
 
     print("✅ WhatsFlow Professional configurado!")
