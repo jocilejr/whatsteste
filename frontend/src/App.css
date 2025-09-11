@@ -2188,8 +2188,8 @@ body {
   z-index: 1000;
 }
 
-.modal {
-  background: white;
+.modal { 
+  background: white; 
   border-radius: 12px;
   max-width: 500px;
   width: 90%;
@@ -2197,6 +2197,13 @@ body {
   overflow: hidden;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
 }
+
+/* Schedule modal tabs */
+.schedule-tabs { margin-top: 1.5rem; }
+.tabs-header { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; }
+.tabs-header button { padding: 0.25rem 0.5rem; border: 1px solid #e2e8f0; background: #f8fafc; cursor: pointer; border-radius: 4px; }
+.tabs-header button.active { background: #e2e8f0; }
+.tabs-content .message-card { border: 1px solid #e2e8f0; padding: 0.5rem; border-radius: 4px; margin-bottom: 0.5rem; }
 
 .modal-header {
   padding: 1.5rem;
