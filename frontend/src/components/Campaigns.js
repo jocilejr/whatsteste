@@ -273,11 +273,12 @@ function CampaignForm({ initialData, onSave, onCancel }) {
 // Modal for selecting groups
 function GroupModal({ campaign, onClose, onSaved }) {
   const [instances, setInstances] = useState([]);
-  const [instanceId, setInstanceId] = useState('');
+  const [instanceId, setInstanceId] = useState(campaign.instance_id || '');
   const [groups, setGroups] = useState([]);
   const [selected, setSelected] = useState(campaign.groups || []);
 
   useEffect(() => {
+    if (campaign.instance_id) return;
     const loadInstances = async () => {
       try {
         const res = await axios.get(`${API}/whatsapp/instances`);
@@ -287,7 +288,7 @@ function GroupModal({ campaign, onClose, onSaved }) {
       }
     };
     loadInstances();
-  }, []);
+  }, [campaign.instance_id]);
 
   useEffect(() => {
     if (!instanceId) return;
@@ -321,15 +322,17 @@ function GroupModal({ campaign, onClose, onSaved }) {
   return (
     <div className="modal">
       <h3>Selecionar grupos</h3>
-      <div className="form-row">
-        <label>Instância</label>
-        <select value={instanceId} onChange={e => setInstanceId(e.target.value)}>
-          <option value="">Selecione...</option>
-          {instances.map(inst => (
-            <option key={inst.id} value={inst.id}>{inst.name}</option>
-          ))}
-        </select>
-      </div>
+      {!campaign.instance_id && (
+        <div className="form-row">
+          <label>Instância</label>
+          <select value={instanceId} onChange={e => setInstanceId(e.target.value)}>
+            <option value="">Selecione...</option>
+            {instances.map(inst => (
+              <option key={inst.id} value={inst.id}>{inst.name}</option>
+            ))}
+          </select>
+        </div>
+      )}
       {groups.length > 0 && (
         <div className="form-row groups-list">
           {groups.map(g => (
