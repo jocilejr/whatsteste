@@ -201,11 +201,14 @@ class TestMediaDelivery:
 
         sent = {}
 
-        def fake_post(url, data):
+        def fake_send(instance_id, data):
             sent['payload'] = data
+            return True
 
-        app.baileys_post = fake_post
+        orig = app.baileys_send_message
+        app.baileys_send_message = fake_send
         ok = app.send_scheduled_message('g', 'msg', 'audio', path)
+        app.baileys_send_message = orig
         os.remove(path)
         assert ok and 'audio' in sent['payload']
 
