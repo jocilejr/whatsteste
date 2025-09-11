@@ -423,31 +423,33 @@ app.post('/send/:instanceId', async (req, res) => {
 
     const instance = instances.get(instanceId);
     if (!instance || !instance.connected || !instance.sock) {
-        return res.status(400).json({ error: 'Instância não conectada', instanceId: instanceId });
+        return res.status(400).json({ error: 'Instância não conectada', instanceId });
     }
 
     try {
         const jid = to.includes('@') ? to : `${to}@s.whatsapp.net`;
+        const mediaTypes = ['image', 'audio', 'video', 'document'];
 
         if (type === 'text') {
             await instance.sock.sendMessage(jid, { text: message });
-        } else {
-            const supportedTypes = ['image', 'audio', 'video', 'document'];
-            if (!supportedTypes.includes(type)) {
-                console.error(`Tipo de mídia desconhecido: ${type}`);
-                return res.status(400).json({ error: `Tipo de mídia '${type}' não suportado`, instanceId: instanceId });
-            }
-
+        } else if (mediaTypes.includes(type)) {
             const base64Data = req.body[type];
             if (!base64Data) {
-                return res.status(400).json({ error: `Campo '${type}' com dados base64 ausente`, instanceId: instanceId });
+                return res.status(400).json({ error: `Campo '${type}' com dados base64 ausente`, instanceId });
             }
 
-            const buffer = Buffer.from(base64Data, 'base64');
+            let buffer;
+            try {
+                buffer = Buffer.from(base64Data, 'base64');
+            } catch (err) {
+                return res.status(400).json({ error: `Dados base64 inválidos para '${type}'`, instanceId });
+            }
+
             const msgOptions = { [type]: buffer };
             if (caption || message) {
                 msgOptions.caption = caption || message;
             }
+
             if (type === 'document') {
                 if (req.body.fileName) msgOptions.fileName = req.body.fileName;
                 if (req.body.mimeType || req.body.mimetype) {
@@ -456,13 +458,15 @@ app.post('/send/:instanceId', async (req, res) => {
             }
 
             await instance.sock.sendMessage(jid, msgOptions);
+        } else {
+            return res.status(400).json({ error: `Tipo de mídia '${type}' não suportado`, instanceId });
         }
 
         console.log(`📤 Mensagem enviada da instância ${instanceId} para ${to}`);
-        res.json({ success: true, instanceId: instanceId });
+        res.json({ success: true, instanceId });
     } catch (error) {
         console.error(`❌ Erro ao enviar mensagem da instância ${instanceId}:`, error);
-        res.status(500).json({ error: error.message, instanceId: instanceId });
+        res.status(500).json({ error: error.message, instanceId });
     }
 });
 
