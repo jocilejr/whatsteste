@@ -79,7 +79,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # HTML da aplicação (mesmo do Pure, mas com conexão real)
-HTML_APP = r'''<!DOCTYPE html>
+HTML_APP = r"""<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
@@ -3921,7 +3921,7 @@ HTML_APP = r'''<!DOCTYPE html>
         loadScheduledList();
     </script>
 </body>
-</html>'''
+</html>"""
 
 
 # Database setup (same as before but with WebSocket integration)
@@ -4868,7 +4868,7 @@ app.listen(PORT, '0.0.0.0', () => {
 
 # HTTP Handler with Baileys integration
 class WhatsFlowRealHandler(BaseHTTPRequestHandler):
- codex/redesign-grupos-tab-with-campaign-button-c12slc
+ codex/redesign-grupos-tab-with-campaign-button-pimow2
     def serve_frontend(self, *, head: bool = False) -> None:
 
         path = self.path.split('?', 1)[0]
@@ -4886,7 +4886,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                 self.send_response(200)
                 self.send_header("Content-Type", mime_type or "application/octet-stream")
                 self.end_headers()
- codex/redesign-grupos-tab-with-campaign-button-c12slc
+ codex/redesign-grupos-tab-with-campaign-button-pimow2
                 if not head:
                     self.wfile.write(f.read())
 
