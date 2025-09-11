@@ -80,19 +80,10 @@ export default function Groups() {
   const scheduleMessage = async (e) => {
     e.preventDefault();
     try {
-      await axios.post(`${API}/campaigns/${selectedCampaign.id}/messages`, {
-        schedule_type: 'once',
-        weekday: null,
-        send_time: sendTime,
+      await axios.post(`${API}/campaigns/${selectedCampaign.id}/schedule`, {
         message: messageText,
-        media_type: null,
-        media_data: null,
+        send_at: sendTime,
       });
-      setCampaigns(campaigns.map(c =>
-        c.id === selectedCampaign.id
-          ? { ...c, messages: [...(c.messages || []), { message: messageText, send_time: sendTime }] }
-          : c
-      ));
       setShowMessageModal(false);
       setMessageText('');
       setSendTime('');
@@ -192,9 +183,9 @@ export default function Groups() {
                 />
               </div>
               <div className="form-row">
-                <label>Horário</label>
+                <label>Data e horário</label>
                 <input
-                  type="time"
+                  type="datetime-local"
                   value={sendTime}
                   onChange={e => setSendTime(e.target.value)}
                   required
