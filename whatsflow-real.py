@@ -4868,7 +4868,9 @@ app.listen(PORT, '0.0.0.0', () => {
 
 # HTTP Handler with Baileys integration
 class WhatsFlowRealHandler(BaseHTTPRequestHandler):
+ codex/redesign-grupos-tab-with-campaign-button-pimow2
     def serve_frontend(self, *, head: bool = False) -> None:
+
         path = self.path.split('?', 1)[0]
         file_path = (FRONTEND_BUILD_DIR / path.lstrip('/')).resolve()
         if file_path.is_dir():
@@ -4884,8 +4886,10 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                 self.send_response(200)
                 self.send_header("Content-Type", mime_type or "application/octet-stream")
                 self.end_headers()
+ codex/redesign-grupos-tab-with-campaign-button-pimow2
                 if not head:
                     self.wfile.write(f.read())
+
         except FileNotFoundError:
             self.send_error(404, "Not Found")
 
