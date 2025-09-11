@@ -528,25 +528,18 @@ export default function Campaigns() {
 
       <div className="campaigns-grid">
 
-        {campaigns.map(c => (
-          <div key={c.id} className="campaign-card">
-            <div className="campaign-info">
-              <h3>{c.name}</h3>
-              {c.recurrence && (
-                <div className="campaign-schedule">
-                  {c.recurrence === 'daily' && `Diária às ${c.time}`}
-                  {c.recurrence === 'weekly' && `Toda ${c.day} às ${c.time}`}
-                </div>
-              )}
-            </div>
- codex/redesign-groups-tab-with-campaign-cards
-            <div className="card-actions">
-              <button className="card-btn" onClick={() => setGroupModal(c)}><Users size={16}/> Selecionar grupos</button>
-              <button className="card-btn" onClick={() => setScheduleModal(c)}><Calendar size={16}/> Agendar mensagens</button>
-              <button className="card-btn" onClick={() => { setEditing(c); setShowForm(true); }}>Editar</button>
-              <button className="card-btn" onClick={() => handleDelete(c.id)}>Excluir</button>
+          {campaigns.map(c => (
+            <div key={c.id} className="campaign-card">
+              <div className="campaign-info">
+                <h3>{c.name}</h3>
+              </div>
+              <div className="card-actions">
+                <button className="card-btn" onClick={() => setGroupModal(c)}><Users size={16}/> Selecionar grupos</button>
+                <button className="card-btn" onClick={() => setScheduleModal(c)}><Calendar size={16}/> Agendar mensagens</button>
+                <button className="card-btn" onClick={() => { setEditing(c); setShowForm(true); }}>Editar</button>
+                <button className="card-btn" onClick={() => handleDelete(c.id)}>Excluir</button>
 
-            </div>
+              </div>
           </div>
         ))}
       </div>
