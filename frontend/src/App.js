@@ -6,6 +6,8 @@ import FlowList from './components/FlowList';
 import MessagesCenter from './components/MessagesCenter';
 import WhatsAppInstances from './components/WhatsAppInstances';
 import Groups from './components/Groups';
+import DashboardStats from './components/DashboardStats';
+import ContactsList from './components/ContactsList';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -233,116 +235,6 @@ const WhatsAppConnection = () => {
   );
 };
 
-// Dashboard Stats Component
-const DashboardStats = () => {
-  const [stats, setStats] = useState({
-    new_contacts_today: 0,
-    active_conversations: 0,
-    messages_today: 0
-  });
-
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const response = await axios.get(`${API}/dashboard/stats`);
-        setStats(response.data);
-      } catch (error) {
-        console.error('Failed to fetch stats:', error);
-      }
-    };
-
-    fetchStats();
-    const interval = setInterval(fetchStats, 30000); // Update every 30 seconds
-
-    return () => clearInterval(interval);
-  }, []);
-
-  return (
-    <div className="dashboard-stats">
-      <div className="stats-grid">
-        <div className="stat-card">
-          <div className="stat-icon">👥</div>
-          <div className="stat-content">
-            <h3>{stats.new_contacts_today}</h3>
-            <p>Novos contatos hoje</p>
-          </div>
-        </div>
-        
-        <div className="stat-card">
-          <div className="stat-icon">💬</div>
-          <div className="stat-content">
-            <h3>{stats.active_conversations}</h3>
-            <p>Conversas ativas</p>
-          </div>
-        </div>
-        
-        <div className="stat-card">
-          <div className="stat-icon">📨</div>
-          <div className="stat-content">
-            <h3>{stats.messages_today}</h3>
-            <p>Mensagens hoje</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Contacts List Component
-const ContactsList = () => {
-  const [contacts, setContacts] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchContacts = async () => {
-      try {
-        const response = await axios.get(`${API}/contacts`);
-        setContacts(response.data);
-      } catch (error) {
-        console.error('Failed to fetch contacts:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchContacts();
-  }, []);
-
-  if (loading) {
-    return <div className="loading">Carregando contatos...</div>;
-  }
-
-  return (
-    <div className="contacts-list">
-      <h3>📞 Contatos Recentes</h3>
-      {contacts.length === 0 ? (
-        <div className="empty-state">
-          <p>Nenhum contato encontrado ainda.</p>
-          <p>Os contatos aparecerão aqui quando começarem a enviar mensagens.</p>
-        </div>
-      ) : (
-        <div className="contacts-grid">
-          {contacts.slice(0, 6).map(contact => (
-            <div key={contact.id} className="contact-card">
-              <div className="contact-avatar">
-                {contact.name.charAt(0).toUpperCase()}
-              </div>
-              <div className="contact-info">
-                <h4>{contact.name}</h4>
-                <p>{contact.phone_number}</p>
-                <div className="contact-tags">
-                  {contact.tags.map(tag => (
-                    <span key={tag} className="tag">{tag}</span>
-                  ))}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
 
 // Main App Component
 function App() {
