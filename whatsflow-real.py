@@ -6259,7 +6259,6 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                     data['name'],
                     data.get('description'),
                     data.get('recurrence'),
- codex/create-campaigns-database-and-rest-endpoints
                     data.get('send_time'),
                     data.get('weekday'),
                     data.get('timezone', 'America/Sao_Paulo'),
