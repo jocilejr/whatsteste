@@ -4868,7 +4868,9 @@ app.listen(PORT, '0.0.0.0', () => {
 
 # HTTP Handler with Baileys integration
 class WhatsFlowRealHandler(BaseHTTPRequestHandler):
-    def serve_frontend(self):
+ codex/redesign-grupos-tab-with-campaign-button-c12slc
+    def serve_frontend(self, *, head: bool = False) -> None:
+
         path = self.path.split('?', 1)[0]
         file_path = (FRONTEND_BUILD_DIR / path.lstrip('/')).resolve()
         if file_path.is_dir():
@@ -4884,7 +4886,10 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                 self.send_response(200)
                 self.send_header("Content-Type", mime_type or "application/octet-stream")
                 self.end_headers()
-                self.wfile.write(f.read())
+ codex/redesign-grupos-tab-with-campaign-button-c12slc
+                if not head:
+                    self.wfile.write(f.read())
+
         except FileNotFoundError:
             self.send_error(404, "Not Found")
 
@@ -4952,6 +4957,12 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             self.handle_get_scheduled_messages()
         else:
             self.send_error(404, "Not Found")
+
+    def do_HEAD(self):
+        if not self.path.startswith('/api'):
+            self.serve_frontend(head=True)
+            return
+        self.send_error(405, "Method Not Allowed")
     
     def do_POST(self):
         if self.path == '/api/instances':
