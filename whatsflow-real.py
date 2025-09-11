@@ -6636,11 +6636,6 @@ def main():
     server_thread.daemon = True
     server_thread.start()
 
-    # Launch campaign scheduler task after server starts
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop.create_task(campaign_message_scheduler())
-
     print("✅ WhatsFlow Professional configurado!")
     print(f"🌐 Interface: http://localhost:{PORT}")
     print(f"🔌 WebSocket: ws://localhost:{WEBSOCKET_PORT}")
@@ -6650,7 +6645,7 @@ def main():
     print()
 
     try:
-        loop.run_forever()
+        server_thread.join()
     except KeyboardInterrupt:
         print("\n👋 WhatsFlow Professional finalizado!")
         baileys_manager.stop_baileys()
