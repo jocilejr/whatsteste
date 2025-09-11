@@ -50,6 +50,18 @@ WEBSOCKET_PORT = 8890
 
 # Path to React build for serving the frontend
 FRONTEND_BUILD_DIR = Path(__file__).resolve().parent / "frontend" / "build"
+
+
+def baileys_post(url: str, data: dict):
+    """Wrapper to send data to Baileys service.
+
+    Separated for easier monkeypatching during tests.
+    """
+    try:
+        import requests
+        requests.post(url, json=data, timeout=10)
+    except Exception as e:
+        logger.error(f"Baileys POST failed: {e}")
 # codex/redesign-grupos-tab-with-campaign-button-1n5c7l
 def compute_next_run(schedule_type: str, weekday: int, time_str: str) -> datetime:
     """Compute next datetime for a campaign message based on schedule."""
@@ -65,6 +77,33 @@ def compute_next_run(schedule_type: str, weekday: int, time_str: str) -> datetim
         if scheduled <= now:
             scheduled += timedelta(days=7)
     return scheduled
+
+
+def calculate_next_run(recurrence: str, send_time: str, weekday: int | None, timezone_str: str | None, *, now: datetime | None = None) -> datetime:
+    """Utility to compute next run based on campaign recurrence."""
+    tz = ZoneInfo(timezone_str) if timezone_str else BR_TZ
+    if now is None:
+        now = datetime.now(tz)
+    else:
+        if now.tzinfo is None:
+            now = now.replace(tzinfo=tz)
+        else:
+            now = now.astimezone(tz)
+
+    hour, minute = map(int, send_time.split(":"))
+    scheduled = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
+
+    if recurrence == "daily":
+        if scheduled <= now:
+            scheduled += timedelta(days=1)
+    elif recurrence == "weekly":
+        wd = weekday or 0
+        days_ahead = (wd - scheduled.weekday()) % 7
+        scheduled += timedelta(days=days_ahead)
+        if scheduled <= now:
+            scheduled += timedelta(days=7)
+
+    return scheduled.astimezone(timezone.utc)
 
 # WebSocket clients management
 if WEBSOCKETS_AVAILABLE:
@@ -159,8 +198,13 @@ def init_db():
     # Campaign tables
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS campaigns (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id TEXT PRIMARY KEY,
             name TEXT NOT NULL,
+            description TEXT,
+            recurrence TEXT,
+            send_time TEXT,
+            weekday INTEGER,
+            timezone TEXT,
             created_at TEXT
         )
     """)
@@ -185,6 +229,19 @@ def init_db():
             media_type TEXT,
             media_path TEXT,
             next_run TEXT,
+            FOREIGN KEY(campaign_id) REFERENCES campaigns(id)
+        )
+    """)
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS scheduled_messages (
+            id TEXT PRIMARY KEY,
+            campaign_id INTEGER,
+            content TEXT,
+            media_type TEXT,
+            media_path TEXT,
+            next_run TEXT,
+            status TEXT,
             FOREIGN KEY(campaign_id) REFERENCES campaigns(id)
         )
     """)
@@ -242,6 +299,102 @@ def campaign_scheduler_loop():
 
 def start_campaign_scheduler():
     thread = threading.Thread(target=campaign_scheduler_loop, daemon=True)
+    thread.start()
+    return thread
+
+
+def send_scheduled_message(group_id: str, content: str, media_type: str | None, media_path: str | None, instance_id: str = "default") -> bool:
+    """Send a scheduled message through the Baileys service."""
+    url = f"{BAILEYS_URL}/send/{instance_id}"
+    data = {"to": group_id}
+    if media_type and media_type != "text" and media_path:
+        try:
+            with open(media_path, "rb") as f:
+                encoded = base64.b64encode(f.read()).decode()
+            data[media_type] = encoded
+        except Exception as e:
+            logger.error(f"Failed to read media file: {e}")
+            return False
+    else:
+        data["message"] = content
+
+    try:
+        baileys_post(url, data)
+        return True
+    except Exception as e:
+        logger.error(f"Scheduled message send failed: {e}")
+        return False
+
+
+def process_scheduled_messages(now: datetime | None = None):
+    """Dispatch scheduled messages due at or before *now*.
+
+    Args:
+        now: Optional datetime to use for comparisons. If omitted, current
+             UTC time is used.
+    """
+    now = now or datetime.now(timezone.utc)
+    if now.tzinfo is None:
+        now_cmp = now.replace(tzinfo=timezone.utc)
+    else:
+        now_cmp = now.astimezone(timezone.utc)
+
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT id, campaign_id, content, media_type, media_path, next_run, status FROM scheduled_messages WHERE status='pending'"
+    )
+    rows = cursor.fetchall()
+
+    for sched_id, campaign_id, content, media_type, media_path, next_run_str, status in rows:
+        try:
+            next_run_dt = datetime.fromisoformat(next_run_str)
+        except Exception:
+            continue
+        if next_run_dt.tzinfo is None:
+            next_run_dt = next_run_dt.replace(tzinfo=timezone.utc)
+        else:
+            next_run_dt = next_run_dt.astimezone(timezone.utc)
+
+        if next_run_dt <= now_cmp:
+            cursor.execute("SELECT group_id FROM campaign_groups WHERE campaign_id=?", (campaign_id,))
+            groups = [g[0] for g in cursor.fetchall()]
+            for group in groups:
+                send_scheduled_message(group, content, media_type, media_path)
+
+            cursor.execute(
+                "SELECT recurrence, send_time, weekday, timezone FROM campaigns WHERE id=?",
+                (campaign_id,),
+            )
+            row = cursor.fetchone()
+            if row and row[0] in ("daily", "weekly"):
+                recurrence, send_time, weekday, tz = row
+                next_dt = calculate_next_run(recurrence, send_time, weekday, tz, now=now_cmp)
+                cursor.execute(
+                    "UPDATE scheduled_messages SET next_run=?, status='pending' WHERE id=?",
+                    (next_dt.isoformat(), sched_id),
+                )
+            else:
+                cursor.execute(
+                    "UPDATE scheduled_messages SET status='sent' WHERE id=?",
+                    (sched_id,),
+                )
+
+    conn.commit()
+    conn.close()
+
+
+def _scheduled_loop():
+    while True:
+        try:
+            process_scheduled_messages()
+        except Exception as e:
+            logger.error(f"Scheduler loop error: {e}")
+        time.sleep(60)
+
+
+def start_scheduled_dispatcher():
+    thread = threading.Thread(target=_scheduled_loop, daemon=True)
     thread.start()
     return thread
 
@@ -1151,6 +1304,9 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             instance_id = self.path.split('/')[-1]
             self.handle_send_message(instance_id)
 
+        elif self.path == '/api/messages/schedule':
+            self.handle_schedule_message()
+
         elif self.path == '/api/flows':
             self.handle_create_flow()
         elif self.path == '/api/campaigns':
@@ -1161,6 +1317,9 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
         elif self.path.startswith('/api/campaigns/') and self.path.endswith('/messages'):
             campaign_id = int(self.path.split('/')[-2])
             self.handle_add_campaign_message(campaign_id)
+        elif self.path.startswith('/api/campaigns/') and self.path.endswith('/schedule'):
+            campaign_id = int(self.path.split('/')[-2])
+            self.handle_schedule_campaign_message(campaign_id)
 
         elif self.path == '/api/webhooks/send':
             self.handle_send_webhook()
@@ -2181,6 +2340,40 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
         except Exception as e:
             self.send_json_response({"error": str(e)}, 500)
 
+    def handle_schedule_campaign_message(self, campaign_id):
+        try:
+            length = int(self.headers.get('Content-Length', 0))
+            data = json.loads(self.rfile.read(length)) if length else {}
+            message = data.get('message')
+            send_at = data.get('send_at') or data.get('send_time')
+            if not message or not send_at:
+                self.send_json_response({'error': 'Dados inválidos'}, 400)
+                return
+
+            try:
+                dt = datetime.fromisoformat(send_at)
+                if dt.tzinfo is None:
+                    dt = dt.replace(tzinfo=BR_TZ)
+                next_run = dt.astimezone(timezone.utc).isoformat()
+            except Exception:
+                next_run = send_at
+
+            schedule_id = str(uuid.uuid4())
+            conn = sqlite3.connect(DB_FILE)
+            cursor = conn.cursor()
+            cursor.execute(
+                """
+                INSERT INTO scheduled_messages (id, campaign_id, content, media_type, media_path, next_run, status)
+                VALUES (?, ?, ?, ?, ?, ?, 'pending')
+                """,
+                (schedule_id, campaign_id, message, None, None, next_run),
+            )
+            conn.commit()
+            conn.close()
+            self.send_json_response({'success': True, 'id': schedule_id})
+        except Exception as e:
+            self.send_json_response({'error': str(e)}, 500)
+
     def handle_get_campaign_messages(self, campaign_id):
         try:
             conn = sqlite3.connect(DB_FILE)
@@ -2814,6 +3007,7 @@ def main():
 
     # Start campaign scheduler
     start_campaign_scheduler()
+    start_scheduled_dispatcher()
     
     # Start HTTP server in background thread
     server = HTTPServer(('0.0.0.0', PORT), WhatsFlowRealHandler)
