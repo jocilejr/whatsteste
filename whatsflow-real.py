@@ -3916,7 +3916,6 @@ def send_scheduled_message(
             logger.error(f"Erro ao carregar mídia '{media_path}': {e}")
             return False
     try:
- codex/update-fetch-url-and-create-api-handler
         return baileys_send_message(instance_id, data)
     except BaileysUnavailable:
 
