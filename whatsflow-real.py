@@ -23,6 +23,8 @@ import urllib.parse
 import logging
 from typing import Set, Dict, Any
 from zoneinfo import ZoneInfo
+from pathlib import Path
+import mimetypes
 
 import base64
 
@@ -45,6 +47,9 @@ BAILEYS_PORT = 3002
 BR_TZ = ZoneInfo("America/Sao_Paulo")
 BAILEYS_URL = os.getenv("BAILEYS_URL", f"http://127.0.0.1:{BAILEYS_PORT}")
 WEBSOCKET_PORT = 8890
+
+# Path to React build for serving the frontend
+FRONTEND_BUILD_DIR = Path(__file__).resolve().parent / "frontend" / "build"
 
 # Brazil timezone for scheduling
 BR_TZ = ZoneInfo("America/Sao_Paulo")
@@ -4863,10 +4868,33 @@ app.listen(PORT, '0.0.0.0', () => {
 
 # HTTP Handler with Baileys integration
 class WhatsFlowRealHandler(BaseHTTPRequestHandler):
+    def serve_frontend(self, *, head: bool = False) -> None:
+        path = self.path.split('?', 1)[0]
+        file_path = (FRONTEND_BUILD_DIR / path.lstrip('/')).resolve()
+        if file_path.is_dir():
+            file_path /= 'index.html'
+        if not str(file_path).startswith(str(FRONTEND_BUILD_DIR)):
+            self.send_error(404, "Not Found")
+            return
+        if not file_path.exists():
+            file_path = FRONTEND_BUILD_DIR / 'index.html'
+        try:
+            with open(file_path, 'rb') as f:
+                mime_type, _ = mimetypes.guess_type(str(file_path))
+                self.send_response(200)
+                self.send_header("Content-Type", mime_type or "application/octet-stream")
+                self.end_headers()
+                if not head:
+                    self.wfile.write(f.read())
+        except FileNotFoundError:
+            self.send_error(404, "Not Found")
+
     def do_GET(self):
-        if self.path == '/':
-            self.send_html_response(HTML_APP)
-        elif self.path == '/api/instances':
+        if not self.path.startswith('/api'):
+            self.serve_frontend()
+            return
+
+        if self.path == '/api/instances':
             self.handle_get_instances()
         elif self.path == '/api/stats':
             self.handle_get_stats()
@@ -4925,6 +4953,12 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             self.handle_get_scheduled_messages()
         else:
             self.send_error(404, "Not Found")
+
+    def do_HEAD(self):
+        if not self.path.startswith('/api'):
+            self.serve_frontend(head=True)
+            return
+        self.send_error(405, "Method Not Allowed")
     
     def do_POST(self):
         if self.path == '/api/instances':
