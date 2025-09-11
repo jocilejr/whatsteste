@@ -26,6 +26,8 @@ from zoneinfo import ZoneInfo
 
 import base64
 
+import asyncio
+
 # Try to import websockets, fallback gracefully if not available
 try:
     import websockets
