@@ -12,6 +12,7 @@ import json
 import sqlite3
 import uuid
 from datetime import datetime, timezone, timedelta
+ codex/add-error-handling-for-fetch-requests-1k9r8k
 import os
 import subprocess
 import sys
@@ -22,12 +23,13 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 import urllib.parse
 import logging
 from typing import Set, Dict, Any
+ codex/add-error-handling-for-fetch-requests-1k9r8k
 from zoneinfo import ZoneInfo
+
 import base64
 
 # Try to import websockets, fallback gracefully if not available
 try:
-    import asyncio
     import websockets
     WEBSOCKETS_AVAILABLE = True
 except ImportError:
@@ -38,6 +40,10 @@ except ImportError:
 DB_FILE = "whatsflow.db"
 PORT = 8889
 BAILEYS_PORT = 3002
+
+# Brazil timezone
+BR_TZ = ZoneInfo("America/Sao_Paulo")
+BAILEYS_URL = os.getenv("BAILEYS_URL", f"http://127.0.0.1:{BAILEYS_PORT}")
 WEBSOCKET_PORT = 8890
 
 # Brazil timezone for scheduling
@@ -1205,15 +1211,39 @@ HTML_APP = r'''<!DOCTYPE html>
             border-top: 1px solid var(--border);
             padding-top: 1.5rem;
         }
-        
-        .schedule-form .form-row {
+
+        .preview-controls {
             display: flex;
+            align-items: center;
             gap: 10px;
             margin-bottom: 1rem;
         }
-        
+
         .scheduled-messages {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
             margin-top: 1rem;
+        }
+
+        .scheduled-card {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--bg-secondary);
+            padding: 12px 16px;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+        }
+
+        .scheduled-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .scheduled-info span {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
         }
         
         .empty-chat-icon {
@@ -1872,6 +1902,9 @@ HTML_APP = r'''<!DOCTYPE html>
             <button class="nav-btn" onclick="showSection('flows')">
                 <span>🎯</span> Fluxos
             </button>
+            <button class="nav-btn" onclick="showSection('campaigns')">
+                <span>📢</span> Campanhas
+            </button>
         </nav>
         
         <div id="dashboard" class="section active">
@@ -2000,18 +2033,14 @@ HTML_APP = r'''<!DOCTYPE html>
             </div>
         </div>
         
-        <!-- Groups Section - Nova funcionalidade -->
+        <!-- Schedule Section -->
         <div id="groups" class="section">
             <div class="card">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                    <h2>Gerenciar Grupos WhatsApp</h2>
-                    <div>
-                        <select id="groupInstanceSelect" onchange="loadGroupsFromInstance()" style="margin-right: 10px;">
-                            <option value="">Selecione uma instância</option>
-                        </select>
-                        <button class="btn btn-primary" onclick="loadGroupsFromInstance()">🔄 Atualizar Grupos</button>
-                    </div>
+                <div class="schedule-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <h2>📅 Agendamentos de Mensagens</h2>
+                    <button class="btn btn-primary" onclick="openScheduleModal()">+ Agendar mensagem</button>
                 </div>
+ codex/add-error-handling-for-fetch-requests-1k9r8k
                 
                 <div class="groups-container">
                     <div class="groups-header">
@@ -2054,8 +2083,59 @@ HTML_APP = r'''<!DOCTYPE html>
                         <div class="empty-state">
                             <p>Nenhuma mensagem agendada</p>
                         </div>
+
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- Schedule Modal -->
+        <div id="scheduleModal" class="modal" style="display:none;">
+            <div class="modal-content">
+                <span class="close" onclick="closeScheduleModal()">&times;</span>
+                <h3>Agendar Mensagem</h3>
+                <div class="form-group">
+                    <label>Instância</label>
+                    <select id="scheduleInstanceSelect" onchange="loadGroupsForSchedule()">
+                        <option value="">Selecione uma instância</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Grupo</label>
+                    <select id="scheduleGroupSelect">
+                        <option value="">Selecione um grupo</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Dia da semana</label>
+                    <select id="weekdaySelect">
+                        <option value="0">Domingo</option>
+                        <option value="1">Segunda</option>
+                        <option value="2">Terça</option>
+                        <option value="3">Quarta</option>
+                        <option value="4">Quinta</option>
+                        <option value="5">Sexta</option>
+                        <option value="6">Sábado</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Horário</label>
+                    <input type="time" id="scheduleTime">
+                </div>
+                <div class="form-group">
+                    <label>Tipo de mensagem</label>
+                    <select id="messageType" onchange="toggleMediaInput()">
+                        <option value="text">Texto</option>
+                        <option value="image">Imagem</option>
+                        <option value="audio">Áudio</option>
+                        <option value="video">Vídeo</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <textarea id="scheduleText" placeholder="Mensagem..." style="width:100%;height:80px;"></textarea>
+                    <input type="file" id="scheduleMedia" style="display:none;margin-top:10px;" accept="image/*,audio/*,video/*">
+                </div>
+                <button class="btn btn-success" onclick="submitSchedule()">📤 Agendar</button>
             </div>
         </div>
         
@@ -2081,8 +2161,56 @@ HTML_APP = r'''<!DOCTYPE html>
                 </div>
             </div>
         </div>
+        <div id="campaigns" class="section">
+            <div class="card">
+                <h2>📢 Campanhas</h2>
+                <form id="campaignForm" onsubmit="createCampaign(event)">
+                    <input type="text" id="campName" placeholder="Nome" class="form-input" required>
+                    <input type="text" id="campDesc" placeholder="Descrição" class="form-input" style="margin-top:10px">
+                    <div style="display:flex; gap:10px; margin-top:10px">
+                        <select id="campRecurrence" class="form-input">
+                            <option value="once">Uma vez</option>
+                            <option value="daily">Diária</option>
+                            <option value="weekly">Semanal</option>
+                        </select>
+                        <input type="time" id="campTime" class="form-input" required>
+                        <select id="campWeekday" class="form-input">
+                            <option value="">-</option>
+                            <option value="0">Dom</option>
+                            <option value="1">Seg</option>
+                            <option value="2">Ter</option>
+                            <option value="3">Qua</option>
+                            <option value="4">Qui</option>
+                            <option value="5">Sex</option>
+                            <option value="6">Sáb</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" style="margin-top:10px" type="submit">Criar campanha</button>
+                </form>
+                <div id="campaignList" style="margin-top:1rem"></div>
+            </div>
+            <div class="card" style="margin-top:1rem">
+                <h3>Agendar mensagem</h3>
+                <form id="scheduleForm" onsubmit="scheduleMessage(event)">
+                    <select id="scheduleCampaign" class="form-input" required></select>
+                    <select id="scheduleGroups" class="form-input" multiple style="margin-top:10px"></select>
+                    <textarea id="scheduleContent" class="form-input" placeholder="Mensagem" style="margin-top:10px"></textarea>
+                    <div style="display:flex; gap:10px; margin-top:10px">
+                        <select id="scheduleMediaType" class="form-input">
+                            <option value="text">Texto</option>
+                            <option value="image">Imagem</option>
+                            <option value="audio">Áudio</option>
+                            <option value="video">Vídeo</option>
+                        </select>
+                        <input type="text" id="scheduleMediaPath" class="form-input" placeholder="Caminho mídia">
+                    </div>
+                    <button class="btn btn-primary" style="margin-top:10px" type="submit">Agendar</button>
+                </form>
+                <div id="scheduledList" style="margin-top:1rem"></div>
+            </div>
+        </div>
     </div>
-    
+
     <div id="createModal" class="modal">
         <div class="modal-content">
             <h3>➕ Nova Instância WhatsApp</h3>
@@ -2190,8 +2318,10 @@ HTML_APP = r'''<!DOCTYPE html>
                     loadInstancesForSelect();
                 }
             } else if (name === 'groups') {
+ codex/add-error-handling-for-fetch-requests-1k9r8k
                 loadInstancesForGroups();
                 loadCampaigns();
+
             } else if (name === 'flows') {
                 loadFlows();
             }
@@ -2726,10 +2856,10 @@ HTML_APP = r'''<!DOCTYPE html>
 
         async function sendMessage(phone, message) {
             try {
-                const response = await fetch('http://127.0.0.1:3002/send', {
+                const response = await fetch('/api/whatsapp/send', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ to: phone, message: message })
+                    body: JSON.stringify({ phone_number: phone, message: message })
                 });
                 
                 if (response.ok) {
@@ -3090,27 +3220,24 @@ HTML_APP = r'''<!DOCTYPE html>
             try {
                 console.log('📤 Enviando mensagem para:', currentChat.phone, 'via instância:', currentChat.instanceId);
                 
-                // First check if Baileys service is available
-                const healthResponse = await fetch('http://127.0.0.1:3002/health', {
-                    method: 'GET',
-                    timeout: 5000
-                });
-                
+                // Check backend health before sending
+                const healthResponse = await fetch('/api/whatsapp/health');
+
                 if (!healthResponse.ok) {
                     throw new Error('Serviço Baileys não está disponível');
                 }
-                
-                // Use Baileys service to send message with corrected URL and proper error handling
-                const response = await fetch(`http://127.0.0.1:3002/send/${currentChat.instanceId}`, {
+
+                // Send via backend which proxies to Baileys
+                const response = await fetch('/api/whatsapp/send', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'Accept': 'application/json'
                     },
                     body: JSON.stringify({
-                        to: currentChat.phone,
+                        phone_number: currentChat.phone,
                         message: message,
-                        type: 'text'
+                        device_id: currentChat.instanceId
                     })
                 });
                 
@@ -3417,15 +3544,13 @@ HTML_APP = r'''<!DOCTYPE html>
             if (statusPollingInterval) clearInterval(statusPollingInterval);
         });
         
-        // Groups Management Functions
-        async function loadInstancesForGroups() {
+        // Schedule Management Functions
+        async function loadInstancesForSchedule() {
             try {
                 const response = await fetch('/api/instances');
                 const instances = await response.json();
-                
-                const select = document.getElementById('groupInstanceSelect');
+                const select = document.getElementById('scheduleInstanceSelect');
                 select.innerHTML = '<option value="">Selecione uma instância</option>';
-                
                 instances.forEach(instance => {
                     const option = document.createElement('option');
                     option.value = instance.id;
@@ -3433,72 +3558,32 @@ HTML_APP = r'''<!DOCTYPE html>
                     option.textContent = `${instance.name} ${status}`;
                     select.appendChild(option);
                 });
-                
-                console.log('✅ Instâncias para grupos carregadas');
-                
             } catch (error) {
-                console.error('❌ Erro ao carregar instâncias para grupos:', error);
+                console.error('❌ Erro ao carregar instâncias:', error);
             }
         }
-        
-        async function loadGroupsFromInstance() {
-            const select = document.getElementById('groupInstanceSelect');
-            const instanceId = select.value;
-            
+
+        async function loadGroupsForSchedule() {
+            const instanceId = document.getElementById('scheduleInstanceSelect').value;
+            const select = document.getElementById('scheduleGroupSelect');
+            select.innerHTML = '<option value="">Carregando...</option>';
             if (!instanceId) {
-                document.getElementById('groups-container').innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-icon">👥</div>
-                        <div class="empty-title">Nenhum grupo encontrado</div>
-                        <p>Selecione uma instância conectada para carregar os grupos do WhatsApp</p>
-                    </div>
-                `;
+                select.innerHTML = '<option value="">Selecione uma instância</option>';
                 return;
             }
-            
             try {
-                // Show loading
-                document.getElementById('groups-container').innerHTML = `
-                    <div class="loading">
-                        <div style="text-align: center; padding: 2rem;">🔄 Carregando grupos...</div>
-                    </div>
-                `;
-                
-                // Request groups from Baileys with proper error handling
-                const response = await fetch(`/api/groups/${instanceId}`, {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json'
-                    },
-                    timeout: 10000
-                });
-                
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    let errorMessage = 'Erro ao carregar grupos';
-                    
-                    try {
-                        const errorData = JSON.parse(errorText);
-                        errorMessage = errorData.error || errorMessage;
-                    } catch (e) {
-                        // Use default error message
-                    }
-                    
-                    throw new Error(errorMessage);
-                }
-                
+                const response = await fetch(`/api/groups/${instanceId}`);
                 const result = await response.json();
-                
-                if (result.success && result.groups) {
-                    renderGroups(result.groups);
-                    populateScheduleGroupSelect(result.groups);
-                } else {
-                    throw new Error(result.error || 'Nenhum grupo encontrado para esta instância');
-                }
-                
+                select.innerHTML = '<option value="">Selecione um grupo</option>';
+                (result.groups || []).forEach(group => {
+                    const option = document.createElement('option');
+                    option.value = group.id;
+                    option.textContent = group.name || `Grupo ${group.id.split('@')[0]}`;
+                    select.appendChild(option);
+                });
             } catch (error) {
                 console.error('❌ Erro ao carregar grupos:', error);
+ codex/add-error-handling-for-fetch-requests-1k9r8k
 
                 let errorMessage = error.message;
                 if (error.message.includes('fetch') || error instanceof TypeError) {
@@ -3518,58 +3603,19 @@ HTML_APP = r'''<!DOCTYPE html>
                         <a href="https://docs.example.com/baileys" target="_blank" class="btn btn-link">📚 Ver documentação</a>
                     </div>
                 `;
+
             }
         }
-        
-        function renderGroups(groups) {
-            const container = document.getElementById('groups-container');
-            
-            if (!groups || groups.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-icon">👥</div>
-                        <div class="empty-title">Nenhum grupo encontrado</div>
-                        <p>Esta instância não possui grupos ou não conseguiu carregá-los</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            container.innerHTML = groups.map(group => `
-                <div class="group-card" data-group-id="${group.id}">
-                    <div class="group-info">
-                        <div class="group-avatar">
-                            ${group.name ? group.name.charAt(0).toUpperCase() : '👥'}
-                        </div>
-                        <div class="group-details">
-                            <h4>${group.name || 'Grupo sem nome'}</h4>
-                            <p>${group.participants?.length || 0} participantes</p>
-                            <small>ID: ${group.id.split('@')[0]}</small>
-                        </div>
-                    </div>
-                    <div class="group-actions">
-                        <button class="btn btn-sm btn-primary" onclick="sendToGroup('${group.id}', '${group.name}')">
-                            📤 Enviar Mensagem
-                        </button>
-                        <button class="btn btn-sm btn-secondary" onclick="viewGroupInfo('${group.id}')">
-                            ℹ️ Info
-                        </button>
-                    </div>
-                </div>
-            `).join('');
+
+        function openScheduleModal() {
+            loadInstancesForSchedule();
+            document.getElementById('scheduleModal').style.display = 'block';
         }
-        
-        function populateScheduleGroupSelect(groups) {
-            const select = document.getElementById('scheduleGroupSelect');
-            select.innerHTML = '<option value="">Selecione um grupo</option>';
-            
-            groups.forEach(group => {
-                const option = document.createElement('option');
-                option.value = group.id;
-                option.textContent = group.name || `Grupo ${group.id.split('@')[0]}`;
-                select.appendChild(option);
-            });
+
+        function closeScheduleModal() {
+            document.getElementById('scheduleModal').style.display = 'none';
         }
+ codex/add-error-handling-for-fetch-requests-1k9r8k
         
         async function sendToGroup(groupId, groupName) {
             const message = prompt(`💬 Enviar mensagem para o grupo "${groupName}":`, '');
@@ -3713,69 +3759,169 @@ HTML_APP = r'''<!DOCTYPE html>
         }
         
         async function scheduleMessage() {
+
             const groupId = document.getElementById('scheduleGroupSelect').value;
-            const dateTime = document.getElementById('scheduleDateTime').value;
-            const message = document.getElementById('scheduleMessage').value.trim();
-            
-            if (!groupId || !dateTime || !message) {
-                alert('❌ Preencha todos os campos para agendar uma mensagem');
+            const content = document.getElementById('scheduleText').value;
+            const mediaType = document.getElementById('messageType').value;
+            const weekday = document.getElementById('weekdaySelect').value;
+            const time = document.getElementById('scheduleTime').value;
+            const file = document.getElementById('scheduleMedia').files[0];
+
+            if (!instanceId || !groupId || !time) {
+                alert('❌ Preencha todos os campos obrigatórios');
                 return;
             }
-            
-            const instanceId = document.getElementById('groupInstanceSelect').value;
-            if (!instanceId) {
-                alert('❌ Selecione uma instância primeiro');
-                return;
-            }
-            
-            try {
-                const response = await fetch('/api/messages/schedule', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        instanceId: instanceId,
-                        groupId: groupId,
-                        message: message,
-                        scheduledFor: dateTime,
-                        type: 'group'
-                    })
-                });
-                
-                const result = await response.json();
-                
-                if (response.ok && result.success) {
-                    alert('✅ Mensagem agendada com sucesso!');
-                    // Clear form
-                    document.getElementById('scheduleGroupSelect').value = '';
-                    document.getElementById('scheduleDateTime').value = '';
-                    document.getElementById('scheduleMessage').value = '';
-                    loadScheduledMessages();
-                } else {
-                    throw new Error(result.error || 'Erro ao agendar mensagem');
-                }
-                
-            } catch (error) {
-                console.error('❌ Erro ao agendar mensagem:', error);
-                alert(`❌ Erro ao agendar mensagem: ${error.message}`);
+
+            const formData = new FormData();
+            formData.append('instance_id', instanceId);
+            formData.append('group_id', groupId);
+            formData.append('content', content);
+            formData.append('media_type', mediaType);
+            formData.append('weekday', weekday);
+            formData.append('send_time', time);
+            formData.append('recurrence', 'weekly');
+            if (file) formData.append('media', file);
+
+            const response = await fetch('/api/messages/schedule', { method: 'POST', body: formData });
+            const result = await response.json();
+            if (response.ok && result.success) {
+                loadScheduledMessages();
+                closeScheduleModal();
+            } else {
+                alert('❌ Erro ao agendar mensagem');
             }
         }
-        
+
         async function loadScheduledMessages() {
+            const selectedDay = document.getElementById('previewWeekday')?.value || '';
             try {
                 const response = await fetch('/api/messages/scheduled');
                 const result = await response.json();
-                
-                if (response.ok && result.success) {
-                    renderScheduledMessages(result.messages || []);
+                const container = document.getElementById('scheduledMessages');
+                container.innerHTML = '';
+                const messages = Array.isArray(result) ? result.filter(item => selectedDay === '' || String(item.weekday) === selectedDay) : [];
+                if (messages.length === 0) {
+                    container.innerHTML = '<div class="empty-state"><p>Nenhuma mensagem agendada</p></div>';
+                    return;
                 }
-                
+                messages.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'scheduled-card';
+                    div.innerHTML = `
+                        <div class="scheduled-info">
+                            <strong>${item.group_id}</strong>
+                            <span>${item.send_time}</span>
+                        </div>
+                        <button class="btn btn-sm btn-danger" onclick="deleteSchedule('${item.id}')">❌</button>
+                    `;
+                    container.appendChild(div);
+                });
             } catch (error) {
                 console.error('❌ Erro ao carregar mensagens agendadas:', error);
             }
         }
+
+        async function deleteSchedule(id) {
+            await fetch('/api/messages/scheduled/' + id, { method: 'DELETE' });
+            loadScheduledMessages();
+        }
+
+        async function loadCampaigns() {
+            try {
+                const res = await fetch('/api/campaigns');
+                const campaigns = await res.json();
+                const list = document.getElementById('campaignList');
+                const sel = document.getElementById('scheduleCampaign');
+                list.innerHTML = '';
+                sel.innerHTML = '';
+                campaigns.forEach(c => {
+                    const div = document.createElement('div');
+                    div.textContent = c.name;
+                    list.appendChild(div);
+                    const opt = document.createElement('option');
+                    opt.value = c.id;
+                    opt.textContent = c.name;
+                    sel.appendChild(opt);
+                });
+            } catch (err) {
+                console.error('Erro ao carregar campanhas', err);
+            }
+        }
+
+        async function createCampaign(ev) {
+            ev.preventDefault();
+            const payload = {
+                name: document.getElementById('campName').value,
+                description: document.getElementById('campDesc').value,
+                recurrence: document.getElementById('campRecurrence').value,
+                send_time: document.getElementById('campTime').value,
+                weekday: document.getElementById('campWeekday').value || null
+            };
+            await fetch('/api/campaigns', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            loadCampaigns();
+            document.getElementById('campaignForm').reset();
+        }
+
+        async function loadGroupsForSchedule() {
+            try {
+                const res = await fetch('/api/groups/default');
+                const groups = await res.json();
+                const sel = document.getElementById('scheduleGroups');
+                sel.innerHTML = '';
+                groups.forEach(g => {
+                    const opt = document.createElement('option');
+                    opt.value = g.id || g.groupId || g;
+                    opt.textContent = g.name || g.subject || g.id || g;
+                    sel.appendChild(opt);
+                });
+            } catch (err) {
+                console.error('Erro ao carregar grupos', err);
+            }
+        }
+
+        async function scheduleMessage(ev) {
+            ev.preventDefault();
+            const campaign = document.getElementById('scheduleCampaign').value;
+            const groups = Array.from(document.getElementById('scheduleGroups').selectedOptions).map(o => o.value);
+            const payload = {
+                campaign_id: campaign,
+                groups: groups,
+                content: document.getElementById('scheduleContent').value,
+                media_type: document.getElementById('scheduleMediaType').value,
+                media_path: document.getElementById('scheduleMediaPath').value
+            };
+            await fetch('/api/messages/schedule', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            loadScheduledList();
+            document.getElementById('scheduleForm').reset();
+        }
+
+        async function loadScheduledList() {
+            const res = await fetch('/api/messages/scheduled');
+            const data = await res.json();
+            const container = document.getElementById('scheduledList');
+            container.innerHTML = '';
+            data.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'scheduled-card';
+                div.innerHTML = `<strong>${item.campaign_name}</strong> - ${item.next_run} <button class="btn btn-sm btn-danger" onclick="deleteScheduled('${item.id}')">❌</button>`;
+                container.appendChild(div);
+            });
+        }
+
+        async function deleteScheduled(id) {
+            await fetch('/api/messages/scheduled/' + id, { method: 'DELETE' });
+            loadScheduledList();
+        }
+
+        document.getElementById('previewWeekday').value = new Date().getDay();
+        loadScheduledMessages();
+        loadCampaigns();
+        loadGroupsForSchedule();
+        loadScheduledList();
     </script>
 </body>
 </html>'''
+
 
 # Database setup (same as before but with WebSocket integration)
 def init_db():
@@ -3841,7 +3987,7 @@ def init_db():
             created_at TEXT
         )
     """)
-    
+
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS flows (
             id TEXT PRIMARY KEY,
@@ -3856,6 +4002,7 @@ def init_db():
         )
     """)
 
+ codex/add-error-handling-for-fetch-requests-1k9r8k
     # Campaign tables
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS campaigns (
@@ -3889,10 +4036,12 @@ def init_db():
         )
     """)
 
+
     conn.commit()
     conn.close()
     print("✅ Banco de dados inicializado com suporte WebSocket")
 
+ codex/add-error-handling-for-fetch-requests-1k9r8k
 
 # Campaign scheduler
 def campaign_scheduler_loop():
@@ -3944,6 +4093,7 @@ def start_campaign_scheduler():
     thread.start()
     return thread
 
+
 # WebSocket Server Functions
 if WEBSOCKETS_AVAILABLE:
     async def websocket_handler(websocket, path):
@@ -3980,27 +4130,26 @@ if WEBSOCKETS_AVAILABLE:
         for client in disconnected_clients:
             websocket_clients.discard(client)
 
+    async def _websocket_server():
+        async with websockets.serve(
+            websocket_handler,
+            "0.0.0.0",
+            WEBSOCKET_PORT,
+            ping_interval=30,
+            ping_timeout=10,
+        ):
+            logger.info(f"🔌 WebSocket server iniciado na porta {WEBSOCKET_PORT}")
+            await asyncio.Future()  # run forever
+
     def start_websocket_server():
         """Start WebSocket server in a separate thread"""
+
         def run_websocket():
             try:
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-                
-                start_server = websockets.serve(
-                    websocket_handler, 
-                    "localhost", 
-                    WEBSOCKET_PORT,
-                    ping_interval=30,
-                    ping_timeout=10
-                )
-                
-                logger.info(f"🔌 WebSocket server iniciado na porta {WEBSOCKET_PORT}")
-                loop.run_until_complete(start_server)
-                loop.run_forever()
+                asyncio.run(_websocket_server())
             except Exception as e:
                 logger.error(f"❌ Erro no WebSocket server: {e}")
-        
+
         websocket_thread = threading.Thread(target=run_websocket, daemon=True)
         websocket_thread.start()
         return websocket_thread
@@ -4019,7 +4168,7 @@ def add_sample_data():
         conn.close()
         return
     
-    current_time = datetime.now(timezone.utc).isoformat()
+    current_time = datetime.now(BR_TZ).astimezone(timezone.utc).isoformat()
     
     # Sample instance
     instance_id = str(uuid.uuid4())
@@ -4626,9 +4775,10 @@ app.get('/health', (req, res) => {
 });
 
 const PORT = process.env.PORT || 3002;
+const BASE_URL = process.env.BAILEYS_URL || `http://localhost:${PORT}`;
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Baileys service rodando na porta ${PORT}`);
-    console.log(`📊 Health check: http://localhost:${PORT}/health`);
+    console.log(`📊 Health check: ${BASE_URL}/health`);
     console.log('⏳ Aguardando comandos para conectar instâncias...');
 });'''
             
@@ -4740,6 +4890,20 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             self.handle_get_chats()
         elif self.path == '/api/flows':
             self.handle_get_flows()
+        elif self.path.startswith('/api/campaigns/') and self.path.endswith('/groups'):
+            campaign_id = self.path.split('/')[-2]
+            self.handle_get_campaign_groups(campaign_id)
+        elif self.path.startswith('/api/campaigns/') and self.path.endswith('/messages'):
+            campaign_id = self.path.split('/')[-2]
+            self.handle_get_campaign_messages(campaign_id)
+        elif self.path.startswith('/api/campaigns/'):
+            campaign_id = self.path.split('/')[-1]
+            self.handle_get_campaign(campaign_id)
+        elif self.path == '/api/campaigns':
+            self.handle_get_campaigns()
+        elif self.path.startswith('/api/groups/'):
+            instance_id = self.path.split('/')[-1]
+            self.handle_get_groups(instance_id)
         elif self.path == '/api/webhooks/send':
             self.handle_send_webhook()
         elif self.path.startswith('/api/whatsapp/status/'):
@@ -4763,6 +4927,8 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             self.handle_get_campaign_messages(campaign_id)
         elif self.path == '/api/webhooks':
             self.handle_get_webhooks()
+        elif self.path == '/api/messages/scheduled':
+            self.handle_get_scheduled_messages()
         else:
             self.send_error(404, "Not Found")
     
@@ -4798,19 +4964,23 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
         elif self.path.startswith('/api/messages/send/'):
             instance_id = self.path.split('/')[-1]
             self.handle_send_message(instance_id)
+ codex/add-error-handling-for-fetch-requests-1k9r8k
         elif self.path.startswith('/api/send/'):
             instance_id = self.path.split('/')[-1]
             self.handle_send_message(instance_id)
+
         elif self.path == '/api/flows':
             self.handle_create_flow()
         elif self.path == '/api/campaigns':
             self.handle_create_campaign()
+ codex/add-error-handling-for-fetch-requests-1k9r8k
         elif self.path.startswith('/api/campaigns/') and self.path.endswith('/groups'):
             campaign_id = int(self.path.split('/')[-2])
             self.handle_set_campaign_groups(campaign_id)
         elif self.path.startswith('/api/campaigns/') and self.path.endswith('/messages'):
             campaign_id = int(self.path.split('/')[-2])
             self.handle_add_campaign_message(campaign_id)
+
         elif self.path == '/api/webhooks/send':
             self.handle_send_webhook()
         else:
@@ -4820,6 +4990,9 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
         if self.path.startswith('/api/flows/'):
             flow_id = self.path.split('/')[-1]
             self.handle_update_flow(flow_id)
+        elif self.path.startswith('/api/campaigns/'):
+            campaign_id = self.path.split('/')[-1]
+            self.handle_update_campaign(campaign_id)
         else:
             self.send_error(404, "Not Found")
     
@@ -4830,6 +5003,12 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
         elif self.path.startswith('/api/flows/'):
             flow_id = self.path.split('/')[-1]
             self.handle_delete_flow(flow_id)
+        elif self.path.startswith('/api/campaigns/'):
+            campaign_id = self.path.split('/')[-1]
+            self.handle_delete_campaign(campaign_id)
+        elif self.path.startswith('/api/messages/scheduled/'):
+            schedule_id = self.path.split('/')[-1]
+            self.handle_delete_campaign_message(schedule_id)
         else:
             self.send_error(404, "Not Found")
     
@@ -4896,6 +5075,203 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             self.send_json_response(messages)
         except Exception as e:
             self.send_json_response({"error": str(e)}, 500)
+
+    def handle_schedule_message(self):
+        try:
+            length = int(self.headers.get('Content-Length', 0))
+            data = json.loads(self.rfile.read(length).decode('utf-8')) if length else {}
+            campaign_id = data.get('campaign_id') or data.get('campaignId')
+            content = data.get('content') or data.get('message', '')
+            media_type = data.get('media_type') or data.get('mediaType', 'text')
+            media_path = data.get('media_path')
+            groups = data.get('groups', [])
+
+            if not campaign_id:
+                self.send_json_response({"error": "Dados inválidos"}, 400)
+                return
+
+            conn = sqlite3.connect(DB_FILE)
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT recurrence, send_time, weekday, timezone FROM campaigns WHERE id = ?",
+                (campaign_id,),
+            )
+            row = cursor.fetchone()
+            if not row:
+                conn.close()
+                self.send_json_response({"error": "Campanha não encontrada"}, 404)
+                return
+            recurrence, send_time, weekday, timezone = row
+            next_run = calculate_next_run(
+                recurrence or 'once', send_time or '00:00', weekday, timezone
+            )
+
+            schedule_id = str(uuid.uuid4())
+            cursor.execute(
+                """
+                INSERT INTO scheduled_messages (id, campaign_id, content, media_type, media_path, next_run, status)
+                VALUES (?, ?, ?, ?, ?, ?, 'pending')
+                """,
+                (
+                    schedule_id,
+                    campaign_id,
+                    content,
+                    media_type,
+                    media_path,
+                    next_run,
+                ),
+            )
+
+            for gid in groups:
+                cursor.execute(
+                    "INSERT OR IGNORE INTO campaign_groups (campaign_id, group_id) VALUES (?, ?)",
+                    (campaign_id, gid),
+                )
+
+            conn.commit()
+            conn.close()
+            self.send_json_response({"success": True, "id": schedule_id})
+        except Exception as e:
+            self.send_json_response({"error": str(e)}, 500)
+
+    def handle_get_scheduled_messages(self):
+        try:
+            conn = sqlite3.connect(DB_FILE)
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute(
+                """
+                SELECT cm.id, cm.campaign_id, c.name as campaign_name, cm.content, cm.media_type, cm.media_path,
+                       cm.recurrence, cm.send_time, cm.weekday, cm.timezone, cm.next_run, cm.status
+                FROM campaign_messages cm
+                JOIN campaigns c ON c.id = cm.campaign_id
+                ORDER BY cm.next_run ASC
+                """,
+            )
+            messages = [dict(row) for row in cursor.fetchall()]
+            conn.close()
+            self.send_json_response(messages)
+        except Exception as e:
+            self.send_json_response({"error": str(e)}, 500)
+
+    def handle_schedule_campaign_message(self, campaign_id: str) -> None:
+        """Schedule a message for a specific campaign."""
+        try:
+            length = int(self.headers.get('Content-Length', 0))
+            data = json.loads(self.rfile.read(length).decode('utf-8')) if length else {}
+            content = data.get('content') or data.get('message', '')
+            media_type = data.get('media_type') or data.get('mediaType', 'text')
+            media_path = data.get('media_path')
+            groups = data.get('groups')
+
+            conn = sqlite3.connect(DB_FILE)
+            cursor = conn.cursor()
+
+            cursor.execute(
+                "SELECT recurrence, send_time, weekday, timezone FROM campaigns WHERE id = ?",
+                (campaign_id,),
+            )
+            row = cursor.fetchone()
+            if not row:
+                conn.close()
+                self.send_json_response({'error': 'Campanha não encontrada'}, 404)
+                return
+
+            cursor.execute(
+                "SELECT group_id FROM campaign_groups WHERE campaign_id = ?",
+                (campaign_id,),
+            )
+            allowed_groups = {g[0] for g in cursor.fetchall()}
+            if not allowed_groups:
+                conn.close()
+                self.send_json_response({'error': 'Nenhum grupo associado à campanha'}, 400)
+                return
+
+            if groups:
+                if not set(groups).issubset(allowed_groups):
+                    conn.close()
+                    self.send_json_response({'error': 'Grupos inválidos para esta campanha'}, 400)
+                    return
+
+            recurrence, send_time, weekday, timezone = row
+            next_run = calculate_next_run(
+                recurrence or 'once', send_time or '00:00', weekday, timezone
+            )
+
+            schedule_id = str(uuid.uuid4())
+            cursor.execute(
+                """
+                INSERT INTO campaign_messages (id, campaign_id, content, media_type, media_path, recurrence, send_time, weekday, timezone, next_run, status)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')
+                """,
+                (
+                    schedule_id,
+                    campaign_id,
+                    content,
+                    media_type,
+                    media_path,
+                    recurrence,
+                    send_time,
+                    weekday,
+                    timezone,
+                    next_run,
+                ),
+            )
+
+            conn.commit()
+            conn.close()
+            self.send_json_response({'success': True, 'id': schedule_id}, 201)
+        except Exception as e:
+            self.send_json_response({'error': str(e)}, 500)
+
+    def handle_get_campaign_messages(self, campaign_id: str) -> None:
+        """List scheduled messages for a campaign."""
+        try:
+            conn = sqlite3.connect(DB_FILE)
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+
+            cursor.execute("SELECT id FROM campaigns WHERE id = ?", (campaign_id,))
+            if not cursor.fetchone():
+                conn.close()
+                self.send_json_response({'error': 'Campanha não encontrada'}, 404)
+                return
+
+            cursor.execute(
+                "SELECT group_id FROM campaign_groups WHERE campaign_id = ?",
+                (campaign_id,),
+            )
+            groups = [g[0] for g in cursor.fetchall()]
+            if not groups:
+                conn.close()
+                self.send_json_response({'error': 'Nenhum grupo associado à campanha'}, 400)
+                return
+
+            cursor.execute(
+                """
+                SELECT id, content, media_type, media_path, recurrence, send_time, weekday, timezone, next_run, status
+                FROM campaign_messages
+                WHERE campaign_id = ?
+                ORDER BY next_run ASC
+                """,
+                (campaign_id,),
+            )
+            messages = [dict(row) for row in cursor.fetchall()]
+            conn.close()
+            self.send_json_response({'campaign_id': campaign_id, 'groups': groups, 'messages': messages})
+        except Exception as e:
+            self.send_json_response({'error': str(e)}, 500)
+
+    def handle_delete_campaign_message(self, message_id: str):
+        try:
+            conn = sqlite3.connect(DB_FILE)
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM campaign_messages WHERE id = ?", (message_id,))
+            conn.commit()
+            conn.close()
+            self.send_json_response({"success": True})
+        except Exception as e:
+            self.send_json_response({"error": str(e)}, 500)
     
     def handle_create_instance(self):
         try:
@@ -4912,7 +5288,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                 return
             
             instance_id = str(uuid.uuid4())
-            created_at = datetime.now(timezone.utc).isoformat()
+            created_at = datetime.now(BR_TZ).astimezone(timezone.utc).isoformat()
             
             conn = sqlite3.connect(DB_FILE)
             cursor = conn.cursor()
@@ -4943,7 +5319,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             # Start Baileys connection
             try:
                 import requests
-                response = requests.post('http://127.0.0.1:3002/connect', timeout=5)
+                response = requests.post(f'{BAILEYS_URL}/connect', timeout=5)
                 
                 if response.status_code == 200:
                     self.send_json_response({"success": True, "message": "Conexão iniciada"})
@@ -4953,7 +5329,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                 # Fallback usando urllib se requests não estiver disponível
                 import urllib.request
                 import urllib.error
-                
+
                 try:
                     data = json.dumps({}).encode('utf-8')
                     req = urllib.request.Request(
@@ -4961,8 +5337,10 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                         data=data,
                         headers={'Content-Type': 'application/json'},
                     )
+ codex/add-error-handling-for-fetch-requests-1k9r8k
+
                     req.get_method = lambda: 'POST'
-                    
+
                     with urllib.request.urlopen(req, timeout=5) as response:
                         if response.status == 200:
                             self.send_json_response({"success": True, "message": "Conexão iniciada"})
@@ -4978,7 +5356,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
         try:
             try:
                 import requests
-                response = requests.get('http://127.0.0.1:3002/status', timeout=5)
+                response = requests.get(f'{BAILEYS_URL}/status', timeout=5)
                 
                 if response.status_code == 200:
                     data = response.json()
@@ -4988,7 +5366,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             except ImportError:
                 # Fallback usando urllib
                 try:
-                    with urllib.request.urlopen('http://127.0.0.1:3002/status', timeout=5) as response:
+                    with urllib.request.urlopen(f'{BAILEYS_URL}/status', timeout=5) as response:
                         if response.status == 200:
                             data = json.loads(response.read().decode('utf-8'))
                             self.send_json_response(data)
@@ -5004,7 +5382,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
         try:
             try:
                 import requests
-                response = requests.get('http://127.0.0.1:3002/qr', timeout=5)
+                response = requests.get(f'{BAILEYS_URL}/qr', timeout=5)
                 
                 if response.status_code == 200:
                     data = response.json()
@@ -5014,7 +5392,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             except ImportError:
                 # Fallback usando urllib
                 try:
-                    with urllib.request.urlopen('http://127.0.0.1:3002/qr', timeout=5) as response:
+                    with urllib.request.urlopen(f'{BAILEYS_URL}/qr', timeout=5) as response:
                         if response.status == 200:
                             data = json.loads(response.read().decode('utf-8'))
                             self.send_json_response(data)
@@ -5093,7 +5471,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                         cursor.execute("""
                             INSERT INTO contacts (id, name, phone, instance_id, created_at)
                             VALUES (?, ?, ?, ?, ?)
-                        """, (contact_id, contact_name, phone, instance_id, datetime.now(timezone.utc).isoformat()))
+                        """, (contact_id, contact_name, phone, instance_id, datetime.now(BR_TZ).astimezone(timezone.utc).isoformat()))
                         imported_contacts += 1
                     
                     # Create/update chat entry
@@ -5106,7 +5484,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                         last_msg = chat['messages'][-1]
                         if last_msg.get('message'):
                             last_message = last_msg['message'].get('conversation') or 'Mídia'
-                            last_message_time = datetime.now(timezone.utc).isoformat()
+                            last_message_time = datetime.now(BR_TZ).astimezone(timezone.utc).isoformat()
                     
                     # Insert or update chat
                     cursor.execute("SELECT id FROM chats WHERE contact_phone = ? AND instance_id = ?", (phone, instance_id))
@@ -5120,7 +5498,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                         cursor.execute("""
                             INSERT INTO chats (id, contact_phone, contact_name, instance_id, last_message, last_message_time, unread_count, created_at)
                             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                        """, (chat_id, phone, contact_name, instance_id, last_message, last_message_time, unread_count, datetime.now(timezone.utc).isoformat()))
+                        """, (chat_id, phone, contact_name, instance_id, last_message, last_message_time, unread_count, datetime.now(BR_TZ).astimezone(timezone.utc).isoformat()))
                         imported_chats += 1
             
             conn.commit()
@@ -5149,7 +5527,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             # Start Baileys connection for specific instance
             try:
                 import requests
-                response = requests.post(f'http://127.0.0.1:3002/connect/{instance_id}', timeout=5)
+                response = requests.post(f'{BAILEYS_URL}/connect/{instance_id}', timeout=5)
                 
                 if response.status_code == 200:
                     self.send_json_response({"success": True, "message": f"Conexão da instância {instance_id} iniciada"})
@@ -5159,7 +5537,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                 # Fallback usando urllib se requests não estiver disponível
                 import urllib.request
                 import urllib.error
-                
+
                 try:
                     data = json.dumps({}).encode('utf-8')
                     req = urllib.request.Request(
@@ -5167,8 +5545,10 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                         data=data,
                         headers={'Content-Type': 'application/json'},
                     )
+ codex/add-error-handling-for-fetch-requests-1k9r8k
+
                     req.get_method = lambda: 'POST'
-                    
+
                     with urllib.request.urlopen(req, timeout=5) as response:
                         if response.status == 200:
                             self.send_json_response({"success": True, "message": f"Conexão da instância {instance_id} iniciada"})
@@ -5184,7 +5564,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
         try:
             try:
                 import requests
-                response = requests.post(f'http://127.0.0.1:3002/disconnect/{instance_id}', timeout=5)
+                response = requests.post(f'{BAILEYS_URL}/disconnect/{instance_id}', timeout=5)
                 
                 if response.status_code == 200:
                     # Update database
@@ -5206,6 +5586,8 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                     data=data,
                     headers={'Content-Type': 'application/json'},
                 )
+ codex/add-error-handling-for-fetch-requests-1k9r8k
+
                 req.get_method = lambda: 'POST'
                 
                 with urllib.request.urlopen(req, timeout=5) as response:
@@ -5226,7 +5608,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
         try:
             try:
                 import requests
-                response = requests.get(f'http://127.0.0.1:3002/status/{instance_id}', timeout=5)
+                response = requests.get(f'{BAILEYS_URL}/status/{instance_id}', timeout=5)
                 
                 if response.status_code == 200:
                     data = response.json()
@@ -5236,7 +5618,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             except ImportError:
                 # Fallback usando urllib
                 try:
-                    with urllib.request.urlopen(f'http://127.0.0.1:3002/status/{instance_id}', timeout=5) as response:
+                    with urllib.request.urlopen(f'{BAILEYS_URL}/status/{instance_id}', timeout=5) as response:
                         if response.status == 200:
                             data = json.loads(response.read().decode('utf-8'))
                             self.send_json_response(data)
@@ -5252,7 +5634,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
         try:
             try:
                 import requests
-                response = requests.get(f'http://127.0.0.1:3002/qr/{instance_id}', timeout=5)
+                response = requests.get(f'{BAILEYS_URL}/qr/{instance_id}', timeout=5)
                 
                 if response.status_code == 200:
                     data = response.json()
@@ -5262,7 +5644,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             except ImportError:
                 # Fallback usando urllib
                 try:
-                    with urllib.request.urlopen(f'http://127.0.0.1:3002/qr/{instance_id}', timeout=5) as response:
+                    with urllib.request.urlopen(f'{BAILEYS_URL}/qr/{instance_id}', timeout=5) as response:
                         if response.status == 200:
                             data = json.loads(response.read().decode('utf-8'))
                             self.send_json_response(data)
@@ -5274,19 +5656,12 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
         except Exception as e:
             self.send_json_response({"qr": None, "connected": False, "error": str(e), "instanceId": instance_id})
 
-    def handle_send_message(self, instance_id):
+    def handle_get_groups(self, instance_id):
         try:
-            content_length = int(self.headers.get('Content-Length', 0))
-            post_data = self.rfile.read(content_length)
-            data = json.loads(post_data.decode('utf-8'))
-            
-            to = data.get('to', '')
-            message = data.get('message', '')
-            message_type = data.get('type', 'text')
-            
             try:
                 import requests
                 try:
+ codex/add-error-handling-for-fetch-requests-1k9r8k
                     response = requests.post(
                         f'http://127.0.0.1:3002/send/{instance_id}',
                         json=data, timeout=10
@@ -5295,29 +5670,15 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                     self.send_json_response({"error": "Serviço Baileys indisponível na porta 3002"}, 503)
                     return
                 
+
                 if response.status_code == 200:
-                    # Save message to database
-                    conn = sqlite3.connect(DB_FILE)
-                    cursor = conn.cursor()
-                    
-                    message_id = str(uuid.uuid4())
-                    phone = to.replace('@s.whatsapp.net', '').replace('@c.us', '')
-                    
-                    cursor.execute("""
-                        INSERT INTO messages (id, contact_name, phone, message, direction, instance_id, created_at)
-                        VALUES (?, ?, ?, ?, ?, ?, ?)
-                    """, (message_id, f"Para {phone[-4:]}", phone, message, 'outgoing', instance_id, 
-                          datetime.now(timezone.utc).isoformat()))
-                    
-                    conn.commit()
-                    conn.close()
-                    
-                    self.send_json_response({"success": True, "instanceId": instance_id})
+                    data = response.json()
+                    self.send_json_response(data)
                 else:
-                    self.send_json_response({"error": "Erro ao enviar mensagem"}, 500)
+                    self.send_json_response({"error": "Erro ao obter grupos"}, response.status_code)
             except ImportError:
-                # Fallback usando urllib
                 import urllib.request
+ codex/add-error-handling-for-fetch-requests-1k9r8k
                 req_data = json.dumps(data).encode('utf-8')
                 req = urllib.request.Request(
                     f'http://127.0.0.1:3002/send/{instance_id}',
@@ -5350,6 +5711,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                     self.send_json_response({"error": "Serviço Baileys indisponível na porta 3002"}, 503)
                     return
                 
+
         except Exception as e:
             self.send_json_response({"error": str(e)}, 500)
     
@@ -5391,7 +5753,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             instance_id = data.get('instanceId', 'default')
             from_jid = data.get('from', '')
             message = data.get('message', '')
-            timestamp = data.get('timestamp', datetime.now(timezone.utc).isoformat())
+            timestamp = data.get('timestamp', datetime.now(BR_TZ).astimezone(timezone.utc).isoformat())
             message_id = data.get('messageId', str(uuid.uuid4()))
             message_type = data.get('messageType', 'text')
             
@@ -5819,7 +6181,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
             """, (flow_id, data['name'], data.get('description', ''), 
                   json.dumps(data.get('nodes', [])), json.dumps(data.get('edges', [])),
                   data.get('active', False), data.get('instance_id'),
-                  datetime.now(timezone.utc).isoformat(), datetime.now(timezone.utc).isoformat()))
+                  datetime.now(BR_TZ).astimezone(timezone.utc).isoformat(), datetime.now(BR_TZ).astimezone(timezone.utc).isoformat()))
             
             conn.commit()
             conn.close()
@@ -5874,7 +6236,7 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
                 values.append(data['instance_id'])
             
             update_fields.append('updated_at = ?')
-            values.append(datetime.now(timezone.utc).isoformat())
+            values.append(datetime.now(BR_TZ).astimezone(timezone.utc).isoformat())
             
             values.append(flow_id)
             
@@ -5917,6 +6279,279 @@ class WhatsFlowRealHandler(BaseHTTPRequestHandler):
         except Exception as e:
             print(f"❌ Erro ao excluir fluxo: {e}")
             self.send_json_response({"error": str(e)}, 500)
+
+    # Campaign Management Functions
+    def handle_get_campaigns(self):
+        """Get all campaigns"""
+        try:
+            conn = sqlite3.connect(DB_FILE)
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT id, name, description, recurrence, send_time, weekday, timezone FROM campaigns"
+            )
+            campaigns = []
+            for row in cursor.fetchall():
+                campaign_id = row[0]
+                cursor.execute(
+                    "SELECT group_id FROM campaign_groups WHERE campaign_id = ?",
+                    (campaign_id,),
+                )
+                groups = [g[0] for g in cursor.fetchall()]
+                campaigns.append({
+                    'id': campaign_id,
+                    'name': row[1],
+                    'description': row[2],
+                    'recurrence': row[3],
+                    'send_time': row[4],
+                    'weekday': row[5],
+                    'timezone': row[6],
+                    'groups': groups,
+                })
+            conn.close()
+            self.send_json_response(campaigns)
+
+        except Exception as e:
+            print(f"❌ Erro ao obter campanhas: {e}")
+            self.send_json_response({'error': str(e)}, 500)
+
+    def handle_get_campaign(self, campaign_id):
+        """Get a single campaign"""
+        try:
+            conn = sqlite3.connect(DB_FILE)
+            cursor = conn.cursor()
+
+            cursor.execute(
+                "SELECT id, name, description, recurrence, send_time, weekday, timezone FROM campaigns WHERE id = ?",
+                (campaign_id,),
+            )
+            row = cursor.fetchone()
+            if not row:
+                conn.close()
+                self.send_json_response({'error': 'Campanha não encontrada'}, 404)
+                return
+
+            cursor.execute(
+                "SELECT group_id FROM campaign_groups WHERE campaign_id = ?",
+                (campaign_id,),
+            )
+            groups = [g[0] for g in cursor.fetchall()]
+
+            campaign = {
+                'id': row[0],
+                'name': row[1],
+                'description': row[2],
+                'recurrence': row[3],
+                'send_time': row[4],
+                'weekday': row[5],
+                'timezone': row[6],
+                'groups': groups,
+            }
+
+            conn.close()
+            self.send_json_response(campaign)
+
+        except Exception as e:
+            print(f"❌ Erro ao obter campanha: {e}")
+            self.send_json_response({'error': str(e)}, 500)
+
+    def handle_create_campaign(self):
+        """Create new campaign"""
+        try:
+            content_length = int(self.headers.get('Content-Length', 0))
+            post_data = self.rfile.read(content_length)
+            data = json.loads(post_data.decode('utf-8'))
+
+            campaign_id = str(uuid.uuid4())
+
+            conn = sqlite3.connect(DB_FILE)
+            cursor = conn.cursor()
+
+            groups = data.get('groups', [])
+            if not isinstance(groups, list):
+                conn.close()
+                self.send_json_response({'error': 'Grupos inválidos'}, 400)
+                return
+
+            send_time = data.get('send_time')
+            if send_time:
+                try:
+                    dt = datetime.fromisoformat(send_time)
+                    if dt.tzinfo is None:
+                        dt = dt.replace(tzinfo=BR_TZ)
+                    send_time = dt.astimezone(timezone.utc).isoformat()
+                except ValueError:
+                    pass
+            cursor.execute(
+                """
+                INSERT INTO campaigns (id, name, description, recurrence, send_time, weekday, timezone)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    campaign_id,
+                    data['name'],
+                    data.get('description'),
+                    data.get('recurrence'),
+                    data.get('send_time'),
+                    data.get('weekday'),
+                    data.get('timezone', 'America/Sao_Paulo'),
+
+                ),
+            )
+
+            for group_id in groups:
+                cursor.execute(
+                    "INSERT OR IGNORE INTO campaign_groups (campaign_id, group_id) VALUES (?, ?)",
+                    (campaign_id, group_id),
+                )
+
+            conn.commit()
+            conn.close()
+
+            self.send_json_response({'success': True, 'campaign_id': campaign_id})
+
+        except Exception as e:
+            print(f"❌ Erro ao criar campanha: {e}")
+            self.send_json_response({'error': str(e)}, 500)
+
+    def handle_update_campaign(self, campaign_id):
+        """Update campaign"""
+        try:
+            content_length = int(self.headers.get('Content-Length', 0))
+            post_data = self.rfile.read(content_length)
+            data = json.loads(post_data.decode('utf-8'))
+
+            conn = sqlite3.connect(DB_FILE)
+            cursor = conn.cursor()
+
+            update_fields = []
+            values = []
+
+            if 'name' in data:
+                update_fields.append('name = ?')
+                values.append(data['name'])
+
+            if 'description' in data:
+                update_fields.append('description = ?')
+                values.append(data['description'])
+
+            if 'recurrence' in data:
+                update_fields.append('recurrence = ?')
+                values.append(data['recurrence'])
+
+            if 'send_time' in data:
+                st = data['send_time']
+                try:
+                    dt = datetime.fromisoformat(st)
+                    if dt.tzinfo is None:
+                        dt = dt.replace(tzinfo=BR_TZ)
+                    st = dt.astimezone(timezone.utc).isoformat()
+                except ValueError:
+                    pass
+                update_fields.append('send_time = ?')
+                values.append(st)
+
+            if 'weekday' in data:
+                update_fields.append('weekday = ?')
+                values.append(data['weekday'])
+
+            if 'timezone' in data:
+                update_fields.append('timezone = ?')
+                values.append(data['timezone'])
+
+            values.append(campaign_id)
+            cursor.execute(
+                f"UPDATE campaigns SET {', '.join(update_fields)} WHERE id = ?",
+                values,
+            )
+
+            if cursor.rowcount == 0:
+                conn.close()
+                self.send_json_response({'error': 'Campanha não encontrada'}, 404)
+                return
+
+            if 'groups' in data:
+                groups = data['groups']
+                if not isinstance(groups, list):
+                    conn.close()
+                    self.send_json_response({'error': 'Grupos inválidos'}, 400)
+                    return
+                cursor.execute("DELETE FROM campaign_groups WHERE campaign_id = ?", (campaign_id,))
+                for group_id in groups:
+                    cursor.execute(
+                        "INSERT OR IGNORE INTO campaign_groups (campaign_id, group_id) VALUES (?, ?)",
+                        (campaign_id, group_id),
+                    )
+
+            conn.commit()
+            conn.close()
+
+            self.send_json_response({'success': True})
+
+        except Exception as e:
+            print(f"❌ Erro ao atualizar campanha: {e}")
+            self.send_json_response({'error': str(e)}, 500)
+
+    def handle_delete_campaign(self, campaign_id):
+        """Delete campaign"""
+        try:
+            conn = sqlite3.connect(DB_FILE)
+            cursor = conn.cursor()
+
+            cursor.execute("DELETE FROM campaign_groups WHERE campaign_id = ?", (campaign_id,))
+            cursor.execute("DELETE FROM campaign_messages WHERE campaign_id = ?", (campaign_id,))
+            cursor.execute("DELETE FROM campaigns WHERE id = ?", (campaign_id,))
+
+            if cursor.rowcount > 0:
+                conn.commit()
+                conn.close()
+                self.send_json_response({'success': True})
+            else:
+                conn.close()
+                self.send_json_response({'error': 'Campanha não encontrada'}, 404)
+
+        except Exception as e:
+            print(f"❌ Erro ao excluir campanha: {e}")
+            self.send_json_response({'error': str(e)}, 500)
+
+    def handle_get_campaign_groups(self, campaign_id: str) -> None:
+        try:
+            conn = sqlite3.connect(DB_FILE)
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT group_id FROM campaign_groups WHERE campaign_id = ?",
+                (campaign_id,),
+            )
+            groups = [row[0] for row in cursor.fetchall()]
+            conn.close()
+            self.send_json_response({'campaign_id': campaign_id, 'groups': groups})
+        except Exception as e:
+            self.send_json_response({'error': str(e)}, 500)
+
+    def handle_add_campaign_groups(self, campaign_id: str) -> None:
+        try:
+            length = int(self.headers.get('Content-Length', 0))
+            data = json.loads(self.rfile.read(length).decode('utf-8')) if length else {}
+            groups = data.get('groups', [])
+            if not isinstance(groups, list) or not groups:
+                self.send_json_response({'error': 'Grupos inválidos'}, 400)
+                return
+            conn = sqlite3.connect(DB_FILE)
+            cursor = conn.cursor()
+            cursor.execute("SELECT id FROM campaigns WHERE id = ?", (campaign_id,))
+            if not cursor.fetchone():
+                conn.close()
+                self.send_json_response({'error': 'Campanha não encontrada'}, 404)
+                return
+            for gid in groups:
+                cursor.execute(
+                    "INSERT OR IGNORE INTO campaign_groups (campaign_id, group_id) VALUES (?, ?)",
+                    (campaign_id, gid),
+                )
+            conn.commit()
+            conn.close()
+            self.send_json_response({'success': True})
+        except Exception as e:
+            self.send_json_response({'error': str(e)}, 500)
 
     def handle_send_webhook(self):
         """Send webhook"""
@@ -6004,6 +6639,21 @@ def main():
     # Start campaign scheduler
     start_campaign_scheduler()
     
+    # Start HTTP server in background thread
+    server = HTTPServer(('0.0.0.0', PORT), WhatsFlowRealHandler)
+    print(f"✅ Servidor rodando na porta {PORT}")
+    print("🔗 Pronto para conectar WhatsApp REAL!")
+    print(f"🌐 Acesse: http://localhost:{PORT}")
+    print("🎉 Sistema profissional pronto para uso!")
+    server_thread = threading.Thread(target=server.serve_forever)
+    server_thread.daemon = True
+    server_thread.start()
+
+    # Launch campaign scheduler task after server starts
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.create_task(campaign_message_scheduler())
+
     print("✅ WhatsFlow Professional configurado!")
     print(f"🌐 Interface: http://localhost:{PORT}")
     print(f"🔌 WebSocket: ws://localhost:{WEBSOCKET_PORT}")
@@ -6011,17 +6661,13 @@ def main():
     print("🚀 Servidor iniciando...")
     print("   Para parar: Ctrl+C")
     print()
-    
+
     try:
-        server = HTTPServer(('0.0.0.0', PORT), WhatsFlowRealHandler)
-        print(f"✅ Servidor rodando na porta {PORT}")
-        print("🔗 Pronto para conectar WhatsApp REAL!")
-        print(f"🌐 Acesse: http://localhost:{PORT}")
-        print("🎉 Sistema profissional pronto para uso!")
-        server.serve_forever()
+        loop.run_forever()
     except KeyboardInterrupt:
         print("\n👋 WhatsFlow Professional finalizado!")
         baileys_manager.stop_baileys()
+        server.shutdown()
 
 if __name__ == "__main__":
     main()

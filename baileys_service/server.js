@@ -419,18 +419,20 @@ app.post('/disconnect/:instanceId', (req, res) => {
 
 app.post('/send/:instanceId', async (req, res) => {
     const { instanceId } = req.params;
-    const { to, message, type = 'text' } = req.body;
-    
+    const { to, type = 'text', message, caption } = req.body;
+
     const instance = instances.get(instanceId);
     if (!instance || !instance.connected || !instance.sock) {
-        return res.status(400).json({ error: 'Instância não conectada', instanceId: instanceId });
+        return res.status(400).json({ error: 'Instância não conectada', instanceId });
     }
-    
+
     try {
         const jid = to.includes('@') ? to : `${to}@s.whatsapp.net`;
-        
+        const mediaTypes = ['image', 'audio', 'video', 'document'];
+
         if (type === 'text') {
             await instance.sock.sendMessage(jid, { text: message });
+ codex/add-error-handling-for-fetch-requests-1k9r8k
         } else if (type === 'image' && req.body.imageData) {
             const buffer = Buffer.from(req.body.imageData, 'base64');
             await instance.sock.sendMessage(jid, {
@@ -458,13 +460,14 @@ app.post('/send/:instanceId', async (req, res) => {
             });
         } else {
             return res.status(400).json({ error: 'Tipo de mensagem não suportado' });
+
         }
-        
+
         console.log(`📤 Mensagem enviada da instância ${instanceId} para ${to}`);
-        res.json({ success: true, instanceId: instanceId });
+        res.json({ success: true, instanceId });
     } catch (error) {
         console.error(`❌ Erro ao enviar mensagem da instância ${instanceId}:`, error);
-        res.status(500).json({ error: error.message, instanceId: instanceId });
+        res.status(500).json({ error: error.message, instanceId });
     }
 });
 
@@ -572,8 +575,9 @@ app.get('/health', (req, res) => {
 });
 
 const PORT = process.env.PORT || 3002;
+const BAILEYS_URL = process.env.BAILEYS_URL || `http://localhost:${PORT}`;
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Baileys service rodando na porta ${PORT}`);
-    console.log(`📊 Health check: http://localhost:${PORT}/health`);
+    console.log(`📊 Health check: ${BAILEYS_URL}/health`);
     console.log('⏳ Aguardando comandos para conectar instâncias...');
 });

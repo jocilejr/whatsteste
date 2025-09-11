@@ -12,6 +12,7 @@ import json
 import sqlite3
 import uuid
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 import os
 import urllib.parse
 from http.server import HTTPServer, BaseHTTPRequestHandler
@@ -19,6 +20,9 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 # Configurações
 DB_FILE = "whatsflow.db"
 PORT = 8888
+
+# Brazil timezone
+BR_TZ = ZoneInfo("America/Sao_Paulo")
 
 # HTML completo da aplicação (CSS inline, JS inline)
 HTML_APP = '''<!DOCTYPE html>
@@ -868,7 +872,7 @@ def add_sample_data():
         return
     
     # Add sample instances
-    current_time = datetime.now(timezone.utc).isoformat()
+    current_time = datetime.now(BR_TZ).astimezone(timezone.utc).isoformat()
     
     sample_instances = [
         {
@@ -1031,7 +1035,7 @@ class WhatsFlowHandler(BaseHTTPRequestHandler):
                 return
             
             instance_id = str(uuid.uuid4())
-            created_at = datetime.now(timezone.utc).isoformat()
+            created_at = datetime.now(BR_TZ).astimezone(timezone.utc).isoformat()
             
             conn = sqlite3.connect(DB_FILE)
             cursor = conn.cursor()
